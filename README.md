@@ -1,16 +1,35 @@
-# React + Vite
+# Enterprise Backend Platform
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Technology Stack
+- Java 21
+- Spring Boot 3
+- PostgreSQL
+- Redis
+- Kafka
+- Docker
+- Kubernetes
 
-Currently, two official plugins are available:
+## Planned Architecture
+- API Gateway
+- Authentication Service
+- User Service
+- Product Service
+- Order Service
+- Payment Service
+- Notification Service
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Documentation Roadmap
+- System Architecture
+- Database Design
+- API Specifications
+- Security Design
+- Deployment Architecture
+- Scalability Considerations
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Next Steps
+1. Create Spring Boot multi-module project
+2. Configure PostgreSQL and Flyway
+3. Implement JWT authentication
+4. Create core domain entities
+5. Dockerize services
+6. Deploy to Kubernetes
