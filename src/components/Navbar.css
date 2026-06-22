@@ -1,0 +1,162 @@
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+.navbar-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.logo-icon {
+  font-size: 1.7rem;
+}
+
+.logo-text {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #FF6B35;
+  letter-spacing: -0.5px;
+}
+
+.navbar-search {
+  flex: 1;
+  display: flex;
+  background: #F5F5F5;
+  border-radius: 50px;
+  overflow: hidden;
+  border: 1.5px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.navbar-search:focus-within {
+  border-color: #FF6B35;
+  background: #fff;
+}
+
+.navbar-search input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0.55rem 1rem;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.navbar-search button {
+  background: #FF6B35;
+  border: none;
+  padding: 0 1rem;
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.navbar-search button:hover {
+  background: #e55a25;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 1.2rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.navbar-links a {
+  text-decoration: none;
+  color: #333;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: color 0.2s;
+  white-space: nowrap;
+}
+
+.navbar-links a:hover {
+  color: #FF6B35;
+}
+
+.navbar-cart {
+  position: relative;
+  text-decoration: none;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.cart-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: #FF6B35;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.hamburger span {
+  display: block;
+  width: 22px;
+  height: 2.5px;
+  background: #333;
+  border-radius: 2px;
+}
+
+@media (max-width: 768px) {
+  .navbar-links {
+    display: none;
+    position: absolute;
+    top: 68px;
+    left: 0;
+    right: 0;
+    background: #fff;
+    flex-direction: column;
+    padding: 1rem 1.5rem;
+    gap: 1rem;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+  }
+
+  .navbar-links.open {
+    display: flex;
+  }
+
+  .hamburger {
+    display: flex;
+  }
+
+  .navbar-search {
+    display: none;
+  }
+}
