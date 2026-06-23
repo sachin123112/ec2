@@ -1,9 +1,7 @@
-<dependency>
-    <groupId>org.postgresql</groupId>
-    <artifactId>postgresql</artifactId>
-</dependency>
+<packaging>pom</packaging>
 
-<dependency>
-    <groupId>org.flywaydb</groupId>
-    <artifactId>flyway-core</artifactId>
-</dependency>
+<modules>
+    <module>services/auth-service</module>
+    <module>services/user-service</module>
+    <module>services/order-service</module>
+</modules>
