@@ -14,6 +14,10 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+      CONTAINER_REGISTRY: ${{ secrets.CONTAINER_REGISTRY }}
+      CONTAINER_REPOSITORY: ${{ secrets.CONTAINER_REPOSITORY }}
 
     steps:
     - uses: actions/checkout@v4
@@ -24,24 +28,18 @@ jobs:
         version: '1.27.0'
 
     - name: Set kubeconfig
-      env:
-        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG }}
       run: |
-        echo "$KUBE_CONFIG_DATA" | base64 --decode > kubeconfig
+        echo "$KUBE_CONFIG" | base64 --decode > kubeconfig
         export KUBECONFIG=$PWD/kubeconfig
         kubectl config view --minify
 
     - name: Build and push backend image to registry
-      env:
-        CONTAINER_REGISTRY: ${{ secrets.CONTAINER_REGISTRY }}
-        CONTAINER_REPOSITORY: ${{ secrets.CONTAINER_REPOSITORY }}
       run: |
         if [ -n "$CONTAINER_REGISTRY" ]; then
-          IMAGE=$CONTAINER_REGISTRY/$CONTAINER_REPOSITORY:${{ github.sha }}
+          IMAGE=$CONTAINER_REGISTRY/$CONTAINER_REPOSITORY:${GITHUB_SHA}
           docker build -t "$IMAGE" -f backend-platform/services/auth-service/Dockerfile .
           echo "Pushing $IMAGE"
           docker push "$IMAGE"
-          # Replace image in k8s deployment template
           sed -i "s|__IMAGE_PLACEHOLDER__|$IMAGE|g" k8s/auth-deployment.yaml
         else
           echo "CONTAINER_REGISTRY not set; skipping image build and push."
