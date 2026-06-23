@@ -1,0 +1,52 @@
+name: Deploy Kubernetes
+
+on:
+
+  workflow_dispatch:
+
+  push:
+    branches:
+      - main
+
+jobs:
+
+  deploy:
+
+    runs-on: ubuntu-latest
+
+    environment:
+      name: production
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - name: Setup Kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure Kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
+
+      - name: Deploy Namespace
+        run: |
+          kubectl apply -f infrastructure/kubernetes/namespace.yaml
+
+      - name: Deploy PostgreSQL
+        run: |
+          kubectl apply -f infrastructure/kubernetes/postgres/
+
+      - name: Deploy Redis
+        run: |
+          kubectl apply -f infrastructure/kubernetes/redis/
+
+      - name: Deploy Services
+        run: |
+          kubectl apply -f infrastructure/kubernetes/auth-service/
+          kubectl apply -f infrastructure/kubernetes/user-service/
+          kubectl apply -f infrastructure/kubernetes/order-service/
+
+      - name: Deploy Ingress
+        run: |
+          kubectl apply -f infrastructure/kubernetes/ingress/
