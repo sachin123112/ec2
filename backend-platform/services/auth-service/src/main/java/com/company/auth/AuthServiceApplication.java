@@ -1,21 +1,15 @@
-@RestController
-@RequestMapping("/api/v1/auth")
-public class AuthController {
+package com.company.auth;
 
-    @Autowired
-    private JwtService jwtService;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-    @PostMapping("/login")
-    public AuthResponse login(
-            @RequestBody LoginRequest request) {
+@SpringBootApplication
+public class AuthServiceApplication {
 
-        // TODO:
-        // Validate user from DB
-
-        String token =
-                jwtService.generateToken(
-                        request.getEmail());
-
-        return new AuthResponse(token);
+    public static void main(String[] args) {
+        SpringApplication.run(
+            AuthServiceApplication.class,
+            args
+        );
     }
 }
