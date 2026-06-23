@@ -69,7 +69,26 @@
      mvn --version
      ```
 
-### 5. Install Git Bash (Optional but Recommended)
+### 5. Install PostgreSQL
+- **Download**: [postgresql.org](https://www.postgresql.org/download/windows/)
+- **Version**: 14 or higher (16 recommended)
+- **Installation Steps**:
+  1. Download PostgreSQL installer (.exe)
+  2. Run installer
+  3. Choose installation directory (e.g., `C:\Program Files\PostgreSQL`)
+  4. Set superuser password (remember this!)
+  5. Port: 5432 (default)
+  6. Verify installation:
+     ```cmd
+     psql --version
+     ```
+
+### 6. Install pgAdmin 4 (Optional - GUI for PostgreSQL)
+- **Download**: [pgadmin.org](https://www.pgadmin.org/download/pgadmin-4-windows/)
+- Provides GUI to manage databases
+- Access at: `http://localhost:5050`
+
+### 7. Install Git Bash (Optional but Recommended)
 - Included with Git installation
 - Provides Unix-like terminal on Windows
 
@@ -128,12 +147,35 @@ This will:
 - Compile all Java code
 - Run tests (if configured)
 
-### Step 3: Build Backend Services
+### Step 3: Database Configuration
+
+Before running services, ensure PostgreSQL is configured:
+
+1. **Check PostgreSQL is running**:
+   ```cmd
+   psql -U postgres -c "SELECT 1"
+   ```
+
+2. **Verify database exists**:
+   ```cmd
+   psql -U postgres -l
+   ```
+
+3. **Update backend database credentials** in `backend-platform/services/auth-service/src/main/resources/application.yml`:
+   ```yaml
+   spring:
+     datasource:
+       url: jdbc:postgresql://localhost:5432/ec2_db
+       username: postgres
+       password: your_postgres_password
+   ```
+
+### Step 4: Build Backend Services
 ```cmd
 mvn clean package -DskipTests
 ```
 
-### Step 4: Run Individual Services
+### Step 5: Run Individual Services
 
 #### Option A: Run Auth Service
 ```cmd
@@ -142,6 +184,7 @@ mvn spring-boot:run
 ```
 - Runs on: `http://localhost:8080`
 - API endpoint: `http://localhost:8080/api/v1/auth/login`
+- Database: `ec2_db` on PostgreSQL
 
 #### Option B: Run User Service
 ```cmd
@@ -157,7 +200,7 @@ mvn spring-boot:run
 ```
 - Runs on: `http://localhost:8082`
 
-### Step 5: Run All Services (Docker - Optional)
+### Step 6: Run All Services (Docker - Optional)
 ```cmd
 docker-compose up
 ```
@@ -350,7 +393,280 @@ VITE_API_TIMEOUT=5000
 
 ## Database Setup
 
+### PostgreSQL Setup (Recommended)
+
+#### Step 1: Create Database
+Open Command Prompt or pgAdmin and run:
+
+```sql
+-- Connect to PostgreSQL default database
+psql -U postgres
+
+-- Create application database
+CREATE DATABASE ec2_db;
+
+-- Connect to new database
+\c ec2_db
+```
+
+#### Step 2: Create Tables
+
+**Users Table** - `V1__create_users.sql`:
+```sql
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT true
+);
+
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_username ON users(username);
+```
+
+**Products Table** - `V2__create_products.sql`:
+```sql
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    price DECIMAL(10, 2) NOT NULL,
+    stock_quantity INTEGER NOT NULL DEFAULT 0,
+    category VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT true
+);
+
+CREATE INDEX idx_products_category ON products(category);
+CREATE INDEX idx_products_name ON products(name);
+```
+
+**Orders Table** - `V3__create_orders.sql`:
+```sql
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    order_number VARCHAR(50) NOT NULL UNIQUE,
+    total_amount DECIMAL(10, 2) NOT NULL,
+    status VARCHAR(50) DEFAULT 'PENDING',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE order_items (
+    id SERIAL PRIMARY KEY,
+    order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    product_id INTEGER NOT NULL REFERENCES products(id),
+    quantity INTEGER NOT NULL,
+    unit_price DECIMAL(10, 2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_orders_user_id ON orders(user_id);
+CREATE INDEX idx_orders_status ON orders(status);
+CREATE INDEX idx_order_items_order_id ON order_items(order_id);
+```
+
+#### Step 3: Run All Migrations via Command Line
+
+**Using psql**:
+```cmd
+psql -U postgres -d ec2_db -f database/migrations/V1__create_users.sql
+psql -U postgres -d ec2_db -f database/migrations/V2__create_products.sql
+psql -U postgres -d ec2_db -f database/migrations/V3__create_orders.sql
+```
+
+**Or use pgAdmin GUI**:
+1. Open pgAdmin
+2. Navigate to: Servers → PostgreSQL 16 → Databases → ec2_db
+3. Right-click → Query Tool
+4. Copy-paste SQL from migration files
+5. Click "Execute" button
+
+### PostgreSQL Connection Configuration
+
+#### For Backend (Spring Boot)
+
+Create/Update: `backend-platform/services/auth-service/src/main/resources/application.yml`:
+
+```yaml
+spring:
+  application:
+    name: auth-service
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ec2_db
+    username: postgres
+    password: your_postgres_password
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+    show-sql: false
+  
+  liquibase:
+    enabled: false
+
+server:
+  port: 8080
+```
+
+#### Update pom.xml (Maven Dependencies)
+
+Add PostgreSQL JDBC driver to `backend-platform/pom.xml`:
+
+```xml
+<dependency>
+    <groupId>org.postgresql</groupId>
+    <artifactId>postgresql</artifactId>
+    <version>42.7.1</version>
+    <scope>runtime</scope>
+</dependency>
+
+<!-- JPA/Hibernate -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-jpa</artifactId>
+    <version>3.0.0</version>
+</dependency>
+```
+
+### PostgreSQL Useful Commands
+
+| Command | Purpose |
+|---------|---------|
+| `psql -U postgres` | Connect as superuser |
+| `\l` | List all databases |
+| `\c database_name` | Connect to database |
+| `\dt` | List all tables |
+| `\d table_name` | Describe table schema |
+| `\du` | List all users/roles |
+| `CREATE USER app_user WITH PASSWORD 'password';` | Create new user |
+| `GRANT ALL PRIVILEGES ON DATABASE ec2_db TO app_user;` | Grant permissions |
+
+### Using pgAdmin GUI
+
+1. **Launch pgAdmin**:
+   - Open browser: `http://localhost:5050`
+   - Email: postgres@pgadmin.com
+   - Password: admin (default)
+
+2. **Add PostgreSQL Server**:
+   - Right-click "Servers" → "Register" → "Server"
+   - Name: `local_postgres`
+   - Host: `localhost`
+   - Port: `5432`
+   - Username: `postgres`
+   - Password: `your_password`
+
+3. **Create Database**:
+   - Right-click "Databases" → "Create" → "Database"
+   - Name: `ec2_db`
+   - Owner: `postgres`
+
+4. **Run SQL Scripts**:
+   - Right-click `ec2_db` → "Query Tool"
+   - Copy-paste SQL migration scripts
+   - Click "Execute"
+
+### SQL Server Setup (Alternative)
+
+If using SQL Server instead:
+
+#### Step 1: Install SQL Server Express
+- **Download**: [Microsoft SQL Server Express](https://www.microsoft.com/en-us/sql-server/sql-server-downloads)
+- **Edition**: SQL Server 2022 Express
+
+#### Step 2: Create Database
+```sql
+CREATE DATABASE ec2_db;
+USE ec2_db;
+```
+
+#### Step 3: Create Tables (SQL Server Syntax)
+```sql
+CREATE TABLE users (
+    id INT PRIMARY KEY IDENTITY(1,1),
+    username VARCHAR(100) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE()
+);
+
+CREATE TABLE products (
+    id INT PRIMARY KEY IDENTITY(1,1),
+    name VARCHAR(255) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    stock_quantity INT DEFAULT 0,
+    created_at DATETIME DEFAULT GETDATE()
+);
+
+CREATE TABLE orders (
+    id INT PRIMARY KEY IDENTITY(1,1),
+    user_id INT NOT NULL FOREIGN KEY REFERENCES users(id),
+    total_amount DECIMAL(10, 2) NOT NULL,
+    status VARCHAR(50) DEFAULT 'PENDING',
+    created_at DATETIME DEFAULT GETDATE()
+);
+```
+
+#### Step 4: Update Backend Config for SQL Server
+
+`application.yml`:
+```yaml
+spring:
+  datasource:
+    url: jdbc:sqlserver://localhost:1433;databaseName=ec2_db
+    username: sa
+    password: YourPassword123
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.SQLServerDialect
+```
+
+### Docker PostgreSQL (Optional)
+
+If you prefer Docker instead of local installation:
+
+```cmd
+docker run -d \
+  --name postgres_ec2 \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres123 \
+  -e POSTGRES_DB=ec2_db \
+  -p 5432:5432 \
+  postgres:16
+```
+
+Connect with:
+```
+Host: localhost
+Port: 5432
+Username: postgres
+Password: postgres123
+Database: ec2_db
+```
+
+---
+
 ### SQL Server (Optional)
+
 If using SQL Server, install:
 - **Download**: [SQL Server Express](https://www.microsoft.com/en-us/sql-server/sql-server-downloads)
 - Run migrations from `database/migrations/` folder
