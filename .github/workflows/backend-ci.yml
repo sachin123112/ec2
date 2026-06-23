@@ -26,20 +26,27 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
     
-    - name: Build auth-service
-      run: |
-        cd services/auth-service
-        mvn clean package -DskipTests
-    
-    - name: Run auth-service tests
-      run: |
-        cd services/auth-service
-        mvn test
-    
-    - name: Build backend-platform Docker image
+    - name: Build backend-platform
       run: |
         cd backend-platform
-        docker build -t backend-platform:latest .
+        mvn clean package -DskipTests
+    
+    - name: Run backend tests
+      run: |
+        cd backend-platform
+        mvn test
+    
+    - name: Build individual services
+      run: |
+        for service in backend-platform/services/*/; do
+          service_name=$(basename "$service")
+          if [ -f "$service/pom.xml" ]; then
+            echo "Building $service_name..."
+            cd "$service"
+            mvn clean package -DskipTests
+            cd ../../..
+          fi
+        done
       continue-on-error: true
     
     - name: Upload build artifacts
@@ -48,5 +55,5 @@ jobs:
       with:
         name: backend-build-logs
         path: |
-          services/auth-service/target/
           backend-platform/target/
+          backend-platform/services/*/target/
