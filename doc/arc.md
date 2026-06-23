@@ -1,4 +1,5 @@
 Recommended structure:
+```
 backend-platform/
 │
 ├── .env
@@ -42,6 +43,7 @@ backend-platform/
     ├── index.html
     ├── public/
     └── src/
+```
 I've started the repository update and committed the first backend-design change to `sachin123112/ec2`.
 
 **Commit SHA**
