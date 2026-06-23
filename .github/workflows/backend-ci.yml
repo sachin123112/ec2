@@ -16,6 +16,20 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres123
+          POSTGRES_DB: ec2_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     
     steps:
     - uses: actions/checkout@v4
@@ -25,6 +39,17 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
+
+    - name: Wait for Postgres
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y postgresql-client
+        for i in {1..30}; do pg_isready -h localhost -p 5432 -U postgres && break || sleep 1; done
+
+    - name: Run Flyway migrations
+      run: |
+        cd backend-platform
+        mvn org.flywaydb:flyway-maven-plugin:9.16.0:migrate -Dflyway.url=jdbc:postgresql://localhost:5432/ec2_db -Dflyway.user=postgres -Dflyway.password=postgres123
     
     - name: Build backend-platform
       run: |
