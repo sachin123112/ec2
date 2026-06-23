@@ -282,4 +282,352 @@ spring:
 ```
 
 After PostgreSQL configuration, the next step should be **JWT Security Configuration** so authentication and authorization are wired into the Auth Service.
+-----------------------------------------------------------------------------------------------------------------
+For Spring Boot 3 + Java 21, implement JWT authentication using **Spring Security 6**.
+
+## Project Structure
+
+```text id="7zq3fx"
+auth-service/
+└── src/main/java/com/company/auth/
+    ├── config/
+    │   └── SecurityConfig.java
+    │
+    ├── security/
+    │   ├── JwtAuthenticationFilter.java
+    │   ├── JwtService.java
+    │   └── CustomUserDetailsService.java
+    │
+    ├── controller/
+    │   └── AuthController.java
+    │
+    ├── dto/
+    │   ├── LoginRequest.java
+    │   └── LoginResponse.java
+    │
+    └── entity/
+        └── User.java
+```
+
+---
+
+# Dependencies
+
+Add to `auth-service/pom.xml`
+
+```xml id="hv4c8g"
+<dependencies>
+
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+
+    <dependency>
+        <groupId>io.jsonwebtoken</groupId>
+        <artifactId>jjwt-api</artifactId>
+        <version>0.12.7</version>
+    </dependency>
+
+    <dependency>
+        <groupId>io.jsonwebtoken</groupId>
+        <artifactId>jjwt-impl</artifactId>
+        <version>0.12.7</version>
+        <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+        <groupId>io.jsonwebtoken</groupId>
+        <artifactId>jjwt-jackson</artifactId>
+        <version>0.12.7</version>
+        <scope>runtime</scope>
+    </dependency>
+
+</dependencies>
+```
+
+---
+
+# application.yml
+
+```yaml id="ofzhrv"
+jwt:
+  secret: 9f4d3c8a5e2b7f6d1a9c4e8f2b6d3a7c
+  expiration: 900000
+
+spring:
+  security:
+    user:
+      name: disabled
+```
+
+Store the secret in environment variables for production.
+
+---
+
+# JwtService
+
+```java id="8x72nr"
+@Service
+public class JwtService {
+
+    @Value("${jwt.secret}")
+    private String secret;
+
+    @Value("${jwt.expiration}")
+    private long expiration;
+
+    public String generateToken(String username) {
+
+        Date now = new Date();
+
+        return Jwts.builder()
+                .subject(username)
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + expiration))
+                .signWith(
+                        Keys.hmacShaKeyFor(secret.getBytes()),
+                        Jwts.SIG.HS256)
+                .compact();
+    }
+
+    public String extractUsername(String token) {
+
+        return Jwts.parser()
+                .verifyWith(
+                    Keys.hmacShaKeyFor(secret.getBytes()))
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getSubject();
+    }
+}
+```
+
+---
+
+# JWT Authentication Filter
+
+```java id="tm5hgs"
+@Component
+public class JwtAuthenticationFilter
+        extends OncePerRequestFilter {
+
+    @Autowired
+    private JwtService jwtService;
+
+    @Autowired
+    private CustomUserDetailsService userDetailsService;
+
+    @Override
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain chain)
+            throws ServletException, IOException {
+
+        String authHeader =
+                request.getHeader("Authorization");
+
+        if (authHeader == null ||
+            !authHeader.startsWith("Bearer ")) {
+
+            chain.doFilter(request, response);
+            return;
+        }
+
+        String token = authHeader.substring(7);
+
+        String username =
+                jwtService.extractUsername(token);
+
+        if (username != null &&
+            SecurityContextHolder.getContext()
+                .getAuthentication() == null) {
+
+            UserDetails user =
+                    userDetailsService
+                        .loadUserByUsername(username);
+
+            UsernamePasswordAuthenticationToken auth =
+                    new UsernamePasswordAuthenticationToken(
+                            user,
+                            null,
+                            user.getAuthorities());
+
+            SecurityContextHolder
+                    .getContext()
+                    .setAuthentication(auth);
+        }
+
+        chain.doFilter(request, response);
+    }
+}
+```
+
+---
+
+# SecurityConfig
+
+```java id="l2i7gb"
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    @Autowired
+    private JwtAuthenticationFilter jwtFilter;
+
+    @Bean
+    SecurityFilterChain securityFilterChain(
+            HttpSecurity http)
+            throws Exception {
+
+        http
+            .csrf(csrf -> csrf.disable())
+
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(
+                    SessionCreationPolicy.STATELESS))
+
+            .authorizeHttpRequests(auth -> auth
+
+                .requestMatchers(
+                    "/api/v1/auth/**",
+                    "/actuator/health")
+                .permitAll()
+
+                .requestMatchers(
+                    "/api/v1/admin/**")
+                .hasRole("ADMIN")
+
+                .anyRequest()
+                .authenticated())
+
+            .addFilterBefore(
+                jwtFilter,
+                UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    @Bean
+    PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}
+```
+
+---
+
+# Login Request DTO
+
+```java id="sqpycu"
+public record LoginRequest(
+        String username,
+        String password) {
+}
+```
+
+---
+
+# Login Response DTO
+
+```java id="dk1slr"
+public record LoginResponse(
+        String accessToken,
+        String tokenType) {
+}
+```
+
+---
+
+# Auth Controller
+
+```java id="u2chc2"
+@RestController
+@RequestMapping("/api/v1/auth")
+public class AuthController {
+
+    @Autowired
+    private AuthenticationManager authManager;
+
+    @Autowired
+    private JwtService jwtService;
+
+    @PostMapping("/login")
+    public LoginResponse login(
+            @RequestBody LoginRequest request) {
+
+        authManager.authenticate(
+            new UsernamePasswordAuthenticationToken(
+                request.username(),
+                request.password()));
+
+        String token =
+                jwtService.generateToken(
+                    request.username());
+
+        return new LoginResponse(
+                token,
+                "Bearer");
+    }
+}
+```
+
+---
+
+# Password Storage
+
+Store passwords using BCrypt:
+
+```java id="pp3xzk"
+String encoded =
+        passwordEncoder.encode(rawPassword);
+```
+
+Never store plain-text passwords.
+
+---
+
+# Protected Endpoint Example
+
+```java id="d9kjcz"
+@GetMapping("/profile")
+public UserProfile getProfile() {
+    return service.getCurrentUser();
+}
+```
+
+Request:
+
+```http id="gwh0we"
+GET /api/v1/users/profile
+
+Authorization: Bearer eyJhbGciOi...
+```
+
+---
+
+# Recommended Next Enhancements
+
+1. Refresh Tokens
+2. Role-Based Access Control (RBAC)
+3. User Registration API
+4. Logout with token blacklist (Redis)
+5. MFA (TOTP)
+6. OAuth2 Login (Google/Microsoft)
+7. API Gateway JWT validation
+8. Key rotation using RS256 public/private keys
+
+For production, prefer **RS256** (public/private key pair) instead of a shared HS256 secret, and store keys in a secrets manager rather than configuration files.
 
