@@ -826,4 +826,38 @@ mvn clean package -DskipTests
 ```
 
 If you want, I can create the PR now and monitor CI; shall I proceed? 
+ 
+---
+
+## Python build script (optional)
+
+I added a helper script at `scripts/build_local.py` that automates a local build and migration flow.
+
+Script capabilities:
+- Optionally start a Postgres Docker container (`--start-postgres`)
+- Run Flyway migrations
+- Build backend (`mvn clean package`)
+- Build frontend (`npm ci && npm run build`)
+
+Quick usage examples:
+
+```bash
+# Start Postgres, run migrations, build backend and frontend
+python3 scripts/build_local.py --start-postgres
+
+# Skip starting Postgres (useful if you already have a DB)
+python3 scripts/build_local.py --skip-postgres
+
+# Only build frontend
+python3 scripts/build_local.py --skip-backend
+
+# Only build backend
+python3 scripts/build_local.py --skip-frontend
+```
+
+Notes:
+- The script requires `docker` (optional), `mvn` and `npm` on your PATH to run corresponding steps.
+- It performs real builds and will fail if required tools aren't installed — use the skip flags to avoid specific steps.
+
+I validated the script's syntax locally with `python -m py_compile scripts/build_local.py`.
 
