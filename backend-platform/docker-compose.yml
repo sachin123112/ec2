@@ -1,15 +1,15 @@
-version: "3.9"
-
 services:
 
   postgres:
     image: postgres:17
     container_name: postgres
 
+    restart: unless-stopped
+
     environment:
-      POSTGRES_DB: backend_platform
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
     ports:
       - "5432:5432"
@@ -17,52 +17,108 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   redis:
     image: redis:7
 
     container_name: redis
 
+    restart: unless-stopped
+
     ports:
       - "6379:6379"
+
+    volumes:
+      - redis_data:/data
 
   auth-service:
     build:
       context: .
       dockerfile: services/auth-service/Dockerfile
 
+    container_name: auth-service
+
+    restart: unless-stopped
+
     ports:
       - "8081:8081"
 
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
     environment:
-      DB_URL: jdbc:postgresql://postgres:5432/backend_platform
-      DB_USERNAME: postgres
-      DB_PASSWORD: postgres
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+
+      JWT_SECRET: ${JWT_SECRET}
 
   user-service:
     build:
       context: .
       dockerfile: services/user-service/Dockerfile
 
+    container_name: user-service
+
+    restart: unless-stopped
+
     ports:
       - "8082:8082"
 
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
 
   order-service:
     build:
       context: .
       dockerfile: services/order-service/Dockerfile
 
+    container_name: order-service
+
+    restart: unless-stopped
+
     ports:
       - "8083:8083"
 
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+
+  frontend:
+    build:
+      context: ./frontend
+
+    container_name: frontend
+
+    restart: unless-stopped
+
+    ports:
+      - "5173:5173"
+
+    depends_on:
+      - auth-service
+      - user-service
+      - order-service
 
 volumes:
   postgres_data:
+  redis_data:
