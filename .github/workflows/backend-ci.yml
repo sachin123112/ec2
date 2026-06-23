@@ -1,0 +1,52 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'services/**'
+      - 'backend-platform/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'services/**'
+      - 'backend-platform/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    
+    - name: Build auth-service
+      run: |
+        cd services/auth-service
+        mvn clean package -DskipTests
+    
+    - name: Run auth-service tests
+      run: |
+        cd services/auth-service
+        mvn test
+    
+    - name: Build backend-platform Docker image
+      run: |
+        cd backend-platform
+        docker build -t backend-platform:latest .
+      continue-on-error: true
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: backend-build-logs
+        path: |
+          services/auth-service/target/
+          backend-platform/target/
