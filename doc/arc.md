@@ -1,3 +1,47 @@
+Recommended structure:
+backend-platform/
+│
+├── .env
+├── .gitignore
+├── docker-compose.yml
+├── pom.xml
+│
+├── docs/
+│   └── architecture.md
+│
+├── database/
+│   └── migrations/
+│       ├── V1__create_users.sql
+│       ├── V2__create_products.sql
+│       └── V3__create_orders.sql
+│
+├── services/
+│   ├── auth-service/
+│   │   ├── pom.xml
+│   │   └── src/
+│   │       └── main/
+│   │           ├── java/
+│   │           │   └── com/company/auth/
+│   │           │       └── AuthServiceApplication.java
+│   │           └── resources/
+│   │               ├── application.yml
+│   │               └── db/migration/
+│   │
+│   ├── user-service/
+│   │   ├── pom.xml
+│   │   └── src/
+│   │
+│   └── order-service/
+│       ├── pom.xml
+│       └── src/
+│
+└── frontend/
+    ├── package.json
+    ├── package-lock.json
+    ├── vite.config.js
+    ├── index.html
+    ├── public/
+    └── src/
 I've started the repository update and committed the first backend-design change to `sachin123112/ec2`.
 
 **Commit SHA**
