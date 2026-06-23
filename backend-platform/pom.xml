@@ -62,6 +62,13 @@
                         <location>filesystem:${project.basedir}/src/main/resources/db/migration</location>
                     </locations>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.postgresql</groupId>
+                        <artifactId>postgresql</artifactId>
+                        <version>42.7.1</version>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
     </build>
