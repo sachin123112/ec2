@@ -1,0 +1,51 @@
+name: Backend AWS Deploy (ECR -> ECS)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend-platform/**'
+      - 'services/**'
+      - '.github/workflows/backend-aws.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build Docker image
+      run: |
+        IMAGE_URI=${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
+        docker build -t "$IMAGE_URI" -f backend-platform/services/auth-service/Dockerfile .
+        docker push "$IMAGE_URI"
+
+    - name: Register ECS task definition (template)
+      run: |
+        # Create a task definition JSON by substituting the image URI into a template kept in repo (k8s/ecs-task-def-template.json)
+        IMAGE_URI=${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
+        mkdir -p tmp
+        jq --arg IMG "$IMAGE_URI" '.containerDefinitions[0].image=$IMG' k8s/ecs-task-def-template.json > tmp/taskdef.json
+        aws ecs register-task-definition --cli-input-json file://tmp/taskdef.json
+
+    - name: Update ECS service (force new deployment)
+      run: |
+        aws ecs update-service --cluster ${{ secrets.ECS_CLUSTER }} --service ${{ secrets.ECS_SERVICE }} --force-new-deployment
+
+    - name: Post-deploy status
+      run: |
+        echo "Deployed image: ${{ secrets.ECR_REPOSITORY }}:${{ github.sha }} to ECS service ${{ secrets.ECS_SERVICE }}"

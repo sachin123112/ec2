@@ -1,0 +1,47 @@
+name: Deploy to Kubernetes
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'k8s/**'
+      - 'backend-platform/**'
+      - '.github/workflows/deploy-k8s.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: '1.27.0'
+
+    - name: Set kubeconfig
+      env:
+        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG }}
+      run: |
+        echo "$KUBE_CONFIG_DATA" | base64 --decode > kubeconfig
+        export KUBECONFIG=$PWD/kubeconfig
+        kubectl config view --minify
+
+    - name: Build and push backend image to registry
+      if: ${{ secrets.CONTAINER_REGISTRY != '' }}
+      run: |
+        IMAGE=${{ secrets.CONTAINER_REGISTRY }}/${{ secrets.CONTAINER_REPOSITORY }}:${{ github.sha }}
+        docker build -t $IMAGE -f backend-platform/services/auth-service/Dockerfile .
+        echo "Pushing $IMAGE"
+        docker push $IMAGE
+        # Replace image in k8s deployment template
+        sed -i "s|__IMAGE_PLACEHOLDER__|$IMAGE|g" k8s/auth-deployment.yaml
+
+    - name: Apply Kubernetes manifests
+      run: |
+        kubectl apply -f k8s/
+        kubectl rollout status deployment/auth-deployment -n default --timeout=120s
