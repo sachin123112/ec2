@@ -24,7 +24,7 @@ public class AuthController {
 
         String token =
                 jwtService.generateToken(
-                        request.email());
+                        request.getEmail());
 
         return new AuthResponse(token);
     }
