@@ -8,7 +8,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/ec2_db
     username: postgres
-    password: postgres123
+    password: postgres
     driver-class-name: org.postgresql.Driver
 
   jpa:
