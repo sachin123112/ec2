@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import './Navbar.css';
 
 export default function Navbar() {
   const { totalItems } = useCart();
+  const { isAuthenticated, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState('');
   const navigate = useNavigate();
@@ -45,6 +47,14 @@ export default function Navbar() {
           <Link to="/shop?category=Cats" onClick={() => setMenuOpen(false)}>Cats</Link>
           <Link to="/shop?category=Birds" onClick={() => setMenuOpen(false)}>Birds</Link>
           <Link to="/shop?category=Fish" onClick={() => setMenuOpen(false)}>Fish</Link>
+          {isAuthenticated ? (
+            <button type="button" className="link-button" onClick={() => { logout(); navigate('/'); }}>
+              Logout
+            </button>
+          ) : (
+            <Link to="/login" onClick={() => setMenuOpen(false)}>Login</Link>
+          )}
+          <Link to="/dashboard" onClick={() => setMenuOpen(false)}>Dashboard</Link>
         </div>
 
         {/* Cart */}
