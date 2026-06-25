@@ -1,0 +1,133 @@
+.dashboard-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px 24px 40px;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  align-items: center;
+}
+
+.dashboard-header h1 {
+  margin: 0;
+}
+
+.dashboard-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.dashboard-tabs button {
+  border: 1px solid #d2d8e2;
+  background: #fff;
+  color: #111827;
+  padding: 11px 18px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.dashboard-tabs button.active {
+  background: #1f6feb;
+  color: #fff;
+  border-color: #1f6feb;
+}
+
+.dashboard-status {
+  color: #475569;
+  margin-bottom: 16px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.8fr;
+  gap: 20px;
+}
+
+.dashboard-card {
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid #e5e7eb;
+  padding: 22px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.05);
+}
+
+.wide-card {
+  min-height: 520px;
+}
+
+.dashboard-card h2 {
+  margin-top: 0;
+}
+
+.panel-form label {
+  display: block;
+  margin-bottom: 14px;
+  font-size: 0.95rem;
+}
+
+.panel-form input,
+.panel-form textarea,
+.panel-form select {
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  background: #f9fafb;
+}
+
+.panel-form textarea {
+  resize: vertical;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead th {
+  text-align: left;
+  padding: 14px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #334155;
+}
+
+tbody td {
+  padding: 12px 12px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.btn-primary {
+  display: inline-block;
+  padding: 12px 18px;
+  background: #1f6feb;
+  color: #fff;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.btn-outline {
+  border: 1px solid #1f6feb;
+  background: transparent;
+  color: #1f6feb;
+  padding: 12px 18px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+@media (max-width: 980px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}

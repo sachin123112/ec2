@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components */
+
 import { createContext, useContext, useReducer } from 'react';
 
 const CartContext = createContext();
@@ -16,9 +18,13 @@ function cartReducer(state, action) {
     case 'REMOVE_ITEM':
       return state.filter(i => i.id !== action.payload);
     case 'UPDATE_QTY':
-      if (action.payload.qty <= 0) return state.filter(i => i.id !== action.payload.id);
+      if (action.payload.qty <= 0) {
+        return state.filter(i => i.id !== action.payload.id);
+      }
       return state.map(i =>
-        i.id === action.payload.id ? { ...i, qty: action.payload.qty } : i
+        i.id === action.payload.id
+          ? { ...i, qty: action.payload.qty }
+          : i
       );
     case 'CLEAR_CART':
       return [];
@@ -30,16 +36,37 @@ function cartReducer(state, action) {
 export function CartProvider({ children }) {
   const [cart, dispatch] = useReducer(cartReducer, []);
 
-  const addToCart = (product) => dispatch({ type: 'ADD_ITEM', payload: product });
-  const removeFromCart = (id) => dispatch({ type: 'REMOVE_ITEM', payload: id });
-  const updateQty = (id, qty) => dispatch({ type: 'UPDATE_QTY', payload: { id, qty } });
-  const clearCart = () => dispatch({ type: 'CLEAR_CART' });
+  const addToCart = (product) =>
+    dispatch({ type: 'ADD_ITEM', payload: product });
 
-  const totalItems = cart.reduce((sum, i) => sum + i.qty, 0);
-  const totalPrice = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+  const removeFromCart = (id) =>
+    dispatch({ type: 'REMOVE_ITEM', payload: id });
+
+  const updateQty = (id, qty) =>
+    dispatch({ type: 'UPDATE_QTY', payload: { id, qty } });
+
+  const clearCart = () =>
+    dispatch({ type: 'CLEAR_CART' });
+
+  const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+
+  const totalPrice = cart.reduce(
+    (sum, item) => sum + item.price * item.qty,
+    0
+  );
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQty, clearCart, totalItems, totalPrice }}>
+    <CartContext.Provider
+      value={{
+        cart,
+        addToCart,
+        removeFromCart,
+        updateQty,
+        clearCart,
+        totalItems,
+        totalPrice,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );
