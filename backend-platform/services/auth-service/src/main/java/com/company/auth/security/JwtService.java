@@ -32,7 +32,7 @@ public class JwtService {
     }
 
     public Claims extractAllClaims(String token) {
-        Jws<Claims> claimsJws = Jwts.parserBuilder()
+        Jws<Claims> claimsJws = Jwts.parser()
                 .setSigningKey(Keys.hmacShaKeyFor(secret.getBytes()))
                 .build()
                 .parseClaimsJws(token);
