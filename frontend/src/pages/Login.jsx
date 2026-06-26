@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Login.css';
 
@@ -41,7 +41,7 @@ export default function Login() {
       }
 
       const data = await response.json();
-      login(data.accessToken, email, data.roles || []);
+      login(data.accessToken, email, data.roles || [], data.refreshToken || '');
       if (data.roles?.includes('ADMIN')) {
         navigate('/admin/dashboard');
       } else {
@@ -91,11 +91,11 @@ export default function Login() {
 
         <div style={{display: 'flex', justifyContent: 'space-between', marginTop: '12px'}}>
           <div>
-            <a href="/">Home</a>
+            <Link to="/">Home</Link>
           </div>
           <div style={{display: 'flex', gap: '12px'}}>
-            <a href="/forgot-password">Forgot password?</a>
-            <a href="/signup">Sign up</a>
+            <Link to="/forgot-password">Forgot password?</Link>
+            <Link to="/signup">Sign up</Link>
           </div>
         </div>
 

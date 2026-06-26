@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 const AuthContext = createContext();
 const STORAGE_KEY = 'pawmart_access_token';
 const STORAGE_EMAIL = 'pawmart_user_email';
+const STORAGE_REFRESH = 'pawmart_refresh_token';
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem(STORAGE_KEY) || '');
@@ -11,6 +12,7 @@ export function AuthProvider({ children }) {
     const saved = localStorage.getItem('pawmart_user_roles');
     return saved ? JSON.parse(saved) : [];
   });
+  const [refreshToken, setRefreshToken] = useState(() => localStorage.getItem(STORAGE_REFRESH) || '');
 
   useEffect(() => {
     if (token) {
@@ -36,10 +38,19 @@ export function AuthProvider({ children }) {
     }
   }, [roles]);
 
-  const login = (newToken, email, newRoles = []) => {
+  useEffect(() => {
+    if (refreshToken) {
+      localStorage.setItem(STORAGE_REFRESH, refreshToken);
+    } else {
+      localStorage.removeItem(STORAGE_REFRESH);
+    }
+  }, [refreshToken]);
+
+  const login = (newToken, email, newRoles = [], newRefreshToken = '') => {
     setToken(newToken);
     setUserEmail(email);
     setRoles(newRoles);
+    setRefreshToken(newRefreshToken);
   };
 
   const signup = async (email, password) => {
@@ -66,12 +77,14 @@ export function AuthProvider({ children }) {
     setToken('');
     setUserEmail('');
     setRoles([]);
+    setRefreshToken('');
   };
 
   return (
     <AuthContext.Provider
       value={{
         token,
+        refreshToken,
         userEmail,
         roles,
         isAdmin: roles.includes('ADMIN'),

@@ -24,7 +24,7 @@ export default function Signup() {
         return;
       }
       const data = await res.json();
-      login(data.accessToken, email, data.roles || []);
+      login(data.accessToken, email, data.roles || [], data.refreshToken || '');
       if (data.roles?.includes('ADMIN')) {
         navigate('/admin/dashboard');
       } else {

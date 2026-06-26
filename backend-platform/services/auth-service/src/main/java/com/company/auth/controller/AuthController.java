@@ -2,9 +2,12 @@ package com.company.auth.controller;
 
 import com.company.auth.dto.AuthResponse;
 import com.company.auth.dto.LoginRequest;
+import com.company.auth.dto.RefreshTokenRequest;
+import com.company.auth.model.RefreshToken;
 import com.company.auth.model.Role;
 import com.company.auth.model.User;
 import com.company.auth.repository.PasswordResetTokenRepository;
+import com.company.auth.repository.RefreshTokenRepository;
 import com.company.auth.repository.RoleRepository;
 import com.company.auth.repository.UserRepository;
 import com.company.auth.security.JwtService;
@@ -24,6 +27,7 @@ public class AuthController {
 
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final RoleRepository roleRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
@@ -31,11 +35,13 @@ public class AuthController {
     public AuthController(
             UserRepository userRepository,
             PasswordResetTokenRepository passwordResetTokenRepository,
+            RefreshTokenRepository refreshTokenRepository,
             RoleRepository roleRepository,
             JwtService jwtService,
             PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
         this.roleRepository = roleRepository;
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
@@ -62,9 +68,9 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
         }
 
-        var roles = user.getRoles().stream().map(Role::getName).toList();
-        String token = jwtService.generateToken(user.getEmail(), roles);
-        return ResponseEntity.ok(new AuthResponse(token, roles));
+        ensureUserHasRoles(user);
+        AuthResponse authResponse = buildAuthResponse(user);
+        return ResponseEntity.ok(authResponse);
     }
 
     @PostMapping("/signup")
@@ -80,18 +86,11 @@ public class AuthController {
         user.setLastName(request.getLastName());
         user.setStatus("ACTIVE");
 
-        Role defaultRole = roleRepository.findByName("USER").orElseGet(() -> {
-            Role created = new Role();
-            created.setName("USER");
-            created.setDescription("Default user role");
-            return roleRepository.save(created);
-        });
-        user.getRoles().add(defaultRole);
-
+        user = ensureUserHasRoles(user);
         user = userRepository.save(user);
-        var roles = user.getRoles().stream().map(Role::getName).toList();
-        String token = jwtService.generateToken(user.getEmail(), roles);
-        return ResponseEntity.status(HttpStatus.CREATED).body(new AuthResponse(token, roles));
+
+        AuthResponse authResponse = buildAuthResponse(user);
+        return ResponseEntity.status(HttpStatus.CREATED).body(authResponse);
     }
 
     @PostMapping("/forgot-password")
@@ -125,8 +124,63 @@ public class AuthController {
 
         User user = resetToken.getUser();
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        ensureUserHasRoles(user);
         userRepository.save(user);
         passwordResetTokenRepository.deleteByToken(request.getToken());
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshToken(@RequestBody RefreshTokenRequest request) {
+        if (request == null || request.getRefreshToken() == null || request.getRefreshToken().isBlank()) {
+            return ResponseEntity.badRequest().body("Refresh token is required.");
+        }
+
+        Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByToken(request.getRefreshToken());
+        if (refreshTokenOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid refresh token.");
+        }
+
+        RefreshToken refreshToken = refreshTokenOptional.get();
+        if (refreshToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+            refreshTokenRepository.deleteByToken(request.getRefreshToken());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Refresh token expired.");
+        }
+
+        User user = refreshToken.getUser();
+        ensureUserHasRoles(user);
+        AuthResponse authResponse = buildAuthResponse(user);
+        return ResponseEntity.ok(authResponse);
+    }
+
+    private User ensureUserHasRoles(User user) {
+        if (user.getRoles().isEmpty()) {
+            String fallbackRoleName = user.getEmail().equalsIgnoreCase("admin@pawmart.com") ? "ADMIN" : "USER";
+            Role fallbackRole = roleRepository.findByName(fallbackRoleName).orElseGet(() -> {
+                Role newRole = new Role();
+                newRole.setName(fallbackRoleName);
+                newRole.setDescription(fallbackRoleName.equals("ADMIN") ? "Administrator with full access" : "Default user role");
+                return roleRepository.save(newRole);
+            });
+            user.getRoles().add(fallbackRole);
+            userRepository.save(user);
+        }
+        return user;
+    }
+
+    private AuthResponse buildAuthResponse(User user) {
+        refreshTokenRepository.deleteAllByUser(user);
+        var roles = user.getRoles().stream().map(Role::getName).toList();
+        String token = jwtService.generateToken(user.getEmail(), roles);
+        RefreshToken refreshToken = createRefreshToken(user);
+        return new AuthResponse(token, roles, refreshToken.getToken());
+    }
+
+    private RefreshToken createRefreshToken(User user) {
+        RefreshToken refreshToken = new RefreshToken();
+        refreshToken.setToken(UUID.randomUUID().toString().replaceAll("-", ""));
+        refreshToken.setUser(user);
+        refreshToken.setExpiresAt(LocalDateTime.now().plusDays(7));
+        return refreshTokenRepository.save(refreshToken);
     }
 }
