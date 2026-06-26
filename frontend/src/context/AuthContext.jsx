@@ -29,6 +29,26 @@ export function AuthProvider({ children }) {
     setUserEmail(email);
   };
 
+  const signup = async (email, phone, password) => {
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+    const res = await fetch(`${API_URL}/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, phone, password }),
+    });
+    return res;
+  };
+
+  const requestPasswordReset = async (email) => {
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+    const res = await fetch(`${API_URL}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    return res;
+  };
+
   const logout = () => {
     setToken('');
     setUserEmail('');
@@ -36,7 +56,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ token, userEmail, login, logout, isAuthenticated: Boolean(token) }}
+      value={{ token, userEmail, login, logout, signup, requestPasswordReset, isAuthenticated: Boolean(token) }}
     >
       {children}
     </AuthContext.Provider>

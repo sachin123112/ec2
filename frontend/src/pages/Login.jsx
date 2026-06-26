@@ -84,6 +84,16 @@ export default function Login() {
           </button>
         </form>
 
+        <div style={{display: 'flex', justifyContent: 'space-between', marginTop: '12px'}}>
+          <div>
+            <a href="/">Home</a>
+          </div>
+          <div style={{display: 'flex', gap: '12px'}}>
+            <a href="/forgot-password">Forgot password?</a>
+            <a href="/signup">Sign up</a>
+          </div>
+        </div>
+
         <div className="login-hint">
           <strong>Hint:</strong> admin@pawmart.com / admin123
         </div>

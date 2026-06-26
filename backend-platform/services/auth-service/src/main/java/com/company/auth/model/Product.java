@@ -27,6 +27,10 @@ public class Product {
     @Column(name = "stock_quantity")
     private Integer stockQuantity = 0;
 
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    private Category category;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -86,6 +90,14 @@ public class Product {
 
     public void setStockQuantity(Integer stockQuantity) {
         this.stockQuantity = stockQuantity;
+    }
+
+    public Category getCategory() {
+        return category;
+    }
+
+    public void setCategory(Category category) {
+        this.category = category;
     }
 
     public LocalDateTime getCreatedAt() {

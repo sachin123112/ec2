@@ -54,4 +54,32 @@ public class AuthController {
         String token = jwtService.generateToken(user.getEmail());
         return ResponseEntity.ok(new AuthResponse(token));
     }
+
+    @PostMapping("/signup")
+    public ResponseEntity<?> signup(@RequestBody com.company.auth.dto.CreateUserRequest request) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already exists");
+        }
+        User user = new User();
+        user.setUsername(request.getUsername() == null ? request.getEmail() : request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setStatus("ACTIVE");
+        user = userRepository.save(user);
+        String token = jwtService.generateToken(user.getEmail());
+        return ResponseEntity.status(HttpStatus.CREATED).body(new AuthResponse(token));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody com.company.auth.dto.ForgotPasswordRequest request) {
+        // For now: accept request and always return 200. In production, send email with reset link.
+        Optional<User> user = userRepository.findByEmail(request.getEmail());
+        if (user.isPresent()) {
+            // TODO: generate reset token and send email
+            System.out.println("Password reset requested for: " + request.getEmail());
+        }
+        return ResponseEntity.ok().build();
+    }
 }

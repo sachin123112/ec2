@@ -482,6 +482,15 @@ psql -U postgres -d ec2_db -f database/migrations/V2__create_products.sql
 psql -U postgres -d ec2_db -f database/migrations/V3__create_orders.sql
 ```
 
+Alternatively, use the provided PowerShell helper to apply all migrations (including new categories/roles migrations):
+
+```powershell
+cd <repo-root>
+powershell -ExecutionPolicy Bypass -File .\scripts\apply_db_migrations.ps1 -Host localhost -Port 5432 -User postgres -Password your_password -Database ec2_db
+```
+
+This runs all SQL files in `database/migrations` and `backend-platform/services/auth-service/src/main/resources/db/migration`, then lists tables.
+
 **Or use pgAdmin GUI**:
 1. Open pgAdmin
 2. Navigate to: Servers → PostgreSQL 16 → Databases → ec2_db

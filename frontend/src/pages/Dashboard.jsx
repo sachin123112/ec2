@@ -9,6 +9,8 @@ export default function Dashboard() {
   const { isAuthenticated, logout, token, userEmail } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState('products');
+  const [categories, setCategories] = useState([]);
+  const [categoryForm, setCategoryForm] = useState({ name: '' });
   const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -38,11 +40,20 @@ export default function Dashboard() {
         fetch(`${API_URL}/users`, { headers: authHeaders }),
         fetch(`${API_URL}/products`, { headers: authHeaders }),
         fetch(`${API_URL}/orders`, { headers: authHeaders }),
+        fetch(`${API_URL}/categories`, { headers: authHeaders }),
       ]);
 
       if (usersRes.ok) setUsers(await usersRes.json());
       if (productsRes.ok) setProducts(await productsRes.json());
       if (ordersRes.ok) setOrders(await ordersRes.json());
+      if (true) {
+        try {
+          const catRes = await fetch(`${API_URL}/categories`, { headers: authHeaders });
+          if (catRes.ok) setCategories(await catRes.json());
+        } catch (e) {
+          // ignore
+        }
+      }
       setStatus('Data loaded successfully.');
     } catch (err) {
       setStatus('Unable to load dashboard data.');
@@ -101,6 +112,23 @@ export default function Dashboard() {
     }
   }
 
+  async function handleCreateCategory(event) {
+    event.preventDefault();
+    setStatus('Creating category...');
+    const response = await fetch(`${API_URL}/categories`, {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify({ name: categoryForm.name }),
+    });
+    if (response.ok) {
+      setCategoryForm({ name: '' });
+      await loadData();
+      setStatus('Category created successfully.');
+    } else {
+      setStatus('Unable to create category.');
+    }
+  }
+
   async function handleCreateOrder(event) {
     event.preventDefault();
     setStatus('Creating order...');
@@ -137,6 +165,7 @@ export default function Dashboard() {
       </div>
 
       <div className="dashboard-tabs">
+        <button className={tab === 'categories' ? 'active' : ''} onClick={() => setTab('categories')}>Categories</button>
         <button className={tab === 'users' ? 'active' : ''} onClick={() => setTab('users')}>Users</button>
         <button className={tab === 'products' ? 'active' : ''} onClick={() => setTab('products')}>Products</button>
         <button className={tab === 'orders' ? 'active' : ''} onClick={() => setTab('orders')}>Orders</button>
@@ -255,6 +284,45 @@ export default function Dashboard() {
                           <td>{product.sku}</td>
                           <td>{product.price}</td>
                           <td>{product.stockQuantity}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {tab === 'categories' && (
+          <>
+            <div className="dashboard-grid">
+              <div className="dashboard-card">
+                <h2>Add Category</h2>
+                <form onSubmit={handleCreateCategory} className="panel-form">
+                  <label>
+                    Name
+                    <input value={categoryForm.name} onChange={e => setCategoryForm({...categoryForm, name: e.target.value})} required />
+                  </label>
+                  <button type="submit" className="btn-primary">Save Category</button>
+                </form>
+              </div>
+
+              <div className="dashboard-card wide-card">
+                <h2>Category List</h2>
+                <div className="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {categories.map(cat => (
+                        <tr key={cat.id}>
+                          <td>{cat.id}</td>
+                          <td>{cat.name}</td>
                         </tr>
                       ))}
                     </tbody>

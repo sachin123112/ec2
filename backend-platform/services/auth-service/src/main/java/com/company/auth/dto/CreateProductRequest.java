@@ -8,6 +8,7 @@ public class CreateProductRequest {
     private String sku;
     private BigDecimal price;
     private Integer stockQuantity;
+    private Long categoryId;
 
     public String getName() {
         return name;
@@ -48,4 +49,7 @@ public class CreateProductRequest {
     public void setStockQuantity(Integer stockQuantity) {
         this.stockQuantity = stockQuantity;
     }
+
+    public Long getCategoryId() { return categoryId; }
+    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
 }

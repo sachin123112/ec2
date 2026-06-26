@@ -14,6 +14,10 @@ import com.company.auth.model.User;
 import com.company.auth.repository.OrderRepository;
 import com.company.auth.repository.ProductRepository;
 import com.company.auth.repository.UserRepository;
+import com.company.auth.repository.CategoryRepository;
+import com.company.auth.repository.RoleRepository;
+import com.company.auth.dto.CategoryDto;
+import com.company.auth.dto.RoleDto;
 import com.company.auth.security.JwtService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +38,8 @@ public class ApiController {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final OrderRepository orderRepository;
+    private final CategoryRepository categoryRepository;
+    private final RoleRepository roleRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
 
@@ -41,11 +47,15 @@ public class ApiController {
             UserRepository userRepository,
             ProductRepository productRepository,
             OrderRepository orderRepository,
+            CategoryRepository categoryRepository,
+            RoleRepository roleRepository,
             JwtService jwtService,
             PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.productRepository = productRepository;
         this.orderRepository = orderRepository;
+        this.categoryRepository = categoryRepository;
+        this.roleRepository = roleRepository;
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
     }
@@ -86,9 +96,45 @@ public class ApiController {
         product.setSku(request.getSku());
         product.setPrice(request.getPrice());
         product.setStockQuantity(request.getStockQuantity());
+        if (request.getCategoryId() != null) {
+            categoryRepository.findById(request.getCategoryId()).ifPresent(product::setCategory);
+        }
 
         product = productRepository.save(product);
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(product));
+    }
+
+    @GetMapping("/categories")
+    public List<CategoryDto> listCategories() {
+        return categoryRepository.findAll().stream().map(c -> {
+            CategoryDto d = new CategoryDto();
+            d.setId(c.getId()); d.setName(c.getName()); d.setCreatedAt(c.getCreatedAt()); return d;
+        }).collect(Collectors.toList());
+    }
+
+    @PostMapping("/categories")
+    public ResponseEntity<CategoryDto> createCategory(@RequestBody CategoryDto request) {
+        com.company.auth.model.Category c = new com.company.auth.model.Category();
+        c.setName(request.getName());
+        c = categoryRepository.save(c);
+        CategoryDto d = new CategoryDto(); d.setId(c.getId()); d.setName(c.getName()); d.setCreatedAt(c.getCreatedAt());
+        return ResponseEntity.status(HttpStatus.CREATED).body(d);
+    }
+
+    @GetMapping("/roles")
+    public List<RoleDto> listRoles() {
+        return roleRepository.findAll().stream().map(r -> {
+            RoleDto d = new RoleDto(); d.setId(r.getId()); d.setName(r.getName()); d.setDescription(r.getDescription()); d.setCreatedAt(r.getCreatedAt()); return d;
+        }).collect(Collectors.toList());
+    }
+
+    @PostMapping("/roles")
+    public ResponseEntity<RoleDto> createRole(@RequestBody RoleDto request) {
+        com.company.auth.model.Role r = new com.company.auth.model.Role();
+        r.setName(request.getName()); r.setDescription(request.getDescription());
+        r = roleRepository.save(r);
+        RoleDto d = new RoleDto(); d.setId(r.getId()); d.setName(r.getName()); d.setDescription(r.getDescription()); d.setCreatedAt(r.getCreatedAt());
+        return ResponseEntity.status(HttpStatus.CREATED).body(d);
     }
 
     @GetMapping("/orders")
@@ -130,6 +176,10 @@ public class ApiController {
         dto.setSku(product.getSku());
         dto.setPrice(product.getPrice());
         dto.setStockQuantity(product.getStockQuantity());
+        if (product.getCategory() != null) {
+            dto.setCategoryId(product.getCategory().getId());
+            dto.setCategoryName(product.getCategory().getName());
+        }
         dto.setCreatedAt(product.getCreatedAt());
         return dto;
     }
