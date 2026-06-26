@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dashboard</title>
+  <style>section{border:1px solid #ccc;padding:8px;margin:8px}</style>
+</head>
+<body>
+  <h2>Dashboard</h2>
+  <button id="logout">Logout</button>
+
+  <section id="users">
+    <h3>Users</h3>
+    <form id="userForm">
+      <input placeholder="username" id="u_username" required />
+      <input placeholder="email" id="u_email" required />
+      <input placeholder="password" id="u_password" required />
+      <input placeholder="first name" id="u_first" />
+      <input placeholder="last name" id="u_last" />
+      <button>Create User</button>
+    </form>
+    <div id="usersList">Loading...</div>
+  </section>
+
+  <section id="products">
+    <h3>Products</h3>
+    <form id="productForm">
+      <input placeholder="name" id="p_name" required />
+      <input placeholder="description" id="p_desc" />
+      <input placeholder="sku" id="p_sku" />
+      <input placeholder="price" id="p_price" type="number" step="0.01" />
+      <input placeholder="stock" id="p_stock" type="number" />
+      <button>Create Product</button>
+    </form>
+    <div id="productsList">Loading...</div>
+  </section>
+
+  <section id="orders">
+    <h3>Orders</h3>
+    <form id="orderForm">
+      <input placeholder="userId" id="o_userId" required />
+      <input placeholder="totalAmount" id="o_total" type="number" step="0.01" />
+      <input placeholder="status" id="o_status" />
+      <button>Create Order</button>
+    </form>
+    <div id="ordersList">Loading...</div>
+  </section>
+
+  <script>
+    const token = () => localStorage.getItem('authToken');
+    if (!token()) window.location.href = '/login.html';
+
+    document.getElementById('logout').addEventListener('click', () => {
+      localStorage.removeItem('authToken');
+      window.location.href = '/login.html';
+    });
+
+    function authHeaders() {
+      return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token() };
+    }
+
+    async function fetchLists() {
+      try {
+        const [uRes,pRes,oRes] = await Promise.all([
+          fetch('/api/v1/users', { headers: authHeaders() }),
+          fetch('/api/v1/products', { headers: authHeaders() }),
+          fetch('/api/v1/orders', { headers: authHeaders() })
+        ]);
+
+        const users = uRes.ok ? await uRes.json() : [];
+        const products = pRes.ok ? await pRes.json() : [];
+        const orders = oRes.ok ? await oRes.json() : [];
+
+        document.getElementById('usersList').innerText = JSON.stringify(users, null, 2);
+        document.getElementById('productsList').innerText = JSON.stringify(products, null, 2);
+        document.getElementById('ordersList').innerText = JSON.stringify(orders, null, 2);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    document.getElementById('userForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const body = {
+        username: document.getElementById('u_username').value,
+        email: document.getElementById('u_email').value,
+        password: document.getElementById('u_password').value,
+        firstName: document.getElementById('u_first').value,
+        lastName: document.getElementById('u_last').value
+      };
+      await fetch('/api/v1/users', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+      fetchLists();
+    });
+
+    document.getElementById('productForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const body = {
+        name: document.getElementById('p_name').value,
+        description: document.getElementById('p_desc').value,
+        sku: document.getElementById('p_sku').value,
+        price: parseFloat(document.getElementById('p_price').value || 0),
+        stockQuantity: parseInt(document.getElementById('p_stock').value || 0)
+      };
+      await fetch('/api/v1/products', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+      fetchLists();
+    });
+
+    document.getElementById('orderForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const body = {
+        userId: document.getElementById('o_userId').value,
+        totalAmount: parseFloat(document.getElementById('o_total').value || 0),
+        status: document.getElementById('o_status').value || 'PENDING'
+      };
+      await fetch('/api/v1/orders', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+      fetchLists();
+    });
+
+    fetchLists();
+  </script>
+</body>
+</html>
