@@ -10,14 +10,15 @@ export default function Login() {
   const [password, setPassword] = useState('admin123');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, roles } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/dashboard', { replace: true });
+      const destination = roles.includes('ADMIN') ? '/admin/dashboard' : '/dashboard';
+      navigate(destination, { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, roles]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -40,8 +41,12 @@ export default function Login() {
       }
 
       const data = await response.json();
-      login(data.accessToken, email);
-      navigate('/dashboard');
+      login(data.accessToken, email, data.roles || []);
+      if (data.roles?.includes('ADMIN')) {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError('Server error. Please try again later.');
     } finally {

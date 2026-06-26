@@ -1,11 +1,14 @@
 package com.company.auth.dto;
 
+import java.util.List;
+
 public class CreateUserRequest {
     private String username;
     private String email;
     private String password;
     private String firstName;
     private String lastName;
+    private List<Long> roleIds;
 
     public String getUsername() {
         return username;
@@ -45,5 +48,13 @@ public class CreateUserRequest {
 
     public void setLastName(String lastName) {
         this.lastName = lastName;
+    }
+
+    public List<Long> getRoleIds() {
+        return roleIds;
+    }
+
+    public void setRoleIds(List<Long> roleIds) {
+        this.roleIds = roleIds;
     }
 }

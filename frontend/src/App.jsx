@@ -9,17 +9,29 @@ import Cart from './pages/Cart';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
+import UserDashboard from './pages/UserDashboard';
 import './App.css';
 
-function ProtectedRoute({ children }) {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+function ProtectedRoute({ children, requiredRole }) {
+  const { isAuthenticated, roles } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (requiredRole && !roles.includes(requiredRole)) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
 }
 
 function AppContent() {
   const location = useLocation();
-  const hideLayout = location.pathname === '/login';
+  const authPaths = ['/login', '/signup', '/forgot-password', '/reset-password'];
+  const hideLayout = authPaths.includes(location.pathname);
 
   return (
     <div className="app-wrapper">
@@ -31,9 +43,15 @@ function AppContent() {
           <Route path="/cart" element={<Cart />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredRole="USER">
+              <UserDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/dashboard" element={
+            <ProtectedRoute requiredRole="ADMIN">
               <Dashboard />
             </ProtectedRoute>
           } />

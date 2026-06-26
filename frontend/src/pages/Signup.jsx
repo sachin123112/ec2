@@ -7,7 +7,6 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 export default function Signup() {
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,14 +18,18 @@ export default function Signup() {
     setError('');
     setLoading(true);
     try {
-      const res = await signup(email, phone, password);
+      const res = await signup(email, password);
       if (!res.ok) {
         setError(await res.text() || 'Unable to create account');
         return;
       }
       const data = await res.json();
-      login(data.accessToken, email);
-      navigate('/dashboard');
+      login(data.accessToken, email, data.roles || []);
+      if (data.roles?.includes('ADMIN')) {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError('Server error');
     } finally {
@@ -42,10 +45,6 @@ export default function Signup() {
           <label>
             Email
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
-          </label>
-          <label>
-            Phone
-            <input value={phone} onChange={e => setPhone(e.target.value)} required />
           </label>
           <label>
             Password

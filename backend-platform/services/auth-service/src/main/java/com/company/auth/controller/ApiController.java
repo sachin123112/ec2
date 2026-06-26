@@ -77,6 +77,11 @@ public class ApiController {
         user.setLastName(request.getLastName());
         user.setStatus("ACTIVE");
 
+        if (request.getRoleIds() != null && !request.getRoleIds().isEmpty()) {
+            user.getRoles().clear();
+            roleRepository.findAllById(request.getRoleIds()).forEach(user.getRoles()::add);
+        }
+
         user = userRepository.save(user);
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(user));
     }
@@ -165,6 +170,7 @@ public class ApiController {
         dto.setLastName(user.getLastName());
         dto.setStatus(user.getStatus());
         dto.setCreatedAt(user.getCreatedAt());
+        dto.setRoles(user.getRoles().stream().map(r -> r.getName()).collect(Collectors.toList()));
         return dto;
     }
 

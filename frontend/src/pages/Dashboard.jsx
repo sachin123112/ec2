@@ -11,13 +11,15 @@ export default function Dashboard() {
   const [tab, setTab] = useState('products');
   const [categories, setCategories] = useState([]);
   const [categoryForm, setCategoryForm] = useState({ name: '' });
+  const [roles, setRoles] = useState([]);
+  const [roleForm, setRoleForm] = useState({ name: '', description: '' });
   const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [status, setStatus] = useState('');
 
-  const [userForm, setUserForm] = useState({ username: '', email: '', password: '', firstName: '', lastName: '' });
-  const [productForm, setProductForm] = useState({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0' });
+  const [userForm, setUserForm] = useState({ username: '', email: '', password: '', firstName: '', lastName: '', roleId: '' });
+  const [productForm, setProductForm] = useState({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0', categoryId: '' });
   const [orderForm, setOrderForm] = useState({ userId: '', totalAmount: '0.00', status: 'PENDING' });
 
   const authHeaders = useMemo(() => {
@@ -36,24 +38,19 @@ export default function Dashboard() {
 
   async function loadData() {
     try {
-      const [usersRes, productsRes, ordersRes] = await Promise.all([
+      const [usersRes, productsRes, ordersRes, categoriesRes, rolesRes] = await Promise.all([
         fetch(`${API_URL}/users`, { headers: authHeaders }),
         fetch(`${API_URL}/products`, { headers: authHeaders }),
         fetch(`${API_URL}/orders`, { headers: authHeaders }),
         fetch(`${API_URL}/categories`, { headers: authHeaders }),
+        fetch(`${API_URL}/roles`, { headers: authHeaders }),
       ]);
 
       if (usersRes.ok) setUsers(await usersRes.json());
       if (productsRes.ok) setProducts(await productsRes.json());
       if (ordersRes.ok) setOrders(await ordersRes.json());
-      if (true) {
-        try {
-          const catRes = await fetch(`${API_URL}/categories`, { headers: authHeaders });
-          if (catRes.ok) setCategories(await catRes.json());
-        } catch (e) {
-          // ignore
-        }
-      }
+      if (categoriesRes.ok) setCategories(await categoriesRes.json());
+      if (rolesRes.ok) setRoles(await rolesRes.json());
       setStatus('Data loaded successfully.');
     } catch (err) {
       setStatus('Unable to load dashboard data.');
@@ -70,6 +67,7 @@ export default function Dashboard() {
       password: userForm.password,
       firstName: userForm.firstName,
       lastName: userForm.lastName,
+      roleIds: userForm.roleId ? [parseInt(userForm.roleId, 10)] : [],
     };
 
     const response = await fetch(`${API_URL}/users`, {
@@ -79,7 +77,7 @@ export default function Dashboard() {
     });
 
     if (response.ok) {
-      setUserForm({ username: '', email: '', password: '', firstName: '', lastName: '' });
+      setUserForm({ username: '', email: '', password: '', firstName: '', lastName: '', roleId: '' });
       await loadData();
       setStatus('User created successfully.');
     } else {
@@ -100,11 +98,12 @@ export default function Dashboard() {
         sku: productForm.sku,
         price: parseFloat(productForm.price) || 0,
         stockQuantity: parseInt(productForm.stockQuantity, 10) || 0,
+        categoryId: productForm.categoryId ? parseInt(productForm.categoryId, 10) : null,
       }),
     });
 
     if (response.ok) {
-      setProductForm({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0' });
+      setProductForm({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0', categoryId: '' });
       await loadData();
       setStatus('Product added successfully.');
     } else {
@@ -156,18 +155,38 @@ export default function Dashboard() {
     <div className="dashboard-page">
       <div className="dashboard-header">
         <div>
-          <h1>Admin Dashboard</h1>
-          <p>Welcome back, {userEmail || 'admin'}.</p>
+          <h1>Admin Control Center</h1>
+          <p>Manage users, products, categories, orders, and reports from one place.</p>
         </div>
         <button type="button" className="btn-outline" onClick={() => { logout(); navigate('/login'); }}>
           Logout
         </button>
       </div>
 
-      <div className="dashboard-tabs">
-        <button className={tab === 'categories' ? 'active' : ''} onClick={() => setTab('categories')}>Categories</button>
+      <div className="dashboard-summary">
+        <div className="summary-card">
+          <span>Total Users</span>
+          <strong>{users.length}</strong>
+        </div>
+        <div className="summary-card">
+          <span>Products</span>
+          <strong>{products.length}</strong>
+        </div>
+        <div className="summary-card">
+          <span>Orders</span>
+          <strong>{orders.length}</strong>
+        </div>
+        <div className="summary-card">
+          <span>Categories</span>
+          <strong>{categories.length}</strong>
+        </div>
+      </div>
+
+      <div className="dashboard-actions">
         <button className={tab === 'users' ? 'active' : ''} onClick={() => setTab('users')}>Users</button>
+        <button className={tab === 'roles' ? 'active' : ''} onClick={() => setTab('roles')}>Roles</button>
         <button className={tab === 'products' ? 'active' : ''} onClick={() => setTab('products')}>Products</button>
+        <button className={tab === 'categories' ? 'active' : ''} onClick={() => setTab('categories')}>Categories</button>
         <button className={tab === 'orders' ? 'active' : ''} onClick={() => setTab('orders')}>Orders</button>
       </div>
 
@@ -193,6 +212,15 @@ export default function Dashboard() {
                     <input type="password" value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} required />
                   </label>
                   <label>
+                    Role
+                    <select value={userForm.roleId} onChange={e => setUserForm({...userForm, roleId: e.target.value})} required>
+                      <option value="">Select role</option>
+                      {roles.map(role => (
+                        <option key={role.id} value={role.id}>{role.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
                     First Name
                     <input value={userForm.firstName} onChange={e => setUserForm({...userForm, firstName: e.target.value})} />
                   </label>
@@ -213,6 +241,7 @@ export default function Dashboard() {
                         <th>ID</th>
                         <th>Email</th>
                         <th>Username</th>
+                        <th>Role</th>
                         <th>Status</th>
                       </tr>
                     </thead>
@@ -222,6 +251,7 @@ export default function Dashboard() {
                           <td>{user.id}</td>
                           <td>{user.email}</td>
                           <td>{user.username}</td>
+                          <td>{user.roles?.join(', ')}</td>
                           <td>{user.status}</td>
                         </tr>
                       ))}
@@ -233,6 +263,65 @@ export default function Dashboard() {
           </>
         )}
 
+        {tab === 'roles' && (
+          <>
+            <div className="dashboard-grid">
+              <div className="dashboard-card">
+                <h2>Add Role</h2>
+                <form onSubmit={async event => {
+                  event.preventDefault();
+                  setStatus('Creating role...');
+                  const response = await fetch(`${API_URL}/roles`, {
+                    method: 'POST',
+                    headers: authHeaders,
+                    body: JSON.stringify({ name: roleForm.name, description: roleForm.description }),
+                  });
+                  if (response.ok) {
+                    setRoleForm({ name: '', description: '' });
+                    await loadData();
+                    setStatus('Role created successfully.');
+                  } else {
+                    setStatus('Unable to create role.');
+                  }
+                }} className="panel-form">
+                  <label>
+                    Name
+                    <input value={roleForm.name} onChange={e => setRoleForm({...roleForm, name: e.target.value})} required />
+                  </label>
+                  <label>
+                    Description
+                    <textarea value={roleForm.description} onChange={e => setRoleForm({...roleForm, description: e.target.value})} rows={4} />
+                  </label>
+                  <button type="submit" className="btn-primary">Save Role</button>
+                </form>
+              </div>
+
+              <div className="dashboard-card wide-card">
+                <h2>Role List</h2>
+                <div className="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {roles.map(role => (
+                        <tr key={role.id}>
+                          <td>{role.id}</td>
+                          <td>{role.name}</td>
+                          <td>{role.description}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
         {tab === 'products' && (
           <>
             <div className="dashboard-grid">
@@ -246,6 +335,15 @@ export default function Dashboard() {
                   <label>
                     SKU
                     <input value={productForm.sku} onChange={e => setProductForm({...productForm, sku: e.target.value})} required />
+                  </label>
+                  <label>
+                    Category
+                    <select value={productForm.categoryId} onChange={e => setProductForm({...productForm, categoryId: e.target.value})}>
+                      <option value="">Select category</option>
+                      {categories.map(category => (
+                        <option key={category.id} value={category.id}>{category.name}</option>
+                      ))}
+                    </select>
                   </label>
                   <label>
                     Price

@@ -6,7 +6,7 @@ import './Navbar.css';
 
 export default function Navbar() {
   const { totalItems } = useCart();
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, roles } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState('');
   const navigate = useNavigate();
@@ -49,7 +49,9 @@ export default function Navbar() {
           <Link to="/shop?category=Fish" onClick={() => setMenuOpen(false)}>Fish</Link>
           {isAuthenticated ? (
             <>
-              <Link to="/dashboard" onClick={() => setMenuOpen(false)}>Dashboard</Link>
+              <Link to={roles.includes('ADMIN') ? '/admin/dashboard' : '/dashboard'} onClick={() => setMenuOpen(false)}>
+                Dashboard
+              </Link>
               <button type="button" className="link-button" onClick={() => { logout(); navigate('/'); }}>
                 Logout
               </button>

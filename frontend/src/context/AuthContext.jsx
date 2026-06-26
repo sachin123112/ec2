@@ -7,6 +7,10 @@ const STORAGE_EMAIL = 'pawmart_user_email';
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem(STORAGE_KEY) || '');
   const [userEmail, setUserEmail] = useState(() => localStorage.getItem(STORAGE_EMAIL) || '');
+  const [roles, setRoles] = useState(() => {
+    const saved = localStorage.getItem('pawmart_user_roles');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   useEffect(() => {
     if (token) {
@@ -24,17 +28,26 @@ export function AuthProvider({ children }) {
     }
   }, [userEmail]);
 
-  const login = (newToken, email) => {
+  useEffect(() => {
+    if (roles && roles.length > 0) {
+      localStorage.setItem('pawmart_user_roles', JSON.stringify(roles));
+    } else {
+      localStorage.removeItem('pawmart_user_roles');
+    }
+  }, [roles]);
+
+  const login = (newToken, email, newRoles = []) => {
     setToken(newToken);
     setUserEmail(email);
+    setRoles(newRoles);
   };
 
-  const signup = async (email, phone, password) => {
+  const signup = async (email, password) => {
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
     const res = await fetch(`${API_URL}/auth/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, phone, password }),
+      body: JSON.stringify({ email, password }),
     });
     return res;
   };
@@ -52,11 +65,22 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setToken('');
     setUserEmail('');
+    setRoles([]);
   };
 
   return (
     <AuthContext.Provider
-      value={{ token, userEmail, login, logout, signup, requestPasswordReset, isAuthenticated: Boolean(token) }}
+      value={{
+        token,
+        userEmail,
+        roles,
+        isAdmin: roles.includes('ADMIN'),
+        login,
+        logout,
+        signup,
+        requestPasswordReset,
+        isAuthenticated: Boolean(token),
+      }}
     >
       {children}
     </AuthContext.Provider>

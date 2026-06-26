@@ -1,6 +1,7 @@
 package com.company.auth.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class UserDto {
     private Long id;
@@ -10,6 +11,7 @@ public class UserDto {
     private String lastName;
     private String status;
     private LocalDateTime createdAt;
+    private List<String> roles;
 
     public Long getId() {
         return id;
@@ -65,5 +67,13 @@ public class UserDto {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public List<String> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(List<String> roles) {
+        this.roles = roles;
     }
 }
