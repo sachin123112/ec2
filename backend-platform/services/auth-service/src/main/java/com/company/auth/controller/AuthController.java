@@ -11,6 +11,8 @@ import com.company.auth.repository.RefreshTokenRepository;
 import com.company.auth.repository.RoleRepository;
 import com.company.auth.repository.UserRepository;
 import com.company.auth.security.JwtService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,6 +26,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
+
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
@@ -49,28 +53,35 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        Optional<User> optionalUser = userRepository.findByEmail(request.getEmail());
-        if (optionalUser.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
+        try {
+            Optional<User> optionalUser = userRepository.findByEmail(request.getEmail());
+            if (optionalUser.isEmpty()) {
+                logger.warn("Login failed: user not found for email={}", request.getEmail());
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
+            }
+
+            User user = optionalUser.get();
+            String storedHash = user.getPasswordHash();
+
+            boolean matches;
+            if (storedHash != null && (storedHash.startsWith("$2a$") || storedHash.startsWith("$2b$"))) {
+                matches = passwordEncoder.matches(request.getPassword(), storedHash);
+            } else {
+                matches = request.getPassword().equals(storedHash);
+            }
+
+            if (!matches) {
+                logger.warn("Login failed: invalid password for email={}", request.getEmail());
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
+            }
+
+            ensureUserHasRoles(user);
+            AuthResponse authResponse = buildAuthResponse(user);
+            return ResponseEntity.ok(authResponse);
+        } catch (Exception ex) {
+            logger.error("Unexpected login error for email={}", request != null ? request.getEmail() : "null", ex);
+            throw ex;
         }
-
-        User user = optionalUser.get();
-        String storedHash = user.getPasswordHash();
-
-        boolean matches;
-        if (storedHash != null && (storedHash.startsWith("$2a$") || storedHash.startsWith("$2b$"))) {
-            matches = passwordEncoder.matches(request.getPassword(), storedHash);
-        } else {
-            matches = request.getPassword().equals(storedHash);
-        }
-
-        if (!matches) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
-        }
-
-        ensureUserHasRoles(user);
-        AuthResponse authResponse = buildAuthResponse(user);
-        return ResponseEntity.ok(authResponse);
     }
 
     @PostMapping("/signup")
