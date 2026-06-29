@@ -11,6 +11,7 @@ import com.company.auth.repository.RefreshTokenRepository;
 import com.company.auth.repository.RoleRepository;
 import com.company.auth.repository.UserRepository;
 import com.company.auth.security.JwtService;
+import com.company.auth.service.AuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -34,6 +35,7 @@ public class AuthController {
     private final RefreshTokenRepository refreshTokenRepository;
     private final RoleRepository roleRepository;
     private final JwtService jwtService;
+    private final AuthService authService;
     private final PasswordEncoder passwordEncoder;
 
     public AuthController(
@@ -42,42 +44,25 @@ public class AuthController {
             RefreshTokenRepository refreshTokenRepository,
             RoleRepository roleRepository,
             JwtService jwtService,
+            AuthService authService,
             PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.roleRepository = roleRepository;
         this.jwtService = jwtService;
+        this.authService = authService;
         this.passwordEncoder = passwordEncoder;
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
-            Optional<User> optionalUser = userRepository.findByEmail(request.getEmail());
-            if (optionalUser.isEmpty()) {
-                logger.warn("Login failed: user not found for email={}", request.getEmail());
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
-            }
-
-            User user = optionalUser.get();
-            String storedHash = user.getPasswordHash();
-
-            boolean matches;
-            if (storedHash != null && (storedHash.startsWith("$2a$") || storedHash.startsWith("$2b$"))) {
-                matches = passwordEncoder.matches(request.getPassword(), storedHash);
-            } else {
-                matches = request.getPassword().equals(storedHash);
-            }
-
-            if (!matches) {
-                logger.warn("Login failed: invalid password for email={}", request.getEmail());
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
-            }
-
-            ensureUserHasRoles(user);
-            AuthResponse authResponse = buildAuthResponse(user);
+            AuthResponse authResponse = authService.login(request);
             return ResponseEntity.ok(authResponse);
+        } catch (IllegalArgumentException ex) {
+            logger.warn("Login failed for email={}: {}", request != null ? request.getEmail() : "null", ex.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
         } catch (Exception ex) {
             logger.error("Unexpected login error for email={}", request != null ? request.getEmail() : "null", ex);
             throw ex;
@@ -143,25 +128,12 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(@RequestBody RefreshTokenRequest request) {
-        if (request == null || request.getRefreshToken() == null || request.getRefreshToken().isBlank()) {
-            return ResponseEntity.badRequest().body("Refresh token is required.");
+        try {
+            AuthResponse authResponse = authService.refreshToken(request.getRefreshToken());
+            return ResponseEntity.ok(authResponse);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage());
         }
-
-        Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByToken(request.getRefreshToken());
-        if (refreshTokenOptional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid refresh token.");
-        }
-
-        RefreshToken refreshToken = refreshTokenOptional.get();
-        if (refreshToken.getExpiresAt().isBefore(LocalDateTime.now())) {
-            refreshTokenRepository.deleteByToken(request.getRefreshToken());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Refresh token expired.");
-        }
-
-        User user = refreshToken.getUser();
-        ensureUserHasRoles(user);
-        AuthResponse authResponse = buildAuthResponse(user);
-        return ResponseEntity.ok(authResponse);
     }
 
     private User ensureUserHasRoles(User user) {
@@ -180,7 +152,7 @@ public class AuthController {
     }
 
     private AuthResponse buildAuthResponse(User user) {
-        refreshTokenRepository.deleteAllByUser(user);
+        refreshTokenRepository.deleteAllByUserId(user.getId());
         var roles = user.getRoles().stream().map(Role::getName).toList();
         String token = jwtService.generateToken(user.getEmail(), roles);
         RefreshToken refreshToken = createRefreshToken(user);

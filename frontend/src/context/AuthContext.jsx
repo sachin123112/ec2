@@ -46,11 +46,45 @@ export function AuthProvider({ children }) {
     }
   }, [refreshToken]);
 
+  useEffect(() => {
+    if (!token && refreshToken) {
+      refreshSession().catch(() => {
+        /* ignore failures; logout already happens inside refreshSession */
+      });
+    }
+  }, [refreshToken, token]);
+
   const login = (newToken, email, newRoles = [], newRefreshToken = '') => {
     setToken(newToken);
     setUserEmail(email);
     setRoles(newRoles);
     setRefreshToken(newRefreshToken);
+  };
+
+  const refreshSession = async () => {
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
+
+    const response = await fetch(`${API_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!response.ok) {
+      logout();
+      throw new Error('Unable to refresh session');
+    }
+
+    const data = await response.json();
+    login(data.accessToken, userEmail, data.roles || [], data.refreshToken || '');
+    return data;
+  };
+
+  const hardRefresh = async () => {
+    return refreshSession();
   };
 
   const signup = async (email, password) => {
@@ -92,6 +126,8 @@ export function AuthProvider({ children }) {
         logout,
         signup,
         requestPasswordReset,
+        refreshSession,
+        hardRefresh,
         isAuthenticated: Boolean(token),
       }}
     >

@@ -6,7 +6,7 @@ import './Dashboard.css';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 export default function Dashboard() {
-  const { isAuthenticated, logout, token, userEmail } = useAuth();
+  const { isAuthenticated, logout, token, userEmail, hardRefresh } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState('products');
   const [categories, setCategories] = useState([]);
@@ -21,6 +21,7 @@ export default function Dashboard() {
   const [userForm, setUserForm] = useState({ username: '', email: '', password: '', firstName: '', lastName: '', roleId: '' });
   const [productForm, setProductForm] = useState({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0', categoryId: '' });
   const [orderForm, setOrderForm] = useState({ userId: '', totalAmount: '0.00', status: 'PENDING' });
+  const [refreshing, setRefreshing] = useState(false);
 
   const authHeaders = useMemo(() => {
     const headers = { 'Content-Type': 'application/json' };
@@ -158,9 +159,31 @@ export default function Dashboard() {
           <h1>Admin Control Center</h1>
           <p>Manage users, products, categories, orders, and reports from one place.</p>
         </div>
-        <button type="button" className="btn-outline" onClick={() => { logout(); navigate('/login'); }}>
-          Logout
-        </button>
+        <div className="dashboard-actions-right">
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={async () => {
+              setRefreshing(true);
+              try {
+                await hardRefresh();
+                setStatus('Session refreshed successfully.');
+              } catch (err) {
+                setStatus('Unable to refresh session. Please log in again.');
+                logout();
+                navigate('/login');
+              } finally {
+                setRefreshing(false);
+              }
+            }}
+            disabled={refreshing}
+          >
+            {refreshing ? 'Refreshing…' : 'Hard Refresh'}
+          </button>
+          <button type="button" className="btn-outline" onClick={() => { logout(); navigate('/login'); }}>
+            Logout
+          </button>
+        </div>
       </div>
 
       <div className="dashboard-summary">
