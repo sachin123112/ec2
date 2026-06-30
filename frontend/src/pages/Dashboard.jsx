@@ -47,7 +47,8 @@ export default function Dashboard() {
       if (categoriesRes.ok) setCategories(await categoriesRes.json());
       if (rolesRes.ok) setRoles(await rolesRes.json());
       setStatus('Data loaded successfully.');
-    } catch {
+    } catch (error) {
+      console.error(error);
       setStatus('Unable to load dashboard data.');
     }
   }, [authHeaders]);
@@ -277,7 +278,8 @@ export default function Dashboard() {
               try {
                 await hardRefresh();
                 setStatus('Session refreshed successfully.');
-              } catch {
+              } catch (error) {
+                console.error(error);
                 setStatus('Unable to refresh session. Please log in again.');
                 logout();
                 navigate('/login');
