@@ -152,6 +152,124 @@ export default function Dashboard() {
     }
   }
 
+  async function handleDeleteUser(id) {
+    setStatus('Deleting user...');
+    const response = await fetch(`${API_URL}/users/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders,
+    });
+    if (response.ok) {
+      await loadData();
+      setStatus('User deleted successfully.');
+    } else {
+      setStatus('Unable to delete user.');
+    }
+  }
+
+  async function handleDeleteRole(id) {
+    setStatus('Deleting role...');
+    const response = await fetch(`${API_URL}/roles/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders,
+    });
+    if (response.ok) {
+      await loadData();
+      setStatus('Role deleted successfully.');
+    } else {
+      setStatus('Unable to delete role.');
+    }
+  }
+
+  async function handleDeleteProduct(id) {
+    setStatus('Deleting product...');
+    const response = await fetch(`${API_URL}/products/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders,
+    });
+    if (response.ok) {
+      await loadData();
+      setStatus('Product deleted successfully.');
+    } else {
+      setStatus('Unable to delete product.');
+    }
+  }
+
+  async function handleDeleteCategory(id) {
+    setStatus('Deleting category...');
+    const response = await fetch(`${API_URL}/categories/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders,
+    });
+    if (response.ok) {
+      await loadData();
+      setStatus('Category deleted successfully.');
+    } else {
+      setStatus('Unable to delete category.');
+    }
+  }
+
+  async function handleDeleteOrder(id) {
+    setStatus('Deleting order...');
+    const response = await fetch(`${API_URL}/orders/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders,
+    });
+    if (response.ok) {
+      await loadData();
+      setStatus('Order deleted successfully.');
+    } else {
+      setStatus('Unable to delete order.');
+    }
+  }
+
+  function openDeleteModal(entity, id, label) {
+    setDeleteTarget({ entity, id, label });
+    setShowDeleteModal(true);
+  }
+
+  function closeDeleteModal() {
+    setShowDeleteModal(false);
+    setDeleteTarget(null);
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    const { entity, id } = deleteTarget;
+    setShowDeleteModal(false);
+
+    switch (entity) {
+      case 'user':
+        await handleDeleteUser(id);
+        break;
+      case 'role':
+        await handleDeleteRole(id);
+        break;
+      case 'product':
+        await handleDeleteProduct(id);
+        break;
+      case 'category':
+        await handleDeleteCategory(id);
+        break;
+      case 'order':
+        await handleDeleteOrder(id);
+        break;
+      default:
+        break;
+    }
+    setDeleteTarget(null);
+  }
+
+  function formatEntityLabel(entity) {
+    const labels = {
+      user: 'user account',
+      role: 'role',
+      product: 'product',
+      category: 'category',
+      order: 'order',
+    };
+    return labels[entity] || entity;
+  }
+
   return (
     <div className="dashboard-page">
       <div className="dashboard-header">
@@ -215,6 +333,19 @@ export default function Dashboard() {
 
       <div className="dashboard-status">{status}</div>
 
+      {showDeleteModal && deleteTarget && (
+        <div className="modal-overlay" onClick={closeDeleteModal}>
+          <div className="modal-card" onClick={e => e.stopPropagation()}>
+            <h3>Confirm Delete</h3>
+            <p>Delete {formatEntityLabel(deleteTarget.entity)} <strong>{deleteTarget.label}</strong>?</p>
+            <div className="modal-actions">
+              <button className="btn-outline" type="button" onClick={closeDeleteModal}>Cancel</button>
+              <button className="btn-danger" type="button" onClick={confirmDelete}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <section className="dashboard-panel">
         {tab === 'users' && (
           <>
@@ -266,6 +397,7 @@ export default function Dashboard() {
                         <th>Username</th>
                         <th>Role</th>
                         <th>Status</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -276,6 +408,11 @@ export default function Dashboard() {
                           <td>{user.username}</td>
                           <td>{user.roles?.join(', ')}</td>
                           <td>{user.status}</td>
+                          <td>
+                            <button className="btn-danger btn-sm" onClick={() => openDeleteModal('user', user.id, user.email)}>
+                              Delete
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -328,6 +465,7 @@ export default function Dashboard() {
                         <th>ID</th>
                         <th>Name</th>
                         <th>Description</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -336,6 +474,11 @@ export default function Dashboard() {
                           <td>{role.id}</td>
                           <td>{role.name}</td>
                           <td>{role.description}</td>
+                          <td>
+                            <button className="btn-danger btn-sm" onClick={() => openDeleteModal('role', role.id, role.name)}>
+                              Delete
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -395,6 +538,7 @@ export default function Dashboard() {
                         <th>SKU</th>
                         <th>Price</th>
                         <th>Stock</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -405,6 +549,11 @@ export default function Dashboard() {
                           <td>{product.sku}</td>
                           <td>{product.price}</td>
                           <td>{product.stockQuantity}</td>
+                          <td>
+                            <button className="btn-danger btn-sm" onClick={() => openDeleteModal('product', product.id, product.name)}>
+                              Delete
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -437,6 +586,7 @@ export default function Dashboard() {
                       <tr>
                         <th>ID</th>
                         <th>Name</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -444,6 +594,11 @@ export default function Dashboard() {
                         <tr key={cat.id}>
                           <td>{cat.id}</td>
                           <td>{cat.name}</td>
+                          <td>
+                            <button className="btn-danger btn-sm" onClick={() => openDeleteModal('category', cat.id, cat.name)}>
+                              Delete
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -492,6 +647,7 @@ export default function Dashboard() {
                         <th>User ID</th>
                         <th>Total</th>
                         <th>Status</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -502,6 +658,11 @@ export default function Dashboard() {
                           <td>{order.userId}</td>
                           <td>{order.totalAmount}</td>
                           <td>{order.status}</td>
+                          <td>
+                            <button className="btn-danger btn-sm" onClick={() => openDeleteModal('order', order.id, order.orderNumber)}>
+                              Delete
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>

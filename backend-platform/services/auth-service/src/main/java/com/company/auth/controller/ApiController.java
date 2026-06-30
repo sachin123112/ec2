@@ -86,6 +86,15 @@ public class ApiController {
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(user));
     }
 
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        if (!userRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        userRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/products")
     public List<ProductDto> listProducts() {
         return productRepository.findAll().stream()
@@ -109,6 +118,15 @@ public class ApiController {
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(product));
     }
 
+    @DeleteMapping("/products/{id}")
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+        if (!productRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        productRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/categories")
     public List<CategoryDto> listCategories() {
         return categoryRepository.findAll().stream().map(c -> {
@@ -126,6 +144,15 @@ public class ApiController {
         return ResponseEntity.status(HttpStatus.CREATED).body(d);
     }
 
+    @DeleteMapping("/categories/{id}")
+    public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
+        if (!categoryRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        categoryRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/roles")
     public List<RoleDto> listRoles() {
         return roleRepository.findAll().stream().map(r -> {
@@ -140,6 +167,15 @@ public class ApiController {
         r = roleRepository.save(r);
         RoleDto d = new RoleDto(); d.setId(r.getId()); d.setName(r.getName()); d.setDescription(r.getDescription()); d.setCreatedAt(r.getCreatedAt());
         return ResponseEntity.status(HttpStatus.CREATED).body(d);
+    }
+
+    @DeleteMapping("/roles/{id}")
+    public ResponseEntity<Void> deleteRole(@PathVariable Long id) {
+        if (!roleRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        roleRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/orders")
@@ -159,6 +195,15 @@ public class ApiController {
 
         order = orderRepository.save(order);
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(order));
+    }
+
+    @DeleteMapping("/orders/{id}")
+    public ResponseEntity<Void> deleteOrder(@PathVariable Long id) {
+        if (!orderRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        orderRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 
     private UserDto toDto(User user) {

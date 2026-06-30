@@ -62,6 +62,63 @@
   cursor: pointer;
 }
 
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-danger.btn-sm {
+  padding: 6px 10px;
+  font-size: 0.9rem;
+}
+
+.btn-secondary.btn-sm {
+  padding: 6px 10px;
+  font-size: 0.9rem;
+}
+
+.dashboard-actions-right {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 28px;
+  width: min(420px, calc(100% - 40px));
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.15);
+}
+
+.modal-card h3 {
+  margin-top: 0;
+}
+
+.modal-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
 .dashboard-actions button.active,
 .dashboard-tabs button.active {
   background: #1f6feb;
