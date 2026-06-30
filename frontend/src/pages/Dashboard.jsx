@@ -2,6 +2,20 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
+import { Line, Doughnut } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ArcElement);
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
@@ -56,6 +70,69 @@ export default function Dashboard() {
       setStatus('Unable to load dashboard data.');
     }
   }, [authHeaders]);
+
+  const salesChartData = useMemo(() => {
+    // Build last 7 days labels
+    const labels = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      labels.push(d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+    }
+
+    // Aggregate orders by day
+    const ordersByDay = labels.map(() => 0);
+    const revenueByDay = labels.map(() => 0);
+    orders.forEach(o => {
+      const date = o.createdAt ? new Date(o.createdAt) : o.date ? new Date(o.date) : null;
+      if (!date) return;
+      const label = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      const idx = labels.indexOf(label);
+      if (idx >= 0) {
+        ordersByDay[idx] += 1;
+        revenueByDay[idx] += parseFloat(o.totalAmount || 0);
+      }
+    });
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Orders',
+          data: ordersByDay,
+          borderColor: '#2563eb',
+          backgroundColor: 'rgba(37,99,235,0.08)',
+          yAxisID: 'y',
+        },
+        {
+          label: 'Revenue',
+          data: revenueByDay,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16,185,129,0.08)',
+          yAxisID: 'y1',
+        },
+      ],
+    };
+  }, [orders]);
+
+  const donutData = useMemo(() => {
+    const labels = categories.map(c => c.name || `Cat ${c.id}`);
+    const data = categories.map((c, i) => {
+      const seed = (c && c.id) ? Number(c.id) : i;
+      return (Math.abs(seed) % 20) + 1;
+    });
+    const colors = ['#2563eb','#10b981','#f59e0b','#a78bfa','#f472b6'];
+    return {
+      labels,
+      datasets: [
+        {
+          data,
+          backgroundColor: labels.map((_, i) => colors[i % colors.length]),
+        },
+      ],
+    };
+  }, [categories]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -305,9 +382,15 @@ export default function Dashboard() {
   return (
     <div className="dashboard-page">
       <div className="dashboard-header">
-        <div>
-          <h1>Admin Control Center</h1>
-          <p>Manage users, products, categories, orders, and reports from one place.</p>
+        <div className="dashboard-header-left">
+          <h1>Dashboard Overview</h1>
+          <p>Welcome back! Here's what's happening in your store today.</p>
+        </div>
+        <div className="dashboard-header-center">
+          <input className="search-input" placeholder="Search for products, orders, users..." />
+        </div>
+        <div className="dashboard-header-controls">
+          <div className="date-range">30 Jun 2026 - 30 Jun 2026</div>
         </div>
         <div className="dashboard-actions-right">
           <button
@@ -365,6 +448,135 @@ export default function Dashboard() {
         <div className="summary-card">
           <span>Categories</span>
           <strong>{categories.length}</strong>
+        </div>
+      </div>
+
+      <div className="dashboard-main-grid">
+        <div className="sales-card dashboard-card">
+          <div className="section-header">
+            <h3>Sales Overview</h3>
+            <select className="period-select">
+              <option>Last 7 Days</option>
+              <option>Last 30 Days</option>
+            </select>
+          </div>
+          <div className="chart-placeholder">
+            <Line
+              data={salesChartData}
+              options={{
+                responsive: true,
+                interaction: { mode: 'index', intersect: false },
+                stacked: false,
+                scales: {
+                  y: { type: 'linear', display: true, position: 'left' },
+                  y1: { type: 'linear', display: false, position: 'right' },
+                },
+                plugins: { legend: { position: 'top' } },
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="categories-card dashboard-card">
+          <div className="section-header">
+            <h3>Top Categories</h3>
+            <a className="view-all" href="#">View All</a>
+          </div>
+          <div className="categories-content">
+            <div className="donut-placeholder">
+              <Doughnut data={donutData} options={{ maintainAspectRatio: true, plugins: { legend: { position: 'right' } } }} />
+            </div>
+            <ul className="categories-list">
+              {categories.slice(0,5).map((c, i) => (
+                <li key={c.id}>
+                  <span className="legend-dot" style={{ background: ['#2563eb','#10b981','#f59e0b','#a78bfa','#f472b6'][i % 5] }} />
+                  <span className="cat-name">{c.name}</span>
+                  <span className="cat-count">{donutData?.datasets?.[0]?.data?.[i] ?? 0}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div className="dashboard-main-grid bottom-row">
+        <div className="recent-orders-card dashboard-card">
+          <div className="section-header">
+            <h3>Recent Orders</h3>
+            <a className="view-all" href="#">View All Orders</a>
+          </div>
+          <div className="recent-orders-body">
+            {orders.length === 0 ? (
+              <div className="empty-state">No orders found. Orders will appear here once customers place them.</div>
+            ) : (
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Order ID</th>
+                      <th>Customer</th>
+                      <th>Amount</th>
+                      <th>Status</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.slice(0,6).map(o => (
+                      <tr key={o.id}>
+                        <td>{o.id}</td>
+                        <td>{o.customerName || o.userId}</td>
+                        <td>{o.totalAmount}</td>
+                        <td>{o.status}</td>
+                        <td>{o.createdAt || o.date || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="quick-actions-card dashboard-card">
+          <h3>Quick Actions</h3>
+          <div className="quick-actions-grid">
+            <button className="action-tile" onClick={() => setTab('products')}>
+              <div className="tile-icon"> 
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+              <div className="tile-label">Add Product</div>
+            </button>
+            <button className="action-tile" onClick={() => setTab('categories')}>
+              <div className="tile-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 7h18M3 12h18M3 17h18" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+              <div className="tile-label">Add Category</div>
+            </button>
+            <button className="action-tile" onClick={() => setTab('users')}>
+              <div className="tile-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="7" r="4" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+              <div className="tile-label">Add User</div>
+            </button>
+            <button className="action-tile" onClick={() => setTab('orders')}>
+              <div className="tile-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 7h18v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 3v4M8 3v4" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+              <div className="tile-label">View Orders</div>
+            </button>
+            <button className="action-tile" onClick={() => navigate('/reports')}>
+              <div className="tile-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3v18h18" stroke="#06b6d4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M21 8l-6 3-6-3-6 3" stroke="#06b6d4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+              <div className="tile-label">Generate Report</div>
+            </button>
+            <button className="action-tile" onClick={() => navigate('/settings')}>
+              <div className="tile-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z" stroke="#475569" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06A2 2 0 013.3 16.88l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82L4.21 3.3A2 2 0 016.04 1.17l.06.06A1.65 1.65 0 008 1.56c.5 0 .96.19 1.31.53.35.34.59.79.59 1.31V4a2 2 0 004 0v-.09c0-.52.24-.97.59-1.31.35-.34.81-.53 1.31-.53.51 0 .97.19 1.31.53l.06-.06A2 2 0 0119.79 3.3l-.06.06a1.65 1.65 0 00-.33 1.82c.16.5.51.92 1 1.2.49.28.85.78.85 1.35v.09a1.65 1.65 0 001 1.51c.4.24.75.55 1 1z" stroke="#475569" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+              <div className="tile-label">System Settings</div>
+            </button>
+          </div>
         </div>
       </div>
 

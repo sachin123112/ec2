@@ -57,50 +57,94 @@ export default function Login() {
   return (
     <div className="login-page">
       <div className="login-card">
-        <h1>Dashboard Login</h1>
-        <p>Use the administrator account below to access the dashboard.</p>
-        <form onSubmit={handleSubmit} className="login-form">
-          <label>
-            Email
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="admin@pawmart.com"
-              required
-            />
-          </label>
+        <div className="login-grid">
+          <aside className="login-aside">
+            <div className="aside-brand">
+              <div className="logo">🐾</div>
+              <div className="brand-text">
+                <h2>PawMart</h2>
+                <div className="sub">Admin Panel</div>
+              </div>
+            </div>
+            <h1>Welcome Back!</h1>
+            <p className="lead">Sign in to your admin account and manage your store with ease.</p>
 
-          <label>
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="admin123"
-              required
-            />
-          </label>
+            <div className="benefits">
+              <div className="benefit">Secure Access</div>
+              <div className="benefit">Real-time Analytics</div>
+              <div className="benefit">Easy Management</div>
+              <div className="benefit">Instant Notifications</div>
+            </div>
 
-          {error && <div className="login-error">{error}</div>}
+            <div className="mascot">{/* illustration placeholder */}</div>
+          </aside>
 
-          <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign in'}
-          </button>
-        </form>
+          <div className="login-panel">
+            <div className="panel-inner">
+              <div className="panel-avatar">🐶</div>
+              <h2>Admin Login</h2>
+              <p className="panel-sub">Enter your credentials to access the dashboard</p>
 
-        <div style={{display: 'flex', justifyContent: 'space-between', marginTop: '12px'}}>
-          <div>
-            <Link to="/">Home</Link>
+              <form onSubmit={handleSubmit} className="login-form">
+                <label className="input-with-icon">
+                  <span className="input-label">Email Address</span>
+                  <div className="input-row">
+                    <span className="icon">✉️</span>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      placeholder="admin@pawmart.com"
+                      required
+                    />
+                  </div>
+                </label>
+
+                <label className="input-with-icon">
+                  <span className="input-label">Password</span>
+                  <div className="input-row">
+                    <span className="icon">🔒</span>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      placeholder="admin123"
+                      required
+                    />
+                    <button type="button" className="eye" aria-hidden>👁️</button>
+                  </div>
+                </label>
+
+                <div className="form-row small">
+                  <label className="terms-row">
+                    <input type="checkbox" /> Remember me
+                  </label>
+                  <Link to="/forgot-password" className="forgot">Forgot password?</Link>
+                </div>
+
+                {error && <div className="login-error">{error}</div>}
+
+                <button type="submit" className="btn-primary" disabled={loading}>
+                  {loading ? 'Signing in…' : 'Sign In'}
+                </button>
+
+                <div className="divider"><span>or</span></div>
+
+                <button type="button" className="social-btn google-btn">
+                  <span className="social-icon">G</span>
+                  Sign in with Google
+                </button>
+
+                <div className="login-hint">
+                  <strong>Hint:</strong> admin@pawmart.com / admin123
+                </div>
+
+                <div className="panel-footer">
+                  Don't have an account? <Link to="/signup">Sign up</Link>
+                </div>
+              </form>
+            </div>
           </div>
-          <div style={{display: 'flex', gap: '12px'}}>
-            <Link to="/forgot-password">Forgot password?</Link>
-            <Link to="/signup">Sign up</Link>
-          </div>
-        </div>
-
-        <div className="login-hint">
-          <strong>Hint:</strong> admin@pawmart.com / admin123
         </div>
       </div>
     </div>
