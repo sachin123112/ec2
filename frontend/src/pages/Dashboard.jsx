@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
@@ -6,7 +6,7 @@ import './Dashboard.css';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 export default function Dashboard() {
-  const { isAuthenticated, logout, token, userEmail, hardRefresh } = useAuth();
+  const { isAuthenticated, logout, token, hardRefresh } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState('products');
   const [categories, setCategories] = useState([]);
@@ -22,6 +22,8 @@ export default function Dashboard() {
   const [productForm, setProductForm] = useState({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0', categoryId: '' });
   const [orderForm, setOrderForm] = useState({ userId: '', totalAmount: '0.00', status: 'PENDING' });
   const [refreshing, setRefreshing] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const authHeaders = useMemo(() => {
     const headers = { 'Content-Type': 'application/json' };
@@ -29,15 +31,7 @@ export default function Dashboard() {
     return headers;
   }, [token]);
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-    loadData();
-  }, [isAuthenticated, navigate]);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     try {
       const [usersRes, productsRes, ordersRes, categoriesRes, rolesRes] = await Promise.all([
         fetch(`${API_URL}/users`, { headers: authHeaders }),
@@ -53,10 +47,18 @@ export default function Dashboard() {
       if (categoriesRes.ok) setCategories(await categoriesRes.json());
       if (rolesRes.ok) setRoles(await rolesRes.json());
       setStatus('Data loaded successfully.');
-    } catch (err) {
+    } catch {
       setStatus('Unable to load dashboard data.');
     }
-  }
+  }, [authHeaders]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    loadData();
+  }, [isAuthenticated, navigate, loadData]);
 
   async function handleCreateUser(event) {
     event.preventDefault();
@@ -275,7 +277,7 @@ export default function Dashboard() {
               try {
                 await hardRefresh();
                 setStatus('Session refreshed successfully.');
-              } catch (err) {
+              } catch {
                 setStatus('Unable to refresh session. Please log in again.');
                 logout();
                 navigate('/login');
