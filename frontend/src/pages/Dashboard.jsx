@@ -16,11 +16,13 @@ export default function Dashboard() {
   const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [links, setLinks] = useState([]);
   const [status, setStatus] = useState('');
 
   const [userForm, setUserForm] = useState({ username: '', email: '', password: '', firstName: '', lastName: '', roleId: '' });
   const [productForm, setProductForm] = useState({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0', categoryId: '' });
   const [orderForm, setOrderForm] = useState({ userId: '', totalAmount: '0.00', status: 'PENDING' });
+  const [linkForm, setLinkForm] = useState({ label: '', url: '', description: '', isActive: true });
   const [refreshing, setRefreshing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -33,12 +35,13 @@ export default function Dashboard() {
 
   const loadData = useCallback(async () => {
     try {
-      const [usersRes, productsRes, ordersRes, categoriesRes, rolesRes] = await Promise.all([
+      const [usersRes, productsRes, ordersRes, categoriesRes, rolesRes, linksRes] = await Promise.all([
         fetch(`${API_URL}/users`, { headers: authHeaders }),
         fetch(`${API_URL}/products`, { headers: authHeaders }),
         fetch(`${API_URL}/orders`, { headers: authHeaders }),
         fetch(`${API_URL}/categories`, { headers: authHeaders }),
         fetch(`${API_URL}/roles`, { headers: authHeaders }),
+        fetch(`${API_URL}/links`, { headers: authHeaders }),
       ]);
 
       if (usersRes.ok) setUsers(await usersRes.json());
@@ -46,6 +49,7 @@ export default function Dashboard() {
       if (ordersRes.ok) setOrders(await ordersRes.json());
       if (categoriesRes.ok) setCategories(await categoriesRes.json());
       if (rolesRes.ok) setRoles(await rolesRes.json());
+      if (linksRes.ok) setLinks(await linksRes.json());
       setStatus('Data loaded successfully.');
     } catch (error) {
       console.error(error);
@@ -225,6 +229,39 @@ export default function Dashboard() {
     }
   }
 
+  async function handleCreateLink(event) {
+    event.preventDefault();
+    setStatus('Creating link...');
+
+    const response = await fetch(`${API_URL}/links`, {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify(linkForm),
+    });
+
+    if (response.ok) {
+      setLinkForm({ label: '', url: '', description: '', isActive: true });
+      await loadData();
+      setStatus('Link created successfully.');
+    } else {
+      setStatus('Unable to create link.');
+    }
+  }
+
+  async function handleDeleteLink(id) {
+    setStatus('Deleting link...');
+    const response = await fetch(`${API_URL}/links/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders,
+    });
+    if (response.ok) {
+      await loadData();
+      setStatus('Link deleted successfully.');
+    } else {
+      setStatus('Unable to delete link.');
+    }
+  }
+
   function openDeleteModal(entity, id, label) {
     setDeleteTarget({ entity, id, label });
     setShowDeleteModal(true);
@@ -256,6 +293,9 @@ export default function Dashboard() {
       case 'order':
         await handleDeleteOrder(id);
         break;
+      case 'link':
+        await handleDeleteLink(id);
+        break;
       default:
         break;
     }
@@ -272,7 +312,7 @@ export default function Dashboard() {
         <div className="dashboard-actions-right">
           <button
             type="button"
-            className="btn-secondary"
+            className="btn-icon"
             onClick={async () => {
               setRefreshing(true);
               try {
@@ -288,8 +328,20 @@ export default function Dashboard() {
               }
             }}
             disabled={refreshing}
+            aria-label="Hard refresh"
+            title="Hard refresh"
           >
-            {refreshing ? 'Refreshing…' : 'Hard Refresh'}
+            {refreshing ? (
+              <svg className="refresh-icon spin" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 12a9 9 0 10-2.62 6.06" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M21 3v6h-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            ) : (
+              <svg className="refresh-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 12a9 9 0 10-2.62 6.06" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M21 3v6h-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
           </button>
           <button type="button" className="btn-outline" onClick={() => { logout(); navigate('/login'); }}>
             Logout
@@ -319,6 +371,7 @@ export default function Dashboard() {
       <div className="dashboard-actions">
         <button className={tab === 'users' ? 'active' : ''} onClick={() => setTab('users')}>Users</button>
         <button className={tab === 'roles' ? 'active' : ''} onClick={() => setTab('roles')}>Roles</button>
+        <button className={tab === 'links' ? 'active' : ''} onClick={() => setTab('links')}>Links</button>
         <button className={tab === 'products' ? 'active' : ''} onClick={() => setTab('products')}>Products</button>
         <button className={tab === 'categories' ? 'active' : ''} onClick={() => setTab('categories')}>Categories</button>
         <button className={tab === 'orders' ? 'active' : ''} onClick={() => setTab('orders')}>Orders</button>
@@ -481,6 +534,70 @@ export default function Dashboard() {
             </div>
           </>
         )}
+        {tab === 'links' && (
+          <>
+            <div className="dashboard-grid">
+              <div className="dashboard-card">
+                <h2>Add Link</h2>
+                <form onSubmit={handleCreateLink} className="panel-form">
+                  <label>
+                    Label
+                    <input value={linkForm.label} onChange={e => setLinkForm({...linkForm, label: e.target.value})} required />
+                  </label>
+                  <label>
+                    URL
+                    <input type="url" value={linkForm.url} onChange={e => setLinkForm({...linkForm, url: e.target.value})} required />
+                  </label>
+                  <label>
+                    Description
+                    <textarea value={linkForm.description} onChange={e => setLinkForm({...linkForm, description: e.target.value})} rows={4} />
+                  </label>
+                  <label>
+                    Active
+                    <select value={linkForm.isActive ? 'true' : 'false'} onChange={e => setLinkForm({...linkForm, isActive: e.target.value === 'true'})}>
+                      <option value="true">Active</option>
+                      <option value="false">Inactive</option>
+                    </select>
+                  </label>
+                  <button type="submit" className="btn-primary">Save Link</button>
+                </form>
+              </div>
+
+              <div className="dashboard-card wide-card">
+                <h2>Link List</h2>
+                <div className="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Label</th>
+                        <th>URL</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {links.map(link => (
+                        <tr key={link.id}>
+                          <td>{link.id}</td>
+                          <td>{link.label}</td>
+                          <td><a href={link.url} target="_blank" rel="noreferrer">Open</a></td>
+                          <td>{link.isActive ? 'Active' : 'Inactive'}</td>
+                          <td>
+                            <button className="btn-danger btn-sm" onClick={() => openDeleteModal('link', link.id, link.label)}>
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
         {tab === 'products' && (
           <>
             <div className="dashboard-grid">

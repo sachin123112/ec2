@@ -4,9 +4,11 @@ import com.company.auth.dto.AuthResponse;
 import com.company.auth.dto.AddressDto;
 import com.company.auth.dto.AddressRequest;
 import com.company.auth.dto.CategoryDto;
+import com.company.auth.dto.CreateLinkRequest;
 import com.company.auth.dto.CreateOrderRequest;
 import com.company.auth.dto.CreateProductRequest;
 import com.company.auth.dto.CreateUserRequest;
+import com.company.auth.dto.LinkDto;
 import com.company.auth.dto.LoginRequest;
 import com.company.auth.dto.OrderDto;
 import com.company.auth.dto.ProductDto;
@@ -14,11 +16,13 @@ import com.company.auth.dto.RoleDto;
 import com.company.auth.dto.UserDto;
 import com.company.auth.dto.UserUpdateRequest;
 import com.company.auth.model.Address;
+import com.company.auth.model.Link;
 import com.company.auth.model.OrderEntity;
 import com.company.auth.model.Product;
 import com.company.auth.model.User;
 import com.company.auth.repository.AddressRepository;
 import com.company.auth.repository.CategoryRepository;
+import com.company.auth.repository.LinkRepository;
 import com.company.auth.repository.OrderRepository;
 import com.company.auth.repository.ProductRepository;
 import com.company.auth.repository.RoleRepository;
@@ -47,6 +51,7 @@ public class ApiController {
     private final CategoryRepository categoryRepository;
     private final RoleRepository roleRepository;
     private final AddressRepository addressRepository;
+    private final LinkRepository linkRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
 
@@ -57,6 +62,7 @@ public class ApiController {
             CategoryRepository categoryRepository,
             RoleRepository roleRepository,
             AddressRepository addressRepository,
+            LinkRepository linkRepository,
             JwtService jwtService,
             PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
@@ -65,6 +71,7 @@ public class ApiController {
         this.categoryRepository = categoryRepository;
         this.roleRepository = roleRepository;
         this.addressRepository = addressRepository;
+        this.linkRepository = linkRepository;
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
     }
@@ -184,6 +191,35 @@ public class ApiController {
             return ResponseEntity.notFound().build();
         }
         roleRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/links")
+    public List<LinkDto> listLinks() {
+        return linkRepository.findAll().stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @PostMapping("/links")
+    public ResponseEntity<LinkDto> createLink(@RequestBody CreateLinkRequest request) {
+        Link link = new Link();
+        link.setLabel(request.getLabel());
+        link.setUrl(request.getUrl());
+        link.setDescription(request.getDescription());
+        link.setIsActive(request.getIsActive() == null ? true : request.getIsActive());
+        link = linkRepository.save(link);
+
+        LinkDto dto = toDto(link);
+        return ResponseEntity.status(HttpStatus.CREATED).body(dto);
+    }
+
+    @DeleteMapping("/links/{id}")
+    public ResponseEntity<Void> deleteLink(@PathVariable Long id) {
+        if (!linkRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        linkRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 
@@ -356,6 +392,17 @@ public class ApiController {
         dto.setTotalAmount(order.getTotalAmount());
         dto.setStatus(order.getStatus());
         dto.setCreatedAt(order.getCreatedAt());
+        return dto;
+    }
+
+    private LinkDto toDto(Link link) {
+        LinkDto dto = new LinkDto();
+        dto.setId(link.getId());
+        dto.setLabel(link.getLabel());
+        dto.setUrl(link.getUrl());
+        dto.setDescription(link.getDescription());
+        dto.setIsActive(link.getIsActive());
+        dto.setCreatedAt(link.getCreatedAt());
         return dto;
     }
 }
