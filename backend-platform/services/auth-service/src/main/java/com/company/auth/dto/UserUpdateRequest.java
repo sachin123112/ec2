@@ -4,6 +4,8 @@ public class UserUpdateRequest {
     private String firstName;
     private String lastName;
     private String phone;
+    private String countryCode;
+    private String profileImageUrl;
     private String gender;
     private String dateOfBirth;
 
@@ -29,6 +31,22 @@ public class UserUpdateRequest {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getCountryCode() {
+        return countryCode;
+    }
+
+    public void setCountryCode(String countryCode) {
+        this.countryCode = countryCode;
+    }
+
+    public String getProfileImageUrl() {
+        return profileImageUrl;
+    }
+
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
     }
 
     public String getGender() {

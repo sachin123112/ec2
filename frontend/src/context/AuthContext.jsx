@@ -87,12 +87,12 @@ export function AuthProvider({ children }) {
     return refreshSession();
   };
 
-  const signup = async (email, password) => {
+  const signup = async (payload) => {
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
     const res = await fetch(`${API_URL}/auth/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(payload),
     });
     return res;
   };

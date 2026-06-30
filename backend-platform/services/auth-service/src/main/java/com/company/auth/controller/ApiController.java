@@ -227,6 +227,8 @@ public class ApiController {
         if (request.getFirstName() != null) user.setFirstName(request.getFirstName());
         if (request.getLastName() != null) user.setLastName(request.getLastName());
         if (request.getPhone() != null) user.setPhone(request.getPhone());
+        if (request.getCountryCode() != null) user.setCountryCode(request.getCountryCode());
+        if (request.getProfileImageUrl() != null) user.setProfileImageUrl(request.getProfileImageUrl());
         if (request.getGender() != null) user.setGender(request.getGender());
         if (request.getDateOfBirth() != null) user.setDateOfBirth(request.getDateOfBirth());
         user = userRepository.save(user);
@@ -304,6 +306,8 @@ public class ApiController {
         dto.setFirstName(user.getFirstName());
         dto.setLastName(user.getLastName());
         dto.setPhone(user.getPhone());
+        dto.setCountryCode(user.getCountryCode());
+        dto.setProfileImageUrl(user.getProfileImageUrl());
         dto.setGender(user.getGender());
         dto.setDateOfBirth(user.getDateOfBirth());
         dto.setStatus(user.getStatus());

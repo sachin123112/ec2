@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
@@ -12,6 +12,13 @@ function formatUserName(email) {
     .split(' ')
     .map(segment => segment.charAt(0).toUpperCase() + segment.slice(1))
     .join(' ');
+}
+
+function formatPhoneDisplay(countryCode, phone) {
+  if (!phone) return '';
+  const digits = String(phone).replace(/\D/g, '');
+  if (!digits) return '';
+  return `${countryCode || ''} ${digits}`.trim();
 }
 
 const emptyAddressForm = {
@@ -51,6 +58,8 @@ export default function UserDashboard() {
     lastName: '',
     email: userEmail || '',
     phone: '',
+    countryCode: '+91',
+    profileImageUrl: '',
     gender: '',
     dateOfBirth: '',
   });
@@ -58,9 +67,13 @@ export default function UserDashboard() {
     firstName: '',
     lastName: '',
     phone: '',
+    countryCode: '+91',
+    profileImageUrl: '',
     gender: '',
     dateOfBirth: '',
   });
+  const [profileErrors, setProfileErrors] = useState({});
+  const fileInputRef = useRef(null);
   const [addresses, setAddresses] = useState([]);
   const [addressForm, setAddressForm] = useState(emptyAddressForm);
   const [addressFormVisible, setAddressFormVisible] = useState(false);
@@ -117,6 +130,8 @@ export default function UserDashboard() {
           lastName: userData.lastName || '',
           email: userData.email || userEmail || '',
           phone: userData.phone || '',
+          countryCode: userData.countryCode || '+91',
+          profileImageUrl: userData.profileImageUrl || '',
           gender: userData.gender || '',
           dateOfBirth: userData.dateOfBirth || '',
         });
@@ -124,6 +139,8 @@ export default function UserDashboard() {
           firstName: userData.firstName || '',
           lastName: userData.lastName || '',
           phone: userData.phone || '',
+          countryCode: userData.countryCode || '+91',
+          profileImageUrl: userData.profileImageUrl || '',
           gender: userData.gender || '',
           dateOfBirth: userData.dateOfBirth || '',
         });
@@ -141,7 +158,34 @@ export default function UserDashboard() {
     }
   }
 
+  function validatePhone(phone) {
+    const digits = phone.replace(/\D/g, '');
+    return /^\d{7,15}$/.test(digits);
+  }
+
+  function validateProfileForm() {
+    const errors = {};
+    if (!profileForm.firstName.trim()) {
+      errors.firstName = 'First name is required.';
+    }
+    if (!profileForm.lastName.trim()) {
+      errors.lastName = 'Last name is required.';
+    }
+    if (!profileForm.phone.trim()) {
+      errors.phone = 'Phone number is required.';
+    } else if (!validatePhone(profileForm.phone)) {
+      errors.phone = 'Enter a valid phone number without spaces or symbols.';
+    }
+    setProfileErrors(errors);
+    return Object.keys(errors).length === 0;
+  }
+
   async function saveProfile() {
+    if (!validateProfileForm()) {
+      setStatus('Please fix profile errors before saving.');
+      return;
+    }
+
     try {
       const response = await fetch(`${API_URL}/users/me`, {
         method: 'PUT',
@@ -160,14 +204,28 @@ export default function UserDashboard() {
         lastName: updatedUser.lastName || '',
         email: updatedUser.email || userEmail || '',
         phone: updatedUser.phone || '',
+        countryCode: updatedUser.countryCode || '+91',
+        profileImageUrl: updatedUser.profileImageUrl || '',
         gender: updatedUser.gender || '',
         dateOfBirth: updatedUser.dateOfBirth || '',
       });
       setStatus('Profile updated successfully.');
+      setActiveSection('Overview');
     } catch (error) {
       console.error(error);
       setStatus('Unable to save profile updates.');
     }
+  }
+
+  function handleProfileImageUpload(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      setProfileForm(prev => ({ ...prev, profileImageUrl: loadEvent.target?.result || prev.profileImageUrl }));
+    };
+    reader.readAsDataURL(file);
   }
 
   async function saveAddress() {
@@ -288,13 +346,17 @@ export default function UserDashboard() {
 
         <main className="profile-main">
           <div className="profile-overview-card">
+            {userProfile.profileImageUrl ? (
+            <img src={userProfile.profileImageUrl} alt={userName} className="profile-avatar profile-avatar-image" />
+          ) : (
             <div className="profile-avatar">{userName.charAt(0).toUpperCase()}</div>
-            <div>
-              <p className="eyebrow">Verified Member</p>
-              <h2>{userName}</h2>
-              <p>{userEmail}</p>
-              <p>+91 98888 12345</p>
-            </div>
+          )}
+          <div>
+            <p className="eyebrow">Verified Member</p>
+            <h2>{userName}</h2>
+            <p>{userEmail}</p>
+            <p>{formatPhoneDisplay(userProfile.countryCode, userProfile.phone)}</p>
+          </div>
             <div className="profile-badge">Verified</div>
           </div>
 
@@ -322,7 +384,7 @@ export default function UserDashboard() {
                   </div>
                   <div className="profile-detail-row">
                     <span>Phone Number</span>
-                    <strong>+91 98888 12345</strong>
+                    <strong>{formatPhoneDisplay(userProfile.countryCode, userProfile.phone)}</strong>
                   </div>
                 </section>
 
@@ -376,15 +438,56 @@ export default function UserDashboard() {
           )}
 
           {activeSection === 'Profile Information' && (
-            <div className="profile-grid">
-              <section className="profile-card">
-                <div className="card-header">
-                  <h2>Personal Information</h2>
+            <div className="profile-info-layout">
+              <section className="profile-card profile-photo-card">
+                <div className="photo-media">
+                  {profileForm.profileImageUrl ? (
+                    <img src={profileForm.profileImageUrl} alt="Profile" className="photo-preview" />
+                  ) : (
+                    <div className="photo-placeholder">
+                      <span>+</span>
+                    </div>
+                  )}
                 </div>
+
+                <div className="photo-info">
+                  <p className="photo-label">Add a profile photo</p>
+                  <p className="photo-caption">JPG, PNG or GIF. Max size 2MB.</p>
+                </div>
+
+                <div className="photo-actions">
+                  <button type="button" className="btn-primary" onClick={() => fileInputRef.current?.click()}>
+                    Upload Photo
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-outline delete-button"
+                    onClick={() => setProfileForm(prev => ({ ...prev, profileImageUrl: '' }))}
+                  >
+                    Delete
+                  </button>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/gif"
+                  style={{ display: 'none' }}
+                  onChange={handleProfileImageUpload}
+                />
+              </section>
+
+              <section className="profile-card profile-details-panel">
+                <div className="card-header">
+                  <div>
+                    <h2>Profile Information</h2>
+                    <p className="section-note">Update your personal details and manage your profile.</p>
+                  </div>
+                </div>
+
                 <form className="panel-form" onSubmit={e => { e.preventDefault(); saveProfile(); }}>
-                  <div className="form-field-grid">
-                    <label>
-                      First Name
+                  <div className="profile-field-grid">
+                    <label className="profile-field">
+                      First Name *
                       <input
                         type="text"
                         value={profileForm.firstName}
@@ -392,8 +495,8 @@ export default function UserDashboard() {
                         placeholder="First name"
                       />
                     </label>
-                    <label>
-                      Last Name
+                    <label className="profile-field">
+                      Last Name *
                       <input
                         type="text"
                         value={profileForm.lastName}
@@ -401,16 +504,33 @@ export default function UserDashboard() {
                         placeholder="Last name"
                       />
                     </label>
-                    <label>
-                      Phone Number
-                      <input
-                        type="tel"
-                        value={profileForm.phone}
-                        onChange={e => setProfileForm(prev => ({ ...prev, phone: e.target.value }))}
-                        placeholder="Phone number"
-                      />
+                    <label className="profile-field">
+                      Email Address
+                      <input type="email" value={userProfile.email} disabled />
                     </label>
-                    <label>
+                    <label className="profile-field">
+                      Phone Number *
+                      <div className="phone-input-row">
+                        <select
+                          value={profileForm.countryCode}
+                          onChange={e => setProfileForm(prev => ({ ...prev, countryCode: e.target.value }))}
+                        >
+                          <option value="+91">+91</option>
+                          <option value="+1">+1</option>
+                          <option value="+44">+44</option>
+                          <option value="+61">+61</option>
+                          <option value="+81">+81</option>
+                        </select>
+                        <input
+                          type="tel"
+                          value={profileForm.phone}
+                          onChange={e => setProfileForm(prev => ({ ...prev, phone: e.target.value }))}
+                          placeholder="Enter phone number"
+                        />
+                      </div>
+                      {profileErrors.phone && <span className="field-error">{profileErrors.phone}</span>}
+                    </label>
+                    <label className="profile-field">
                       Gender
                       <select
                         value={profileForm.gender}
@@ -422,7 +542,7 @@ export default function UserDashboard() {
                         <option value="Other">Other</option>
                       </select>
                     </label>
-                    <label>
+                    <label className="profile-field">
                       Date of Birth
                       <input
                         type="date"
@@ -430,32 +550,32 @@ export default function UserDashboard() {
                         onChange={e => setProfileForm(prev => ({ ...prev, dateOfBirth: e.target.value }))}
                       />
                     </label>
-                    <label>
-                      Email Address
-                      <input type="email" value={userProfile.email} disabled />
+                    <label className="profile-field full-width">
+                      Profile Image URL
+                      <input
+                        type="url"
+                        value={profileForm.profileImageUrl}
+                        onChange={e => setProfileForm(prev => ({ ...prev, profileImageUrl: e.target.value }))}
+                        placeholder="https://example.com/avatar.jpg"
+                      />
                     </label>
                   </div>
-                  <button type="submit" className="btn-primary">Save Profile</button>
-                </form>
-              </section>
 
-              <section className="profile-card">
-                <div className="card-header">
-                  <h2>Account Security</h2>
-                </div>
-                <div className="profile-detail-row">
-                  <span>Password</span>
-                  <strong>Strong</strong>
-                </div>
-                <div className="profile-detail-row">
-                  <span>Last Changed</span>
-                  <strong>28 May 2024</strong>
-                </div>
-                <div className="profile-detail-row">
-                  <span>Two-factor Authentication</span>
-                  <strong>Not Enabled</strong>
-                </div>
-                <button type="button" className="btn-outline">Enable 2FA</button>
+                  <div className="save-actions">
+                    <button type="button" className="btn-outline" onClick={() => setProfileForm({
+                      firstName: userProfile.firstName,
+                      lastName: userProfile.lastName,
+                      phone: userProfile.phone,
+                      countryCode: userProfile.countryCode,
+                      profileImageUrl: userProfile.profileImageUrl,
+                      gender: userProfile.gender,
+                      dateOfBirth: userProfile.dateOfBirth,
+                    })}>
+                      Cancel
+                    </button>
+                    <button type="submit" className="btn-primary">Save Profile</button>
+                  </div>
+                </form>
               </section>
             </div>
           )}
@@ -553,7 +673,7 @@ export default function UserDashboard() {
                         <p>{addr.phone}</p>
                         <div className="address-actions">
                           <button type="button" className="btn-link" onClick={() => editAddress(addr)}>Edit</button>
-                          <button type="button" className="btn-danger btn-sm" onClick={() => removeAddress(addr.id)}>Remove</button>
+                          <button type="button" className="btn-danger" onClick={() => removeAddress(addr.id)}>Remove</button>
                         </div>
                       </div>
                     ))
@@ -732,13 +852,41 @@ export default function UserDashboard() {
 
           {activeSection === 'My Pets' && (
             <div className="dashboard-card wide-card">
-              <h2>My Pets</h2>
-              <div className="pet-list">
+              <div className="section-header">
+                <div>
+                  <h2>My Pets</h2>
+                  <p className="section-subtitle">Manage your pet profiles and update care details.</p>
+                </div>
+                <button type="button" className="btn-primary">+ Add Pet</button>
+              </div>
+              <div className="pet-list pet-list-grid">
                 {pets.map(pet => (
-                  <div key={pet.id} className="pet-card">
-                    <strong>{pet.name}</strong>
-                    <p>{pet.type}</p>
-                    <p>{pet.age}</p>
+                  <div key={pet.id} className="pet-card pet-card-large">
+                    <div className="pet-card-media">
+                      <div className="pet-avatar">{pet.name.charAt(0)}</div>
+                      <div>
+                        <strong>{pet.name}</strong>
+                        <p className="pet-meta">{pet.type} • {pet.age}</p>
+                      </div>
+                    </div>
+                    <div className="pet-card-details">
+                      <div>
+                        <span className="pet-label">Breed</span>
+                        <strong>{pet.breed || 'Mixed Breed'}</strong>
+                      </div>
+                      <div>
+                        <span className="pet-label">Gender</span>
+                        <strong>{pet.gender || 'Unknown'}</strong>
+                      </div>
+                      <div>
+                        <span className="pet-label">Status</span>
+                        <strong>{pet.status || 'Healthy'}</strong>
+                      </div>
+                    </div>
+                    <div className="pet-card-actions">
+                      <button type="button" className="btn-link">Edit</button>
+                      <button type="button" className="btn-outline">Remove</button>
+                    </div>
                   </div>
                 ))}
               </div>

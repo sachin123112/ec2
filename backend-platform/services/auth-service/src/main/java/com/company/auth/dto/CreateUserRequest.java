@@ -8,6 +8,10 @@ public class CreateUserRequest {
     private String password;
     private String firstName;
     private String lastName;
+    private String phone;
+    private String countryCode;
+    private String dateOfBirth;
+    private String gender;
     private List<Long> roleIds;
 
     public String getUsername() {
@@ -48,6 +52,38 @@ public class CreateUserRequest {
 
     public void setLastName(String lastName) {
         this.lastName = lastName;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getCountryCode() {
+        return countryCode;
+    }
+
+    public void setCountryCode(String countryCode) {
+        this.countryCode = countryCode;
+    }
+
+    public String getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public void setDateOfBirth(String dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
     }
 
     public List<Long> getRoleIds() {

@@ -75,11 +75,17 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already exists");
         }
         User user = new User();
-        user.setUsername(request.getUsername() == null ? request.getEmail() : request.getUsername());
+        user.setUsername(request.getUsername() == null ? request.getEmail().split("@")[0] : request.getUsername());
         user.setEmail(request.getEmail());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
+        user.setPhone(request.getPhone());
+        if (request.getCountryCode() != null) {
+            user.setCountryCode(request.getCountryCode());
+        }
+        user.setDateOfBirth(request.getDateOfBirth());
+        user.setGender(request.getGender());
         user.setStatus("ACTIVE");
 
         user = ensureUserHasRoles(user);

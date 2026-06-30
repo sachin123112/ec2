@@ -30,6 +30,12 @@ public class User {
 
     private String phone;
 
+    @Column(name = "country_code")
+    private String countryCode = "+91";
+
+    @Column(name = "profile_image_url")
+    private String profileImageUrl;
+
     private String gender;
 
     @Column(name = "date_of_birth")
@@ -113,6 +119,22 @@ public class User {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getCountryCode() {
+        return countryCode;
+    }
+
+    public void setCountryCode(String countryCode) {
+        this.countryCode = countryCode;
+    }
+
+    public String getProfileImageUrl() {
+        return profileImageUrl;
+    }
+
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
     }
 
     public String getGender() {
