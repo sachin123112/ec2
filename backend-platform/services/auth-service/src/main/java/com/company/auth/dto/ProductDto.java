@@ -2,6 +2,8 @@ package com.company.auth.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ProductDto {
     private Long id;
@@ -13,6 +15,7 @@ public class ProductDto {
     private LocalDateTime createdAt;
     private Long categoryId;
     private String categoryName;
+    private List<String> imageUrls = new ArrayList<>();
 
     public Long getId() {
         return id;
@@ -66,6 +69,8 @@ public class ProductDto {
     public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
     public String getCategoryName() { return categoryName; }
     public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
+    public List<String> getImageUrls() { return imageUrls; }
+    public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls; }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;

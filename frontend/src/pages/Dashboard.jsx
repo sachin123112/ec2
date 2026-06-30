@@ -35,17 +35,24 @@ export default function Dashboard() {
 
   const [userForm, setUserForm] = useState({ username: '', email: '', password: '', firstName: '', lastName: '', roleId: '' });
   const [productForm, setProductForm] = useState({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0', categoryId: '' });
+  const [productImages, setProductImages] = useState([]);
+  const [productImagePreviews, setProductImagePreviews] = useState([]);
   const [orderForm, setOrderForm] = useState({ userId: '', totalAmount: '0.00', status: 'PENDING' });
   const [linkForm, setLinkForm] = useState({ label: '', url: '', description: '', isActive: true });
   const [refreshing, setRefreshing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const authHeaders = useMemo(() => {
-    const headers = { 'Content-Type': 'application/json' };
+  const authHeaderBase = useMemo(() => {
+    const headers = {};
     if (token) headers.Authorization = `Bearer ${token}`;
     return headers;
   }, [token]);
+
+  const authHeaders = useMemo(() => ({
+    ...authHeaderBase,
+    'Content-Type': 'application/json',
+  }), [authHeaderBase]);
 
   const loadData = useCallback(async () => {
     try {
@@ -142,6 +149,29 @@ export default function Dashboard() {
     loadData();
   }, [isAuthenticated, navigate, loadData]);
 
+  useEffect(() => {
+    return () => {
+      productImagePreviews.forEach(URL.revokeObjectURL);
+    };
+  }, [productImagePreviews]);
+
+  function handleProductImageSelection(event) {
+    const files = Array.from(event.target.files || []);
+    setProductImages(files);
+    setProductImagePreviews(prev => {
+      prev.forEach(URL.revokeObjectURL);
+      return files.map(file => URL.createObjectURL(file));
+    });
+  }
+
+  function removeProductImage(index) {
+    setProductImages(prev => prev.filter((_, i) => i !== index));
+    setProductImagePreviews(prev => {
+      if (prev[index]) URL.revokeObjectURL(prev[index]);
+      return prev.filter((_, i) => i !== index);
+    });
+  }
+
   async function handleCreateUser(event) {
     event.preventDefault();
     setStatus('Creating user...');
@@ -174,21 +204,46 @@ export default function Dashboard() {
     event.preventDefault();
     setStatus('Creating product...');
 
-    const response = await fetch(`${API_URL}/products`, {
-      method: 'POST',
-      headers: authHeaders,
-      body: JSON.stringify({
-        name: productForm.name,
-        description: productForm.description,
-        sku: productForm.sku,
-        price: parseFloat(productForm.price) || 0,
-        stockQuantity: parseInt(productForm.stockQuantity, 10) || 0,
-        categoryId: productForm.categoryId ? parseInt(productForm.categoryId, 10) : null,
-      }),
-    });
+    const payload = {
+      name: productForm.name,
+      description: productForm.description,
+      sku: productForm.sku,
+      price: parseFloat(productForm.price) || 0,
+      stockQuantity: parseInt(productForm.stockQuantity, 10) || 0,
+      categoryId: productForm.categoryId ? parseInt(productForm.categoryId, 10) : null,
+    };
+
+    let response;
+    if (productImages.length > 0) {
+      const formData = new FormData();
+      formData.append('name', payload.name);
+      if (payload.description) formData.append('description', payload.description);
+      if (payload.sku) formData.append('sku', payload.sku);
+      formData.append('price', payload.price.toString());
+      formData.append('stockQuantity', payload.stockQuantity.toString());
+      if (payload.categoryId !== null) formData.append('categoryId', payload.categoryId.toString());
+      productImages.forEach(file => formData.append('images', file));
+
+      response = await fetch(`${API_URL}/products`, {
+        method: 'POST',
+        headers: authHeaderBase,
+        body: formData,
+      });
+    } else {
+      response = await fetch(`${API_URL}/products`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify(payload),
+      });
+    }
 
     if (response.ok) {
       setProductForm({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0', categoryId: '' });
+      setProductImages([]);
+      setProductImagePreviews(prev => {
+        prev.forEach(URL.revokeObjectURL);
+        return [];
+      });
       await loadData();
       setStatus('Product added successfully.');
     } else {
@@ -845,6 +900,22 @@ export default function Dashboard() {
                     Description
                     <textarea value={productForm.description} onChange={e => setProductForm({...productForm, description: e.target.value})} rows={4} />
                   </label>
+                  <label>
+                    Product Images
+                    <input type="file" accept="image/*" multiple onChange={handleProductImageSelection} />
+                  </label>
+                  {productImagePreviews.length > 0 && (
+                    <div className="image-preview-grid">
+                      {productImagePreviews.map((src, index) => (
+                        <div key={index} className="image-preview-card">
+                          <img src={src} alt={`Preview ${index + 1}`} />
+                          <button type="button" className="btn-outline btn-sm" onClick={() => removeProductImage(index)}>
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <button type="submit" className="btn-primary">Save Product</button>
                 </form>
               </div>

@@ -29,6 +29,10 @@ spring:
     validate-on-migrate: false
     repair-on-migrate: true
 
+  web:
+    resources:
+      static-locations: classpath:/static/,file:uploads/
+
 jwt:
   secret: ${JWT_SECRET:ChangeThisToA256BitSecretKeyForProduction}
   expiration: 900000

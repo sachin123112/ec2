@@ -3,6 +3,8 @@ package com.company.auth.model;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "products")
@@ -30,6 +32,9 @@ public class Product {
     @ManyToOne
     @JoinColumn(name = "category_id")
     private Category category;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private List<ProductImage> images = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -98,6 +103,24 @@ public class Product {
 
     public void setCategory(Category category) {
         this.category = category;
+    }
+
+    public List<ProductImage> getImages() {
+        return images;
+    }
+
+    public void setImages(List<ProductImage> images) {
+        this.images = images;
+    }
+
+    public void addImage(ProductImage image) {
+        images.add(image);
+        image.setProduct(this);
+    }
+
+    public void removeImage(ProductImage image) {
+        images.remove(image);
+        image.setProduct(null);
     }
 
     public LocalDateTime getCreatedAt() {

@@ -19,6 +19,7 @@ import com.company.auth.model.Address;
 import com.company.auth.model.Link;
 import com.company.auth.model.OrderEntity;
 import com.company.auth.model.Product;
+import com.company.auth.model.ProductImage;
 import com.company.auth.model.User;
 import com.company.auth.repository.AddressRepository;
 import com.company.auth.repository.CategoryRepository;
@@ -29,11 +30,18 @@ import com.company.auth.repository.RoleRepository;
 import com.company.auth.repository.UserRepository;
 import com.company.auth.security.JwtService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.Principal;
 import java.util.List;
 import java.util.Optional;
@@ -118,7 +126,7 @@ public class ApiController {
                 .collect(Collectors.toList());
     }
 
-    @PostMapping("/products")
+    @PostMapping(value = "/products", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ProductDto> createProduct(@RequestBody CreateProductRequest request) {
         Product product = new Product();
         product.setName(request.getName());
@@ -131,6 +139,43 @@ public class ApiController {
         }
 
         product = productRepository.save(product);
+        return ResponseEntity.status(HttpStatus.CREATED).body(toDto(product));
+    }
+
+    @PostMapping(value = "/products", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ProductDto> createProduct(
+            @RequestParam String name,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) String sku,
+            @RequestParam BigDecimal price,
+            @RequestParam(required = false) Integer stockQuantity,
+            @RequestParam(required = false) Long categoryId,
+            @RequestPart(value = "images", required = false) MultipartFile[] images) {
+        Product product = new Product();
+        product.setName(name);
+        product.setDescription(description);
+        product.setSku(sku);
+        product.setPrice(price);
+        product.setStockQuantity(stockQuantity != null ? stockQuantity : 0);
+        if (categoryId != null) {
+            categoryRepository.findById(categoryId).ifPresent(product::setCategory);
+        }
+
+        product = productRepository.save(product);
+
+        if (images != null && images.length > 0) {
+            for (MultipartFile image : images) {
+                if (image != null && !image.isEmpty()) {
+                    String imageUrl = saveProductImage(image, product.getId());
+                    ProductImage productImage = new ProductImage();
+                    productImage.setProduct(product);
+                    productImage.setImageUrl(imageUrl);
+                    product.addImage(productImage);
+                }
+            }
+            product = productRepository.save(product);
+        }
+
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(product));
     }
 
@@ -380,6 +425,9 @@ public class ApiController {
             dto.setCategoryId(product.getCategory().getId());
             dto.setCategoryName(product.getCategory().getName());
         }
+        if (product.getImages() != null) {
+            dto.setImageUrls(product.getImages().stream().map(i -> i.getImageUrl()).collect(Collectors.toList()));
+        }
         dto.setCreatedAt(product.getCreatedAt());
         return dto;
     }
@@ -393,6 +441,20 @@ public class ApiController {
         dto.setStatus(order.getStatus());
         dto.setCreatedAt(order.getCreatedAt());
         return dto;
+    }
+
+    private String saveProductImage(MultipartFile file, Long productId) {
+        try {
+            Path uploadRoot = Paths.get("uploads", "product-images");
+            Files.createDirectories(uploadRoot);
+            String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
+            String fileName = String.format("%d_%d_%s", productId, System.currentTimeMillis(), originalFileName.replaceAll("[^a-zA-Z0-9._-]", "_"));
+            Path destinationFile = uploadRoot.resolve(fileName).normalize().toAbsolutePath();
+            file.transferTo(destinationFile);
+            return "/product-images/" + fileName;
+        } catch (Exception ex) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to store product image", ex);
+        }
     }
 
     private LinkDto toDto(Link link) {
