@@ -259,17 +259,6 @@ export default function Dashboard() {
     setDeleteTarget(null);
   }
 
-  function formatEntityLabel(entity) {
-    const labels = {
-      user: 'user account',
-      role: 'role',
-      product: 'product',
-      category: 'category',
-      order: 'order',
-    };
-    return labels[entity] || entity;
-  }
-
   return (
     <div className="dashboard-page">
       <div className="dashboard-header">
@@ -337,7 +326,7 @@ export default function Dashboard() {
         <div className="modal-overlay" onClick={closeDeleteModal}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>
             <h3>Confirm Delete</h3>
-            <p>Delete {formatEntityLabel(deleteTarget.entity)} <strong>{deleteTarget.label}</strong>?</p>
+            <p>Delete {deleteTarget.entity} <strong>{deleteTarget.label}</strong>?</p>
             <div className="modal-actions">
               <button className="btn-outline" type="button" onClick={closeDeleteModal}>Cancel</button>
               <button className="btn-danger" type="button" onClick={confirmDelete}>Delete</button>
