@@ -1,30 +1,36 @@
 package com.company.auth.controller;
 
 import com.company.auth.dto.AuthResponse;
+import com.company.auth.dto.AddressDto;
+import com.company.auth.dto.AddressRequest;
+import com.company.auth.dto.CategoryDto;
 import com.company.auth.dto.CreateOrderRequest;
 import com.company.auth.dto.CreateProductRequest;
 import com.company.auth.dto.CreateUserRequest;
 import com.company.auth.dto.LoginRequest;
 import com.company.auth.dto.OrderDto;
 import com.company.auth.dto.ProductDto;
+import com.company.auth.dto.RoleDto;
 import com.company.auth.dto.UserDto;
+import com.company.auth.dto.UserUpdateRequest;
+import com.company.auth.model.Address;
 import com.company.auth.model.OrderEntity;
 import com.company.auth.model.Product;
 import com.company.auth.model.User;
+import com.company.auth.repository.AddressRepository;
+import com.company.auth.repository.CategoryRepository;
 import com.company.auth.repository.OrderRepository;
 import com.company.auth.repository.ProductRepository;
-import com.company.auth.repository.UserRepository;
-import com.company.auth.repository.CategoryRepository;
 import com.company.auth.repository.RoleRepository;
-import com.company.auth.dto.CategoryDto;
-import com.company.auth.dto.RoleDto;
+import com.company.auth.repository.UserRepository;
 import com.company.auth.security.JwtService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.math.BigDecimal;
+import java.security.Principal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,6 +46,7 @@ public class ApiController {
     private final OrderRepository orderRepository;
     private final CategoryRepository categoryRepository;
     private final RoleRepository roleRepository;
+    private final AddressRepository addressRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
 
@@ -49,6 +56,7 @@ public class ApiController {
             OrderRepository orderRepository,
             CategoryRepository categoryRepository,
             RoleRepository roleRepository,
+            AddressRepository addressRepository,
             JwtService jwtService,
             PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
@@ -56,6 +64,7 @@ public class ApiController {
         this.orderRepository = orderRepository;
         this.categoryRepository = categoryRepository;
         this.roleRepository = roleRepository;
+        this.addressRepository = addressRepository;
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
     }
@@ -206,6 +215,87 @@ public class ApiController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/users/me")
+    public UserDto getCurrentUser(Principal principal) {
+        User user = findUserByEmail(principal);
+        return toDto(user);
+    }
+
+    @PutMapping("/users/me")
+    public UserDto updateCurrentUser(Principal principal, @RequestBody UserUpdateRequest request) {
+        User user = findUserByEmail(principal);
+        if (request.getFirstName() != null) user.setFirstName(request.getFirstName());
+        if (request.getLastName() != null) user.setLastName(request.getLastName());
+        if (request.getPhone() != null) user.setPhone(request.getPhone());
+        if (request.getGender() != null) user.setGender(request.getGender());
+        if (request.getDateOfBirth() != null) user.setDateOfBirth(request.getDateOfBirth());
+        user = userRepository.save(user);
+        return toDto(user);
+    }
+
+    @GetMapping("/users/me/addresses")
+    public List<AddressDto> listCurrentUserAddresses(Principal principal) {
+        User user = findUserByEmail(principal);
+        return addressRepository.findAllByUserId(user.getId()).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @PostMapping("/users/me/addresses")
+    public ResponseEntity<AddressDto> addCurrentUserAddress(Principal principal, @RequestBody AddressRequest request) {
+        User user = findUserByEmail(principal);
+        Address address = new Address();
+        address.setUser(user);
+        mapAddressRequest(address, request);
+        Address saved = addressRepository.save(address);
+        return ResponseEntity.status(HttpStatus.CREATED).body(toDto(saved));
+    }
+
+    @PutMapping("/addresses/{id}")
+    public AddressDto updateAddress(Principal principal, @PathVariable Long id, @RequestBody AddressRequest request) {
+        User user = findUserByEmail(principal);
+        Address address = addressRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Address not found"));
+        if (!address.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Address does not belong to user");
+        }
+        mapAddressRequest(address, request);
+        return toDto(addressRepository.save(address));
+    }
+
+    @DeleteMapping("/addresses/{id}")
+    public ResponseEntity<Void> deleteAddress(Principal principal, @PathVariable Long id) {
+        User user = findUserByEmail(principal);
+        Address address = addressRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Address not found"));
+        if (!address.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Address does not belong to user");
+        }
+        addressRepository.delete(address);
+        return ResponseEntity.noContent().build();
+    }
+
+    private void mapAddressRequest(Address address, AddressRequest request) {
+        address.setLabel(request.getLabel());
+        address.setName(request.getName());
+        address.setAddressLine1(request.getAddressLine1());
+        address.setAddressLine2(request.getAddressLine2());
+        address.setCity(request.getCity());
+        address.setState(request.getState());
+        address.setPostalCode(request.getPostalCode());
+        address.setCountry(request.getCountry());
+        address.setPhone(request.getPhone());
+        address.setIsDefault(request.getIsDefault() != null ? request.getIsDefault() : false);
+    }
+
+    private User findUserByEmail(Principal principal) {
+        if (principal == null || principal.getName() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthenticated request");
+        }
+        return userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+    }
+
     private UserDto toDto(User user) {
         UserDto dto = new UserDto();
         dto.setId(user.getId());
@@ -213,9 +303,28 @@ public class ApiController {
         dto.setEmail(user.getEmail());
         dto.setFirstName(user.getFirstName());
         dto.setLastName(user.getLastName());
+        dto.setPhone(user.getPhone());
+        dto.setGender(user.getGender());
+        dto.setDateOfBirth(user.getDateOfBirth());
         dto.setStatus(user.getStatus());
         dto.setCreatedAt(user.getCreatedAt());
         dto.setRoles(user.getRoles().stream().map(r -> r.getName()).collect(Collectors.toList()));
+        return dto;
+    }
+
+    private AddressDto toDto(Address address) {
+        AddressDto dto = new AddressDto();
+        dto.setId(address.getId());
+        dto.setLabel(address.getLabel());
+        dto.setName(address.getName());
+        dto.setAddressLine1(address.getAddressLine1());
+        dto.setAddressLine2(address.getAddressLine2());
+        dto.setCity(address.getCity());
+        dto.setState(address.getState());
+        dto.setPostalCode(address.getPostalCode());
+        dto.setCountry(address.getCountry());
+        dto.setPhone(address.getPhone());
+        dto.setIsDefault(address.getIsDefault());
         return dto;
     }
 

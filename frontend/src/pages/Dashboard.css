@@ -62,21 +62,10 @@
   cursor: pointer;
 }
 
-.btn-danger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: #dc2626;
-  color: #fff;
-  border: none;
-  cursor: pointer;
-}
-
-.btn-danger.btn-sm {
-  padding: 6px 10px;
-  font-size: 0.9rem;
+.profile-actions-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .btn-secondary.btn-sm {
@@ -172,6 +161,39 @@
 
 .panel-form textarea {
   resize: vertical;
+}
+
+.form-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.form-field-grid label {
+  display: block;
+}
+
+.address-list {
+  display: grid;
+  gap: 14px;
+}
+
+.address-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  padding: 18px;
+  background: #fff;
+}
+
+.address-card strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+@media (max-width: 980px) {
+  .form-field-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .table-scroll {
@@ -428,7 +450,8 @@ tbody td {
     grid-template-columns: 1fr;
   }
 
-  .profile-grid {
+  .profile-grid,
+  .profile-summary-row {
     grid-template-columns: 1fr;
   }
 
@@ -441,12 +464,18 @@ tbody td {
     justify-self: center;
   }
 
-  .profile-sidebar {
-    position: relative;
-    top: auto;
+  .profile-actions-row,
+  .address-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .profile-summary-row {
-    grid-template-columns: 1fr;
+  .profile-actions-row button,
+  .address-actions button {
+    width: 100%;
+  }
+
+  .profile-sidebar {
+    width: 100%;
   }
 }

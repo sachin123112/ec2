@@ -28,6 +28,13 @@ public class User {
     @Column(name = "last_name")
     private String lastName;
 
+    private String phone;
+
+    private String gender;
+
+    @Column(name = "date_of_birth")
+    private String dateOfBirth;
+
     @Column(nullable = false)
     private String status = "ACTIVE";
 
@@ -98,6 +105,30 @@ public class User {
 
     public void setLastName(String lastName) {
         this.lastName = lastName;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public String getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public void setDateOfBirth(String dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
     }
 
     public String getStatus() {

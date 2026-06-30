@@ -14,6 +14,20 @@ function formatUserName(email) {
     .join(' ');
 }
 
+const emptyAddressForm = {
+  id: null,
+  label: 'Home',
+  name: '',
+  addressLine1: '',
+  addressLine2: '',
+  city: '',
+  state: '',
+  postalCode: '',
+  country: '',
+  phone: '',
+  isDefault: false,
+};
+
 export default function UserDashboard() {
   const { isAuthenticated, token, userEmail, logout } = useAuth();
   const [orders, setOrders] = useState([]);
@@ -32,16 +46,39 @@ export default function UserDashboard() {
     { id: 1, name: 'Buddy', type: 'Dog', age: '3 yrs' },
     { id: 2, name: 'Milo', type: 'Cat', age: '1 yr' },
   ]);
-  const [address] = useState({
-    label: 'Home',
-    name: 'Sachin P',
-    line1: "No. 158, 1st Main, 1st 'N' Block",
-    line2: 'Rajajinagar, Bengaluru',
-    region: 'Karnataka - 560010',
-    country: 'India',
-    phone: '+91 98888 12345',
+  const [userProfile, setUserProfile] = useState({
+    firstName: '',
+    lastName: '',
+    email: userEmail || '',
+    phone: '',
+    gender: '',
+    dateOfBirth: '',
   });
+  const [profileForm, setProfileForm] = useState({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    gender: '',
+    dateOfBirth: '',
+  });
+  const [addresses, setAddresses] = useState([]);
+  const [addressForm, setAddressForm] = useState(emptyAddressForm);
+  const [addressFormVisible, setAddressFormVisible] = useState(false);
+  const [editingAddress, setEditingAddress] = useState(false);
   const navigate = useNavigate();
+
+  const sectionDescription = {
+    Overview: 'Quick summary and account shortcuts.',
+    Orders: 'View your order history and status updates.',
+    Wishlist: 'Your saved items, ready to buy.',
+    Addresses: 'Manage and edit your delivery addresses.',
+    'Profile Information': 'Manage your personal details and account information.',
+    'Payment Methods': 'Saved payment cards and billing options.',
+    'Saved Cards': 'Your stored cards for faster checkout.',
+    'My Pets': 'Your pet profiles and care information.',
+    Notifications: 'Notification preferences for your account.',
+    'Help & Support': 'Need help? Reach our support team anytime.',
+  };
 
   const userName = formatUserName(userEmail);
   const authHeaders = useMemo(() => {
@@ -55,22 +92,149 @@ export default function UserDashboard() {
       navigate('/login');
       return;
     }
-    loadOrders();
+    loadDashboard();
   }, [isAuthenticated, navigate, authHeaders]);
 
-  async function loadOrders() {
+  async function loadDashboard() {
     try {
-      const response = await fetch(`${API_URL}/orders`, { headers: authHeaders });
-      if (!response.ok) {
+      const [ordersResponse, userResponse, addressesResponse] = await Promise.all([
+        fetch(`${API_URL}/orders`, { headers: authHeaders }),
+        fetch(`${API_URL}/users/me`, { headers: authHeaders }),
+        fetch(`${API_URL}/users/me/addresses`, { headers: authHeaders }),
+      ]);
+
+      if (!ordersResponse.ok) {
         setStatus('Unable to fetch orders at the moment.');
-        return;
+      } else {
+        const ordersData = await ordersResponse.json();
+        setOrders(Array.isArray(ordersData) ? ordersData : []);
       }
-      const data = await response.json();
-      setOrders(Array.isArray(data) ? data : []);
-      setStatus('Your recent activity is shown below.');
+
+      if (userResponse.ok) {
+        const userData = await userResponse.json();
+        setUserProfile({
+          firstName: userData.firstName || '',
+          lastName: userData.lastName || '',
+          email: userData.email || userEmail || '',
+          phone: userData.phone || '',
+          gender: userData.gender || '',
+          dateOfBirth: userData.dateOfBirth || '',
+        });
+        setProfileForm({
+          firstName: userData.firstName || '',
+          lastName: userData.lastName || '',
+          phone: userData.phone || '',
+          gender: userData.gender || '',
+          dateOfBirth: userData.dateOfBirth || '',
+        });
+      }
+
+      if (addressesResponse.ok) {
+        const addressesData = await addressesResponse.json();
+        setAddresses(Array.isArray(addressesData) ? addressesData : []);
+      }
+
+      setStatus('Your dashboard is up to date.');
     } catch (error) {
       console.error(error);
       setStatus('Unable to load your dashboard data.');
+    }
+  }
+
+  async function saveProfile() {
+    try {
+      const response = await fetch(`${API_URL}/users/me`, {
+        method: 'PUT',
+        headers: authHeaders,
+        body: JSON.stringify(profileForm),
+      });
+
+      if (!response.ok) {
+        setStatus('Unable to save profile updates.');
+        return;
+      }
+
+      const updatedUser = await response.json();
+      setUserProfile({
+        firstName: updatedUser.firstName || '',
+        lastName: updatedUser.lastName || '',
+        email: updatedUser.email || userEmail || '',
+        phone: updatedUser.phone || '',
+        gender: updatedUser.gender || '',
+        dateOfBirth: updatedUser.dateOfBirth || '',
+      });
+      setStatus('Profile updated successfully.');
+    } catch (error) {
+      console.error(error);
+      setStatus('Unable to save profile updates.');
+    }
+  }
+
+  async function saveAddress() {
+    try {
+      const method = editingAddress ? 'PUT' : 'POST';
+      const url = editingAddress ? `${API_URL}/addresses/${addressForm.id}` : `${API_URL}/users/me/addresses`;
+      const response = await fetch(url, {
+        method,
+        headers: authHeaders,
+        body: JSON.stringify(addressForm),
+      });
+
+      if (!response.ok) {
+        setStatus('Unable to save address.');
+        return;
+      }
+
+      const savedAddress = await response.json();
+      if (editingAddress) {
+        setAddresses(prev => prev.map(addr => (addr.id === savedAddress.id ? savedAddress : addr)));
+      } else {
+        setAddresses(prev => [...prev, savedAddress]);
+      }
+
+      setAddressForm(emptyAddressForm);
+      setAddressFormVisible(false);
+      setEditingAddress(false);
+      setStatus('Address saved successfully.');
+    } catch (error) {
+      console.error(error);
+      setStatus('Unable to save address.');
+    }
+  }
+
+  async function editAddress(address) {
+    setAddressForm({
+      id: address.id,
+      label: address.label || 'Home',
+      name: address.name || '',
+      addressLine1: address.addressLine1 || '',
+      addressLine2: address.addressLine2 || '',
+      city: address.city || '',
+      state: address.state || '',
+      postalCode: address.postalCode || '',
+      country: address.country || '',
+      phone: address.phone || '',
+      isDefault: Boolean(address.isDefault),
+    });
+    setAddressFormVisible(true);
+    setEditingAddress(true);
+  }
+
+  async function removeAddress(id) {
+    try {
+      const response = await fetch(`${API_URL}/addresses/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders,
+      });
+      if (!response.ok) {
+        setStatus('Unable to remove address.');
+        return;
+      }
+      setAddresses(prev => prev.filter(addr => addr.id !== id));
+      setStatus('Address removed.');
+    } catch (error) {
+      console.error(error);
+      setStatus('Unable to remove address.');
     }
   }
 
@@ -92,8 +256,8 @@ export default function UserDashboard() {
     <div className="dashboard-page profile-page">
       <div className="dashboard-header profile-header">
         <div>
-          <h1>Profile Information</h1>
-          <p>Manage your personal details and account information.</p>
+          <h1>{activeSection}</h1>
+          <p>{sectionDescription[activeSection]}</p>
         </div>
         <button type="button" className="btn-primary">Edit Profile</button>
       </div>
@@ -169,12 +333,12 @@ export default function UserDashboard() {
                   </div>
                   <div className="profile-address-card">
                     <p className="profile-address-label">Home</p>
-                    <p>{address.name}</p>
-                    <p>{address.line1}</p>
-                    <p>{address.line2}</p>
-                    <p>{address.region}</p>
-                    <p>{address.country}</p>
-                    <p>{address.phone}</p>
+                    <p>{addresses[0]?.name || 'No address saved yet'}</p>
+                    <p>{addresses[0]?.addressLine1 || ''}</p>
+                    <p>{addresses[0]?.addressLine2 || ''}</p>
+                    <p>{addresses[0]?.city ? `${addresses[0].city}, ${addresses[0].state} ${addresses[0].postalCode || ''}` : ''}</p>
+                    <p>{addresses[0]?.country || ''}</p>
+                    <p>{addresses[0]?.phone || ''}</p>
                   </div>
                 </section>
 
@@ -216,38 +380,68 @@ export default function UserDashboard() {
               <section className="profile-card">
                 <div className="card-header">
                   <h2>Personal Information</h2>
-                  <button type="button" className="btn-link">Edit</button>
                 </div>
-                <div className="profile-detail-row">
-                  <span>Full Name</span>
-                  <strong>{userName}</strong>
-                </div>
-                <div className="profile-detail-row">
-                  <span>Email Address</span>
-                  <strong>{userEmail}</strong>
-                </div>
-                <div className="profile-detail-row">
-                  <span>Phone Number</span>
-                  <strong>+91 98888 12345</strong>
-                </div>
-                <div className="profile-detail-row">
-                  <span>Date of Birth</span>
-                  <strong>12 May 1995</strong>
-                </div>
-                <div className="profile-detail-row">
-                  <span>Gender</span>
-                  <strong>Male</strong>
-                </div>
-                <div className="profile-detail-row">
-                  <span>Joined On</span>
-                  <strong>28 May 2024</strong>
-                </div>
+                <form className="panel-form" onSubmit={e => { e.preventDefault(); saveProfile(); }}>
+                  <div className="form-field-grid">
+                    <label>
+                      First Name
+                      <input
+                        type="text"
+                        value={profileForm.firstName}
+                        onChange={e => setProfileForm(prev => ({ ...prev, firstName: e.target.value }))}
+                        placeholder="First name"
+                      />
+                    </label>
+                    <label>
+                      Last Name
+                      <input
+                        type="text"
+                        value={profileForm.lastName}
+                        onChange={e => setProfileForm(prev => ({ ...prev, lastName: e.target.value }))}
+                        placeholder="Last name"
+                      />
+                    </label>
+                    <label>
+                      Phone Number
+                      <input
+                        type="tel"
+                        value={profileForm.phone}
+                        onChange={e => setProfileForm(prev => ({ ...prev, phone: e.target.value }))}
+                        placeholder="Phone number"
+                      />
+                    </label>
+                    <label>
+                      Gender
+                      <select
+                        value={profileForm.gender}
+                        onChange={e => setProfileForm(prev => ({ ...prev, gender: e.target.value }))}
+                      >
+                        <option value="">Select gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </label>
+                    <label>
+                      Date of Birth
+                      <input
+                        type="date"
+                        value={profileForm.dateOfBirth}
+                        onChange={e => setProfileForm(prev => ({ ...prev, dateOfBirth: e.target.value }))}
+                      />
+                    </label>
+                    <label>
+                      Email Address
+                      <input type="email" value={userProfile.email} disabled />
+                    </label>
+                  </div>
+                  <button type="submit" className="btn-primary">Save Profile</button>
+                </form>
               </section>
 
               <section className="profile-card">
                 <div className="card-header">
                   <h2>Account Security</h2>
-                  <button type="button" className="btn-link">Change Password</button>
                 </div>
                 <div className="profile-detail-row">
                   <span>Password</span>
@@ -333,21 +527,149 @@ export default function UserDashboard() {
               <section className="profile-card">
                 <div className="card-header">
                   <h2>Saved Addresses</h2>
-                  <button type="button" className="btn-link">Add New Address</button>
+                  <button type="button" className="btn-link" onClick={() => {
+                    setAddressForm(emptyAddressForm);
+                    setAddressFormVisible(true);
+                    setEditingAddress(false);
+                  }}>
+                    Add New Address
+                  </button>
                 </div>
-                <div className="profile-address-card">
-                  <p className="profile-address-label">{address.label}</p>
-                  <p>{address.name}</p>
-                  <p>{address.line1}</p>
-                  <p>{address.line2}</p>
-                  <p>{address.region}</p>
-                  <p>{address.country}</p>
-                  <p>{address.phone}</p>
-                  <div className="address-actions">
-                    <button type="button" className="btn-link">Edit</button>
-                    <button type="button" className="btn-danger btn-sm">Remove</button>
+
+                <div className="address-list">
+                  {addresses.length === 0 ? (
+                    <div className="address-card">
+                      <p>No saved addresses yet. Add one to make checkout faster.</p>
+                    </div>
+                  ) : (
+                    addresses.map(addr => (
+                      <div key={addr.id} className="address-card">
+                        <strong>{addr.label || 'Home'}</strong>
+                        <p>{addr.name}</p>
+                        <p>{addr.addressLine1}</p>
+                        <p>{addr.addressLine2}</p>
+                        <p>{addr.city}, {addr.state} {addr.postalCode}</p>
+                        <p>{addr.country}</p>
+                        <p>{addr.phone}</p>
+                        <div className="address-actions">
+                          <button type="button" className="btn-link" onClick={() => editAddress(addr)}>Edit</button>
+                          <button type="button" className="btn-danger btn-sm" onClick={() => removeAddress(addr.id)}>Remove</button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {addressFormVisible && (
+                  <div className="profile-card">
+                    <div className="card-header">
+                      <h2>{editingAddress ? 'Edit Address' : 'Add Address'}</h2>
+                      <button type="button" className="btn-link" onClick={() => {
+                        setAddressFormVisible(false);
+                        setEditingAddress(false);
+                        setAddressForm(emptyAddressForm);
+                      }}>
+                        Cancel
+                      </button>
+                    </div>
+                    <form className="panel-form" onSubmit={e => { e.preventDefault(); saveAddress(); }}>
+                      <div className="form-field-grid">
+                        <label>
+                          Label
+                          <input
+                            type="text"
+                            value={addressForm.label}
+                            onChange={e => setAddressForm(prev => ({ ...prev, label: e.target.value }))}
+                            placeholder="Home / Work"
+                          />
+                        </label>
+                        <label>
+                          Contact Name
+                          <input
+                            type="text"
+                            value={addressForm.name}
+                            onChange={e => setAddressForm(prev => ({ ...prev, name: e.target.value }))}
+                            placeholder="Recipient name"
+                          />
+                        </label>
+                        <label>
+                          Address Line 1
+                          <input
+                            type="text"
+                            value={addressForm.addressLine1}
+                            onChange={e => setAddressForm(prev => ({ ...prev, addressLine1: e.target.value }))}
+                            placeholder="Street address"
+                          />
+                        </label>
+                        <label>
+                          Address Line 2
+                          <input
+                            type="text"
+                            value={addressForm.addressLine2}
+                            onChange={e => setAddressForm(prev => ({ ...prev, addressLine2: e.target.value }))}
+                            placeholder="Apartment, suite, unit"
+                          />
+                        </label>
+                        <label>
+                          City
+                          <input
+                            type="text"
+                            value={addressForm.city}
+                            onChange={e => setAddressForm(prev => ({ ...prev, city: e.target.value }))}
+                            placeholder="City"
+                          />
+                        </label>
+                        <label>
+                          State
+                          <input
+                            type="text"
+                            value={addressForm.state}
+                            onChange={e => setAddressForm(prev => ({ ...prev, state: e.target.value }))}
+                            placeholder="State"
+                          />
+                        </label>
+                        <label>
+                          Postal Code
+                          <input
+                            type="text"
+                            value={addressForm.postalCode}
+                            onChange={e => setAddressForm(prev => ({ ...prev, postalCode: e.target.value }))}
+                            placeholder="Postal code"
+                          />
+                        </label>
+                        <label>
+                          Country
+                          <input
+                            type="text"
+                            value={addressForm.country}
+                            onChange={e => setAddressForm(prev => ({ ...prev, country: e.target.value }))}
+                            placeholder="Country"
+                          />
+                        </label>
+                        <label>
+                          Phone
+                          <input
+                            type="tel"
+                            value={addressForm.phone}
+                            onChange={e => setAddressForm(prev => ({ ...prev, phone: e.target.value }))}
+                            placeholder="Phone number"
+                          />
+                        </label>
+                        <label>
+                          Default Address
+                          <select
+                            value={addressForm.isDefault ? 'true' : 'false'}
+                            onChange={e => setAddressForm(prev => ({ ...prev, isDefault: e.target.value === 'true' }))}
+                          >
+                            <option value="false">No</option>
+                            <option value="true">Yes</option>
+                          </select>
+                        </label>
+                      </div>
+                      <button type="submit" className="btn-primary">Save Address</button>
+                    </form>
                   </div>
-                </div>
+                )}
               </section>
             </div>
           )}
