@@ -3,11 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Login.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api/v1';
 
 export default function Login() {
   const [email, setEmail] = useState('admin@pawmart.com');
   const [password, setPassword] = useState('admin123');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login, isAuthenticated, roles } = useAuth();
@@ -105,13 +106,20 @@ export default function Login() {
                   <div className="input-row">
                     <span className="icon">🔒</span>
                     <input
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={e => setPassword(e.target.value)}
                       placeholder="admin123"
                       required
                     />
-                    <button type="button" className="eye" aria-hidden>👁️</button>
+                    <button
+                      type="button"
+                      className="eye"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      onClick={() => setShowPassword(prev => !prev)}
+                    >
+                      {showPassword ? '🙈' : '👁️'}
+                    </button>
                   </div>
                 </label>
 
@@ -130,7 +138,28 @@ export default function Login() {
 
                 <div className="divider"><span>or</span></div>
 
-                <button type="button" className="social-btn google-btn">
+                <button
+                  type="button"
+                  className="social-btn google-btn"
+                  onClick={async () => {
+                    setLoading(true);
+                    try {
+                      const response = await fetch(`${API_URL}/auth/google/url`);
+                      if (!response.ok) {
+                        const errorText = await response.text();
+                        setError(errorText || 'Unable to start Google login.');
+                        return;
+                      }
+                      const data = await response.json();
+                      window.location.href = data.url;
+                    } catch (err) {
+                      console.error(err);
+                      setError('Unable to start Google login.');
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                >
                   <span className="social-icon">G</span>
                   Sign in with Google
                 </button>
@@ -140,7 +169,7 @@ export default function Login() {
                 </div>
 
                 <div className="panel-footer">
-                  Don't have an account? <Link to="/signup">Sign up</Link>
+                  Don't have an account? <Link to="/signup">Create one now</Link>.
                 </div>
               </form>
             </div>

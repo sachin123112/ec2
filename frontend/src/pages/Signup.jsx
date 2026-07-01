@@ -151,15 +151,7 @@ export default function Signup() {
                 </label>
               </div>
 
-              <div className="password-hint-card">
-                <span>Password must contain:</span>
-                <div className="password-hint-grid">
-                  <span>At least 8 characters</span>
-                  <span>1 uppercase letter</span>
-                  <span>1 number</span>
-                  <span>1 special character</span>
-                </div>
-              </div>
+
 
               <div className="form-row">
                 <label>

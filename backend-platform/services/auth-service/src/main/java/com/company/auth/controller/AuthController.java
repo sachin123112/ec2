@@ -1,6 +1,8 @@
 package com.company.auth.controller;
 
 import com.company.auth.dto.AuthResponse;
+import com.company.auth.dto.GoogleUserInfo;
+import com.company.auth.dto.GoogleTokenResponse;
 import com.company.auth.dto.LoginRequest;
 import com.company.auth.dto.RefreshTokenRequest;
 import com.company.auth.model.RefreshToken;
@@ -12,14 +14,20 @@ import com.company.auth.repository.RoleRepository;
 import com.company.auth.repository.UserRepository;
 import com.company.auth.security.JwtService;
 import com.company.auth.service.AuthService;
+import com.company.auth.service.GoogleOAuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -36,7 +44,11 @@ public class AuthController {
     private final RoleRepository roleRepository;
     private final JwtService jwtService;
     private final AuthService authService;
+    private final GoogleOAuthService googleOAuthService;
     private final PasswordEncoder passwordEncoder;
+
+    @Value("${frontend.url:http://localhost:5173}")
+    private String frontendUrl;
 
     public AuthController(
             UserRepository userRepository,
@@ -45,6 +57,7 @@ public class AuthController {
             RoleRepository roleRepository,
             JwtService jwtService,
             AuthService authService,
+            GoogleOAuthService googleOAuthService,
             PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
@@ -52,6 +65,7 @@ public class AuthController {
         this.roleRepository = roleRepository;
         this.jwtService = jwtService;
         this.authService = authService;
+        this.googleOAuthService = googleOAuthService;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -140,6 +154,37 @@ public class AuthController {
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage());
         }
+    }
+
+    @GetMapping("/google/url")
+    public ResponseEntity<?> getGoogleAuthUrl(@RequestParam(required = false) String state) {
+        String url = googleOAuthService.buildAuthorizationRedirectUrl(state);
+        return ResponseEntity.ok(Map.of("url", url));
+    }
+
+    @GetMapping("/google/callback")
+    public ResponseEntity<?> handleGoogleCallback(@RequestParam(required = false) String code,
+                                                  @RequestParam(required = false) String state,
+                                                  @RequestParam(required = false) String error) {
+        if (error != null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Google authentication failed: " + error);
+        }
+        if (code == null || code.isBlank()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing authorization code from Google.");
+        }
+
+        GoogleTokenResponse tokenResponse = googleOAuthService.exchangeAuthorizationCode(code);
+        GoogleUserInfo googleUser = googleOAuthService.fetchUserInfo(tokenResponse.getAccessToken());
+        AuthResponse authResponse = authService.loginWithGoogle(googleUser);
+
+        String frontendRedirect = String.format("%s/auth/google/callback?token=%s&refreshToken=%s&roles=%s&email=%s",
+                frontendUrl,
+                URLEncoder.encode(authResponse.getAccessToken(), StandardCharsets.UTF_8),
+                URLEncoder.encode(authResponse.getRefreshToken(), StandardCharsets.UTF_8),
+                URLEncoder.encode(String.join(",", authResponse.getRoles()), StandardCharsets.UTF_8),
+                URLEncoder.encode(googleUser.getEmail(), StandardCharsets.UTF_8));
+
+        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(frontendRedirect)).build();
     }
 
     private User ensureUserHasRoles(User user) {

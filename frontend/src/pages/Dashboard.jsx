@@ -17,7 +17,7 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ArcElement);
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api/v1';
 
 export default function Dashboard() {
   const { isAuthenticated, logout, token, hardRefresh } = useAuth();
@@ -32,8 +32,54 @@ export default function Dashboard() {
   const [orders, setOrders] = useState([]);
   const [links, setLinks] = useState([]);
   const [status, setStatus] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateRange, setDateRange] = useState(() => {
+    const today = new Date();
+    const start = new Date(today);
+    start.setDate(today.getDate() - 29);
+    const formatInput = date => date.toISOString().slice(0, 10);
+    return { startDate: formatInput(start), endDate: formatInput(today) };
+  });
 
   const [userForm, setUserForm] = useState({ username: '', email: '', password: '', firstName: '', lastName: '', roleId: '' });
+
+  const normalizeSearch = query => query.trim().toLowerCase();
+
+  const searchText = useMemo(() => normalizeSearch(searchQuery), [searchQuery]);
+
+  const matchesSearch = useCallback((fields) => {
+    if (!searchText) return true;
+    return fields.some(field => String(field || '').toLowerCase().includes(searchText));
+  }, [searchText]);
+
+  const parseDateValue = value => {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  };
+
+  const isDateInRange = useMemo(() => {
+    const start = parseDateValue(dateRange.startDate);
+    const end = parseDateValue(dateRange.endDate);
+    if (start === null || end === null) return () => true;
+    const endOfDay = new Date(end);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    return dateValue => {
+      const date = parseDateValue(dateValue);
+      if (date === null) return false;
+      return date >= start && date <= endOfDay;
+    };
+  }, [dateRange]);
+
+  const filteredUsers = useMemo(() => users.filter(user => matchesSearch([user.username, user.email, user.firstName, user.lastName])), [users, matchesSearch]);
+  const filteredProducts = useMemo(() => products.filter(product => matchesSearch([product.name, product.description, product.sku])), [products, matchesSearch]);
+  const filteredCategories = useMemo(() => categories.filter(category => matchesSearch([category.name, category.description])), [categories, matchesSearch]);
+  const filteredRoles = useMemo(() => roles.filter(role => matchesSearch([role.name, role.description])), [roles, matchesSearch]);
+  const filteredLinks = useMemo(() => links.filter(link => matchesSearch([link.label, link.url, link.description])), [links, matchesSearch]);
+  const filteredOrders = useMemo(() => orders.filter(order => {
+    const dateField = order.createdAt || order.date;
+    return matchesSearch([order.id, order.orderNumber, order.customerName, order.userId, order.status, order.totalAmount]) && isDateInRange(dateField);
+  }), [orders, matchesSearch, isDateInRange]);
   const [productForm, setProductForm] = useState({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0', categoryId: '' });
   const [productImages, setProductImages] = useState([]);
   const [productImagePreviews, setProductImagePreviews] = useState([]);
@@ -123,23 +169,26 @@ export default function Dashboard() {
     };
   }, [orders]);
 
-  const donutData = useMemo(() => {
-    const labels = categories.map(c => c.name || `Cat ${c.id}`);
-    const data = categories.map((c, i) => {
-      const seed = (c && c.id) ? Number(c.id) : i;
-      return (Math.abs(seed) % 20) + 1;
-    });
-    const colors = ['#2563eb','#10b981','#f59e0b','#a78bfa','#f472b6'];
-    return {
-      labels,
-      datasets: [
-        {
-          data,
-          backgroundColor: labels.map((_, i) => colors[i % colors.length]),
-        },
-      ],
-    };
-  }, [categories]);
+  const topCategories = useMemo(() => ([
+    { name: 'Dogs', value: 2, color: '#2563eb' },
+    { name: 'Fish', value: 3, color: '#10b981' },
+    { name: 'Plants', value: 4, color: '#f59e0b' },
+    { name: 'Birds', value: 5, color: '#a78bfa' },
+    { name: 'Pet Food', value: 6, color: '#f472b6' },
+    { name: 'Fish Food', value: 3, color: '#14b8a6' },
+    { name: 'Aquarium', value: 34, color: '#facc15' },
+  ]), []);
+
+  const donutData = useMemo(() => ({
+    labels: topCategories.map(item => item.name),
+    datasets: [
+      {
+        data: topCategories.map(item => item.value),
+        backgroundColor: topCategories.map(item => item.color),
+        borderWidth: 0,
+      },
+    ],
+  }), [topCategories]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -442,10 +491,29 @@ export default function Dashboard() {
           <p>Welcome back! Here's what's happening in your store today.</p>
         </div>
         <div className="dashboard-header-center">
-          <input className="search-input" placeholder="Search for products, orders, users..." />
+          <input
+            className="search-input"
+            placeholder="Search for products, orders, users..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
         </div>
         <div className="dashboard-header-controls">
-          <div className="date-range">30 Jun 2026 - 30 Jun 2026</div>
+          <div className="date-range">
+            <input
+              type="date"
+              className="date-input"
+              value={dateRange.startDate}
+              onChange={e => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+            />
+            <span>–</span>
+            <input
+              type="date"
+              className="date-input"
+              value={dateRange.endDate}
+              onChange={e => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+            />
+          </div>
         </div>
         <div className="dashboard-actions-right">
           <button
@@ -532,24 +600,65 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="categories-card dashboard-card">
-          <div className="section-header">
-            <h3>Top Categories</h3>
-            <a className="view-all" href="#">View All</a>
-          </div>
-          <div className="categories-content">
-            <div className="donut-placeholder">
-              <Doughnut data={donutData} options={{ maintainAspectRatio: true, plugins: { legend: { position: 'right' } } }} />
+        <div className="top-categories-card dashboard-card">
+          <div className="top-categories-header">
+            <div className="top-categories-title">
+              <span className="category-badge">📊</span>
+              <div>
+                <h3>Top Categories</h3>
+                <p>Overview of product categories</p>
+              </div>
             </div>
-            <ul className="categories-list">
-              {categories.slice(0,5).map((c, i) => (
-                <li key={c.id}>
-                  <span className="legend-dot" style={{ background: ['#2563eb','#10b981','#f59e0b','#a78bfa','#f472b6'][i % 5] }} />
-                  <span className="cat-name">{c.name}</span>
-                  <span className="cat-count">{donutData?.datasets?.[0]?.data?.[i] ?? 0}</span>
-                </li>
-              ))}
-            </ul>
+            <button type="button" className="top-categories-action">
+              View All <span className="chevron">›</span>
+            </button>
+          </div>
+
+          <div className="top-categories-body">
+            <div className="top-categories-chart">
+              <div className="donut-chart-shell">
+                <Doughnut
+                  data={donutData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    rotation: -90,
+                    plugins: {
+                      legend: { display: false },
+                      tooltip: { enabled: true },
+                    },
+                  }}
+                />
+                <div className="donut-center-label">
+                  <strong>26</strong>
+                  <span>Categories</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="top-categories-legend">
+              <ul>
+                {topCategories.map(item => (
+                  <li key={item.name}>
+                    <span className="legend-badge" style={{ background: item.color }} />
+                    <span className="legend-label">{item.name}</span>
+                    <span className="legend-value">{item.value}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div className="top-categories-footer">
+            <div className="footer-left">
+              <span className="trend-icon">📈</span>
+              <span>Top category is <strong>Dogs</strong></span>
+            </div>
+            <div className="footer-right">
+              <span className="trend-pill">📈 20%</span>
+              <span className="footer-note">from last 30 days</span>
+            </div>
           </div>
         </div>
       </div>
@@ -561,8 +670,12 @@ export default function Dashboard() {
             <a className="view-all" href="#">View All Orders</a>
           </div>
           <div className="recent-orders-body">
-            {orders.length === 0 ? (
-              <div className="empty-state">No orders found. Orders will appear here once customers place them.</div>
+            {filteredOrders.length === 0 ? (
+              <div className="empty-state">
+                {orders.length === 0
+                  ? 'No orders found. Orders will appear here once customers place them.'
+                  : 'No orders match the current search or date range. Adjust your filters to see results.'}
+              </div>
             ) : (
               <div className="table-scroll">
                 <table>
@@ -576,7 +689,7 @@ export default function Dashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {orders.slice(0,6).map(o => (
+                    {filteredOrders.slice(0,6).map(o => (
                       <tr key={o.id}>
                         <td>{o.id}</td>
                         <td>{o.customerName || o.userId}</td>
@@ -714,7 +827,7 @@ export default function Dashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {users.map(user => (
+                      {filteredUsers.map(user => (
                         <tr key={user.id}>
                           <td>{user.id}</td>
                           <td>{user.email}</td>
@@ -782,7 +895,7 @@ export default function Dashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {roles.map(role => (
+                      {filteredRoles.map(role => (
                         <tr key={role.id}>
                           <td>{role.id}</td>
                           <td>{role.name}</td>
@@ -844,7 +957,7 @@ export default function Dashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {links.map(link => (
+                      {filteredLinks.map(link => (
                         <tr key={link.id}>
                           <td>{link.id}</td>
                           <td>{link.label}</td>
@@ -935,7 +1048,7 @@ export default function Dashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {products.map(product => (
+                      {filteredProducts.map(product => (
                         <tr key={product.id}>
                           <td>{product.id}</td>
                           <td>{product.name}</td>
@@ -983,7 +1096,7 @@ export default function Dashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {categories.map(cat => (
+                      {filteredCategories.map(cat => (
                         <tr key={cat.id}>
                           <td>{cat.id}</td>
                           <td>{cat.name}</td>
@@ -1044,7 +1157,7 @@ export default function Dashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {orders.map(order => (
+                      {filteredOrders.map(order => (
                         <tr key={order.id}>
                           <td>{order.id}</td>
                           <td>{order.orderNumber}</td>

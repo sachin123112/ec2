@@ -21,6 +21,8 @@ import com.company.auth.model.OrderEntity;
 import com.company.auth.model.Product;
 import com.company.auth.model.ProductImage;
 import com.company.auth.model.User;
+import com.company.auth.document.OrderDocument;
+import com.company.auth.document.ProductDocument;
 import com.company.auth.repository.AddressRepository;
 import com.company.auth.repository.CategoryRepository;
 import com.company.auth.repository.LinkRepository;
@@ -29,6 +31,7 @@ import com.company.auth.repository.ProductRepository;
 import com.company.auth.repository.RoleRepository;
 import com.company.auth.repository.UserRepository;
 import com.company.auth.security.JwtService;
+import com.company.auth.service.SearchService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -62,6 +65,7 @@ public class ApiController {
     private final LinkRepository linkRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
+    private final SearchService searchService;
 
     public ApiController(
             UserRepository userRepository,
@@ -72,7 +76,8 @@ public class ApiController {
             AddressRepository addressRepository,
             LinkRepository linkRepository,
             JwtService jwtService,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            SearchService searchService) {
         this.userRepository = userRepository;
         this.productRepository = productRepository;
         this.orderRepository = orderRepository;
@@ -82,6 +87,7 @@ public class ApiController {
         this.linkRepository = linkRepository;
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
+        this.searchService = searchService;
     }
 
     @GetMapping("/users")
@@ -126,6 +132,14 @@ public class ApiController {
                 .collect(Collectors.toList());
     }
 
+    @GetMapping("/products/search")
+    public List<ProductDto> searchProducts(@RequestParam(required = false) String q,
+                                           @RequestParam(required = false) String category) {
+        return searchService.searchProducts(q, category).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
     @PostMapping(value = "/products", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ProductDto> createProduct(@RequestBody CreateProductRequest request) {
         Product product = new Product();
@@ -139,6 +153,7 @@ public class ApiController {
         }
 
         product = productRepository.save(product);
+        searchService.indexProduct(product);
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(product));
     }
 
@@ -176,6 +191,7 @@ public class ApiController {
             product = productRepository.save(product);
         }
 
+        searchService.indexProduct(product);
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(product));
     }
 
@@ -185,6 +201,7 @@ public class ApiController {
             return ResponseEntity.notFound().build();
         }
         productRepository.deleteById(id);
+        searchService.deleteProduct(id);
         return ResponseEntity.noContent().build();
     }
 
@@ -275,6 +292,15 @@ public class ApiController {
                 .collect(Collectors.toList());
     }
 
+    @GetMapping("/orders/search")
+    public List<OrderDto> searchOrders(@RequestParam(required = false) String q,
+                                       @RequestParam(required = false) String startDate,
+                                       @RequestParam(required = false) String endDate) {
+        return searchService.searchOrders(q, startDate, endDate).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
     @PostMapping("/orders")
     public ResponseEntity<OrderDto> createOrder(@RequestBody CreateOrderRequest request) {
         OrderEntity order = new OrderEntity();
@@ -284,6 +310,7 @@ public class ApiController {
         order.setStatus(request.getStatus() == null ? "PENDING" : request.getStatus());
 
         order = orderRepository.save(order);
+        searchService.indexOrder(order);
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(order));
     }
 
@@ -293,6 +320,7 @@ public class ApiController {
             return ResponseEntity.notFound().build();
         }
         orderRepository.deleteById(id);
+        searchService.deleteOrder(id);
         return ResponseEntity.noContent().build();
     }
 
@@ -432,6 +460,20 @@ public class ApiController {
         return dto;
     }
 
+    private ProductDto toDto(ProductDocument document) {
+        ProductDto dto = new ProductDto();
+        dto.setId(document.getId());
+        dto.setName(document.getName());
+        dto.setDescription(document.getDescription());
+        dto.setSku(document.getSku());
+        dto.setPrice(document.getPrice());
+        dto.setStockQuantity(document.getStockQuantity());
+        dto.setCategoryName(document.getCategoryName());
+        dto.setImageUrls(document.getImageUrls());
+        dto.setCreatedAt(document.getCreatedAt());
+        return dto;
+    }
+
     private OrderDto toDto(OrderEntity order) {
         OrderDto dto = new OrderDto();
         dto.setId(order.getId());
@@ -440,6 +482,16 @@ public class ApiController {
         dto.setTotalAmount(order.getTotalAmount());
         dto.setStatus(order.getStatus());
         dto.setCreatedAt(order.getCreatedAt());
+        return dto;
+    }
+
+    private OrderDto toDto(OrderDocument document) {
+        OrderDto dto = new OrderDto();
+        dto.setId(document.getId());
+        dto.setOrderNumber(document.getOrderNumber());
+        dto.setTotalAmount(document.getTotalAmount());
+        dto.setStatus(document.getStatus());
+        dto.setCreatedAt(document.getCreatedAt());
         return dto;
     }
 

@@ -62,7 +62,7 @@ export function AuthProvider({ children }) {
   };
 
   const refreshSession = async () => {
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api/v1';
     if (!refreshToken) {
       throw new Error('No refresh token available');
     }
@@ -88,7 +88,7 @@ export function AuthProvider({ children }) {
   };
 
   const signup = async (payload) => {
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api/v1';
     const res = await fetch(`${API_URL}/auth/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -98,7 +98,7 @@ export function AuthProvider({ children }) {
   };
 
   const requestPasswordReset = async (email) => {
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api/v1';
     const res = await fetch(`${API_URL}/auth/forgot-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

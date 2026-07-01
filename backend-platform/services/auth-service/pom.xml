@@ -61,6 +61,12 @@
             <artifactId>flyway-core</artifactId>
         </dependency>
 
+        <!-- Elasticsearch search integration -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
+        </dependency>
+
         <!-- H2 for local/in-memory testing -->
         <dependency>
             <groupId>com.h2database</groupId>

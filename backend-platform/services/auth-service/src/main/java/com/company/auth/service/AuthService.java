@@ -1,6 +1,7 @@
 package com.company.auth.service;
 
 import com.company.auth.dto.AuthResponse;
+import com.company.auth.dto.GoogleUserInfo;
 import com.company.auth.dto.LoginRequest;
 import com.company.auth.model.RefreshToken;
 import com.company.auth.model.Role;
@@ -49,6 +50,29 @@ public class AuthService {
 
         if (!matches) {
             throw new IllegalArgumentException("Invalid credentials");
+        }
+
+        ensureUserHasRoles(user);
+        return buildAuthResponse(user);
+    }
+
+    @Transactional
+    public AuthResponse loginWithGoogle(GoogleUserInfo googleUser) {
+        if (googleUser == null || googleUser.getEmail() == null || !googleUser.isEmailVerified()) {
+            throw new IllegalArgumentException("Google user information is incomplete or not verified.");
+        }
+
+        User user = userRepository.findByEmail(googleUser.getEmail()).orElse(null);
+        if (user == null) {
+            user = new User();
+            user.setUsername(googleUser.getEmail().split("@")[0]);
+            user.setEmail(googleUser.getEmail());
+            user.setFirstName(googleUser.getGivenName());
+            user.setLastName(googleUser.getFamilyName());
+            user.setProfileImageUrl(googleUser.getPicture());
+            user.setPasswordHash(UUID.randomUUID().toString());
+            user.setStatus("ACTIVE");
+            user = userRepository.save(user);
         }
 
         ensureUserHasRoles(user);

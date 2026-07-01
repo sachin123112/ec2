@@ -11,6 +11,7 @@ import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
+import GoogleCallback from './pages/GoogleCallback';
 import UserDashboard from './pages/UserDashboard';
 import './App.css';
 
@@ -45,6 +46,7 @@ function AppContent() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/auth/google/callback" element={<GoogleCallback />} />
           <Route path="/dashboard" element={
             <ProtectedRoute requiredRole="USER">
               <UserDashboard />
