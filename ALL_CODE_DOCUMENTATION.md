@@ -9,6 +9,7 @@ Generated: 2026-06-23
 ## Table of Contents
 
 - Frontend files
+- Mobile files
 - Backend files
 - Dependency files (full contents)
 - CI/CD workflow files (full contents)
@@ -65,6 +66,47 @@ npm ci
 npm run dev      # start Vite dev server on port 5173
 npm run build    # produce production build in frontend/dist
 npm run preview  # preview production build
+```
+
+---
+
+## Mobile (mobile/)
+
+Files and purpose:
+
+- `mobile/package.json` — Expo app metadata, dependencies, and scripts.
+- `mobile/app.json` — Expo configuration for the mobile app.
+- `mobile/babel.config.js` — Babel preset for Expo.
+- `mobile/App.js` — React Native entry point; wraps navigation and providers.
+- `mobile/README.md` — Mobile setup instructions and links to Windows-specific docs.
+- `mobile/WINDOWS_SETUP.md` — Windows-specific Expo and Android emulator setup guide.
+- `mobile/TROUBLESHOOTING.md` — Common Expo and Android emulator troubleshooting on Windows.
+- `mobile/MOBILE_WORKFLOW.md` — Mobile app workflow and backend connectivity documentation.
+
+Source files under `mobile/src/`:
+
+- `mobile/src/api/config.js` — Selects the backend API URL for Android emulator vs iOS.
+- `mobile/src/api/auth.js` — Auth API wrappers for login, signup, and refresh.
+- `mobile/src/api/products.js` — Product listing API wrapper.
+- `mobile/src/context/AuthContext.js` — Auth persistence and refresh logic using AsyncStorage.
+- `mobile/src/context/CartContext.js` — Cart state management and actions.
+- `mobile/src/navigation/AppNavigator.js` — Navigation stack for screens.
+- `mobile/src/screens/LoginScreen.js` — Login UI and auth flow.
+- `mobile/src/screens/SignupScreen.js` — Signup UI and auth flow.
+- `mobile/src/screens/HomeScreen.js` — Landing screen with shop and cart navigation.
+- `mobile/src/screens/ShopScreen.js` — Product browsing screen with search and add-to-cart.
+- `mobile/src/screens/CartScreen.js` — Cart review and quantity management screen.
+- `mobile/src/screens/DashboardScreen.js` — Admin dashboard screen using backend admin API.
+- `mobile/src/screens/AdminDashboardScreen.js` — Admin analytics screen.
+- `mobile/src/data/products.js` — Fallback product catalog used when the backend is unavailable.
+
+How to run mobile locally:
+
+```bash
+cd mobile
+npm install
+npm run start
+npm run android
 ```
 
 ---
