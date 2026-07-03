@@ -705,7 +705,7 @@
   width: 100%;
 }
 
-..field-error {
+.field-error {
   display: block;
   margin-top: 8px;
   color: #b91c1c;
@@ -1040,7 +1040,7 @@ tbody td {
   color: #0f172a;
 }
 
-..profile-main {
+.profile-main {
   display: flex;
   flex-direction: column;
   gap: 20px;

@@ -112,7 +112,15 @@ export default function Dashboard() {
       ]);
 
       if (usersRes.ok) setUsers(await usersRes.json());
-      if (productsRes.ok) setProducts(await productsRes.json());
+      if (productsRes.ok) {
+        const productsJson = await productsRes.json();
+        setProducts(productsJson);
+        try {
+          window.dispatchEvent(new CustomEvent('products:updated', { detail: productsJson }));
+        } catch {
+          // ignore in non-browser environments
+        }
+      }
       if (ordersRes.ok) setOrders(await ordersRes.json());
       if (categoriesRes.ok) setCategories(await categoriesRes.json());
       if (rolesRes.ok) setRoles(await rolesRes.json());

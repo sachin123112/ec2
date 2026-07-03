@@ -115,7 +115,7 @@ public class AuthService {
 
     private AuthResponse buildAuthResponse(User user) {
         refreshTokenRepository.deleteAllByUserId(user.getId());
-        var roles = user.getRoles().stream().map(Role::getName).toList();
+        var roles = user.getRoles().stream().map(role -> role.getName()).toList();
         String token = jwtService.generateToken(user.getEmail(), roles);
         RefreshToken refreshToken = createRefreshToken(user);
         return new AuthResponse(token, roles, refreshToken.getToken());

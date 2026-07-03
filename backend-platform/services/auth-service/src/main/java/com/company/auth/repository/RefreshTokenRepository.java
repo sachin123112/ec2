@@ -1,7 +1,6 @@
 package com.company.auth.repository;
 
 import com.company.auth.model.RefreshToken;
-import com.company.auth.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

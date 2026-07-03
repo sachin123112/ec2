@@ -1,10 +1,8 @@
 package com.company.auth.controller;
 
-import com.company.auth.dto.OrderDto;
 import com.company.auth.dto.UserDto;
 import com.company.auth.repository.OrderRepository;
 import com.company.auth.repository.UserRepository;
-import com.company.auth.model.OrderEntity;
 import com.company.auth.model.User;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,9 +30,9 @@ public class AdminController {
         long totalUsers = userRepository.count();
         long totalOrders = orderRepository.count();
         BigDecimal revenue = orderRepository.findAll().stream()
-                .map(OrderEntity::getTotalAmount)
+                .map(order -> order.getTotalAmount())
                 .filter(a -> a != null)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
 
         Map<String, Object> resp = new HashMap<>();
         resp.put("totalUsers", totalUsers);
@@ -47,7 +45,7 @@ public class AdminController {
     public Map<String, Object> ordersAnalytics() {
         long totalOrders = orderRepository.count();
         Map<String, Long> byStatus = orderRepository.findAll().stream()
-                .map(OrderEntity::getStatus)
+                .map(order -> order.getStatus())
                 .collect(Collectors.groupingBy(s -> s == null ? "UNKNOWN" : s, Collectors.counting()));
 
         Map<String, Object> resp = new HashMap<>();
@@ -59,9 +57,9 @@ public class AdminController {
     @GetMapping("/analytics/revenue")
     public Map<String, Object> revenueAnalytics() {
         BigDecimal revenue = orderRepository.findAll().stream()
-                .map(OrderEntity::getTotalAmount)
+                .map(order -> order.getTotalAmount())
                 .filter(a -> a != null)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
 
         Map<String, Object> resp = new HashMap<>();
         resp.put("totalRevenue", revenue);
@@ -70,7 +68,7 @@ public class AdminController {
 
     @GetMapping("/users")
     public List<UserDto> listUsers() {
-        return userRepository.findAll().stream().map(this::toDto).collect(Collectors.toList());
+        return userRepository.findAll().stream().map(user -> toDto(user)).collect(Collectors.toList());
     }
 
     private UserDto toDto(User user) {

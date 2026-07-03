@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
@@ -100,15 +100,7 @@ export default function UserDashboard() {
     return headers;
   }, [token]);
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-    loadDashboard();
-  }, [isAuthenticated, navigate, authHeaders]);
-
-  async function loadDashboard() {
+  const loadDashboard = useCallback(async () => {
     try {
       const [ordersResponse, userResponse, addressesResponse] = await Promise.all([
         fetch(`${API_URL}/orders`, { headers: authHeaders }),
@@ -156,7 +148,15 @@ export default function UserDashboard() {
       console.error(error);
       setStatus('Unable to load your dashboard data.');
     }
-  }
+  }, [authHeaders, userEmail]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    loadDashboard();
+  }, [isAuthenticated, navigate, loadDashboard]);
 
   function validatePhone(phone) {
     const digits = phone.replace(/\D/g, '');
@@ -319,6 +319,12 @@ export default function UserDashboard() {
         </div>
         <button type="button" className="btn-primary">Edit Profile</button>
       </div>
+
+      {status && (
+        <div className="status-banner">
+          {status}
+        </div>
+      )}
 
       <div className="profile-layout">
         <aside className="profile-sidebar">

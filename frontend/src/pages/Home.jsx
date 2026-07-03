@@ -1,9 +1,69 @@
 import { Link } from 'react-router-dom';
-import { products, categories } from '../data/products';
+import { categories } from '../data/products';
 import { useCart } from '../context/CartContext';
+import { useEffect, useState } from 'react';
 import './Home.css';
 
-const featured = products.filter(p => p.badge === 'Best Seller' || p.badge === 'Top Rated');
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+
+function useFeaturedProducts() {
+  const [featured, setFeatured] = useState([]);
+
+  useEffect(() => {
+    let mounted = true;
+    async function fetchProducts() {
+      try {
+        const res = await fetch(`${API_URL}/products`);
+        if (!mounted) return;
+        if (res.ok) {
+          const all = await res.json();
+          const norm = all.map(p => ({
+            id: p.id,
+            name: p.name,
+            category: p.category || (p.category && p.category.name) || 'Uncategorized',
+            subCategory: p.subCategory || '',
+            price: p.price || 0,
+            rating: p.rating || 0,
+            reviews: p.reviews || 0,
+            image: (p.images && p.images[0]) || p.image || 'https://via.placeholder.com/400',
+            badge: p.badge || '',
+            description: p.description || '',
+            inStock: p.stockQuantity ? p.stockQuantity > 0 : (p.inStock !== undefined ? p.inStock : true),
+          }));
+          setFeatured(norm.filter(p => p.badge === 'Best Seller' || p.badge === 'Top Rated'));
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    fetchProducts();
+
+    function onProductsUpdated(e) {
+      if (e && e.detail) {
+        const norm = e.detail.map(p => ({
+          id: p.id,
+          name: p.name,
+          category: p.category || (p.category && p.category.name) || 'Uncategorized',
+          subCategory: p.subCategory || '',
+          price: p.price || 0,
+          rating: p.rating || 0,
+          reviews: p.reviews || 0,
+          image: (p.images && p.images[0]) || p.image || 'https://via.placeholder.com/400',
+          badge: p.badge || '',
+          description: p.description || '',
+          inStock: p.stockQuantity ? p.stockQuantity > 0 : (p.inStock !== undefined ? p.inStock : true),
+        }));
+        setFeatured(norm.filter(p => p.badge === 'Best Seller' || p.badge === 'Top Rated'));
+      }
+    }
+
+    window.addEventListener('products:updated', onProductsUpdated);
+    return () => { mounted = false; window.removeEventListener('products:updated', onProductsUpdated); };
+  }, []);
+
+  return featured;
+}
 
 const testimonials = [
   {
@@ -31,6 +91,7 @@ const testimonials = [
 
 export default function Home() {
   const { addToCart } = useCart();
+  const featured = useFeaturedProducts();
 
   return (
     <div className="home">

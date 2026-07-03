@@ -48,7 +48,7 @@ export default function Login() {
       } else {
         navigate('/dashboard');
       }
-    } catch (err) {
+    } catch {
       setError('Server error. Please try again later.');
     } finally {
       setLoading(false);

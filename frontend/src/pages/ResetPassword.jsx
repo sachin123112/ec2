@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import './Login.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
@@ -34,7 +33,7 @@ export default function ResetPassword() {
 
       setStatus('Password reset successfully. You may now log in.');
       setTimeout(() => navigate('/login'), 1500);
-    } catch (error) {
+    } catch {
       setStatus('Server error. Please try again.');
     } finally {
       setLoading(false);

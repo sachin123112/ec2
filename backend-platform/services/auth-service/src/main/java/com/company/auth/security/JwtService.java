@@ -23,32 +23,31 @@ public class JwtService {
         Date now = new Date();
 
         return Jwts.builder()
-                .setSubject(username)
+                .subject(username)
                 .claim("roles", roles)
-                .setIssuedAt(now)
-                .setExpiration(new Date(now.getTime() + expiration))
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + expiration))
                 .signWith(Keys.hmacShaKeyFor(secret.getBytes()), Jwts.SIG.HS256)
                 .compact();
     }
 
     public Claims extractAllClaims(String token) {
         Jws<Claims> claimsJws = Jwts.parser()
-                .setSigningKey(Keys.hmacShaKeyFor(secret.getBytes()))
+                .verifyWith(Keys.hmacShaKeyFor(secret.getBytes()))
                 .build()
-                .parseClaimsJws(token);
-        return claimsJws.getBody();
+                .parseSignedClaims(token);
+        return claimsJws.getPayload();
     }
 
     public String extractUsername(String token) {
         return extractAllClaims(token).getSubject();
     }
 
-    @SuppressWarnings("unchecked")
     public List<String> extractRoles(String token) {
         Object rolesObject = extractAllClaims(token).get("roles");
         if (rolesObject instanceof List<?>) {
             return ((List<?>) rolesObject).stream()
-                    .map(Object::toString)
+                    .map(o -> String.valueOf(o))
                     .toList();
         }
         return List.of();

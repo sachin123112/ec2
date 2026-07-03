@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
 const AuthContext = createContext();
 const STORAGE_KEY = 'pawmart_access_token';
@@ -46,22 +47,14 @@ export function AuthProvider({ children }) {
     }
   }, [refreshToken]);
 
-  useEffect(() => {
-    if (!token && refreshToken) {
-      refreshSession().catch(() => {
-        /* ignore failures; logout already happens inside refreshSession */
-      });
-    }
-  }, [refreshToken, token]);
+  const logout = useCallback(() => {
+    setToken('');
+    setUserEmail('');
+    setRoles([]);
+    setRefreshToken('');
+  }, []);
 
-  const login = (newToken, email, newRoles = [], newRefreshToken = '') => {
-    setToken(newToken);
-    setUserEmail(email);
-    setRoles(newRoles);
-    setRefreshToken(newRefreshToken);
-  };
-
-  const refreshSession = async () => {
+  const refreshSession = useCallback(async () => {
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
     if (!refreshToken) {
       throw new Error('No refresh token available');
@@ -79,8 +72,26 @@ export function AuthProvider({ children }) {
     }
 
     const data = await response.json();
-    login(data.accessToken, userEmail, data.roles || [], data.refreshToken || '');
+    setToken(data.accessToken);
+    setUserEmail(userEmail);
+    setRoles(data.roles || []);
+    setRefreshToken(data.refreshToken || '');
     return data;
+  }, [refreshToken, userEmail, logout]);
+
+  useEffect(() => {
+    if (!token && refreshToken) {
+      refreshSession().catch(() => {
+        /* ignore failures; logout already happens inside refreshSession */
+      });
+    }
+  }, [refreshToken, token, refreshSession]);
+
+  const login = (newToken, email, newRoles = [], newRefreshToken = '') => {
+    setToken(newToken);
+    setUserEmail(email);
+    setRoles(newRoles);
+    setRefreshToken(newRefreshToken);
   };
 
   const hardRefresh = async () => {
@@ -105,13 +116,6 @@ export function AuthProvider({ children }) {
       body: JSON.stringify({ email }),
     });
     return res;
-  };
-
-  const logout = () => {
-    setToken('');
-    setUserEmail('');
-    setRoles([]);
-    setRefreshToken('');
   };
 
   return (

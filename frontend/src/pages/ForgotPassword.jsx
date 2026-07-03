@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Login.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
-
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState('');
@@ -23,7 +21,7 @@ export default function ForgotPassword() {
       } else {
         setStatus('Unable to process request.');
       }
-    } catch (err) {
+    } catch {
       setStatus('Server error.');
     } finally {
       setLoading(false);

@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
-
 export default function GoogleCallback() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -12,7 +10,6 @@ export default function GoogleCallback() {
   const { login } = useAuth();
 
   useEffect(() => {
-    const code = searchParams.get('code');
     const errorParam = searchParams.get('error');
 
     async function handleCallback() {

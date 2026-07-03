@@ -1,6 +1,5 @@
 package com.company.auth.controller;
 
-import com.company.auth.dto.AuthResponse;
 import com.company.auth.dto.AddressDto;
 import com.company.auth.dto.AddressRequest;
 import com.company.auth.dto.CategoryDto;
@@ -9,7 +8,6 @@ import com.company.auth.dto.CreateOrderRequest;
 import com.company.auth.dto.CreateProductRequest;
 import com.company.auth.dto.CreateUserRequest;
 import com.company.auth.dto.LinkDto;
-import com.company.auth.dto.LoginRequest;
 import com.company.auth.dto.OrderDto;
 import com.company.auth.dto.ProductDto;
 import com.company.auth.dto.RoleDto;
@@ -30,7 +28,6 @@ import com.company.auth.repository.OrderRepository;
 import com.company.auth.repository.ProductRepository;
 import com.company.auth.repository.RoleRepository;
 import com.company.auth.repository.UserRepository;
-import com.company.auth.security.JwtService;
 import com.company.auth.service.SearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +47,6 @@ import java.nio.file.Paths;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -68,7 +64,6 @@ public class ApiController {
     private final RoleRepository roleRepository;
     private final AddressRepository addressRepository;
     private final LinkRepository linkRepository;
-    private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final SearchService searchService;
 
@@ -80,7 +75,6 @@ public class ApiController {
             RoleRepository roleRepository,
             AddressRepository addressRepository,
             LinkRepository linkRepository,
-            JwtService jwtService,
             PasswordEncoder passwordEncoder,
             SearchService searchService) {
         this.userRepository = userRepository;
@@ -90,7 +84,6 @@ public class ApiController {
         this.roleRepository = roleRepository;
         this.addressRepository = addressRepository;
         this.linkRepository = linkRepository;
-        this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
         this.searchService = searchService;
     }
