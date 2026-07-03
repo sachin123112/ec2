@@ -17,6 +17,7 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const { login, signup } = useAuth();
   const navigate = useNavigate();
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api/v1';
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -103,116 +104,199 @@ export default function Signup() {
   }
 
   return (
-    <div className="signup-page">
-      <div className="signup-card">
-        <div className="signup-grid">
-          <div className="signup-panel">
-            <div className="signup-header">
-              <h1>Create Your PawMart Account</h1>
-              <p>Join PawMart and start shopping for your pets with a safe, secure account.</p>
+    <div className="login-page">
+      <div className="login-card">
+        <div className="login-grid">
+          <aside className="login-aside">
+            <div className="aside-brand">
+              <div className="logo">🐾</div>
+              <div className="brand-text">
+                <h2>PawMart</h2>
+                <div className="sub">Create your account</div>
+              </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="signup-form">
-              <div className="form-row">
-                <label>
-                  Full Name <span className="required">*</span>
-                  <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Enter your full name" required />
-                </label>
+            <h1>Welcome to PawMart</h1>
+            <p className="lead">Join PawMart and start shopping for your pets with a safe, secure account.</p>
 
-                <label>
-                  Email Address <span className="required">*</span>
-                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Enter your email address" required />
-                </label>
-              </div>
+            <div className="benefits">
+              <div className="benefit">Faster checkout</div>
+              <div className="benefit">Track orders in real time</div>
+              <div className="benefit">Save favorite products</div>
+              <div className="benefit">Manage multiple delivery addresses</div>
+            </div>
 
-              <label>
-                Phone Number <span className="required">*</span>
-                <div className="phone-input-row">
-                  <select value={countryCode} onChange={e => setCountryCode(e.target.value)}>
-                    <option value="+91">+91</option>
-                    <option value="+1">+1</option>
-                    <option value="+44">+44</option>
-                    <option value="+61">+61</option>
-                    <option value="+81">+81</option>
-                  </select>
-                  <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="Enter your mobile number" required />
+            <div className="mascot">{/* illustration placeholder */}</div>
+          </aside>
+
+          <div className="login-panel">
+            <div className="panel-inner">
+              <div className="panel-avatar">🐶</div>
+              <h2>Create Your PawMart Account</h2>
+              <p className="panel-sub">Sign up to shop for your pets and keep your orders secure.</p>
+
+              <form onSubmit={handleSubmit} className="login-form">
+                <div className="form-row">
+                  <label className="input-with-icon">
+                    <span className="input-label">Full Name</span>
+                    <div className="input-row">
+                      <span className="icon">👤</span>
+                      <input
+                        type="text"
+                        value={fullName}
+                        onChange={e => setFullName(e.target.value)}
+                        placeholder="Enter your full name"
+                        required
+                      />
+                    </div>
+                  </label>
+
+                  <label className="input-with-icon">
+                    <span className="input-label">Email Address</span>
+                    <div className="input-row">
+                      <span className="icon">✉️</span>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        placeholder="Enter your email address"
+                        required
+                      />
+                    </div>
+                  </label>
                 </div>
-              </label>
 
-              <div className="form-row">
-                <label>
-                  Password <span className="required">*</span>
-                  <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Create a password" required />
+                <label className="input-with-icon">
+                  <span className="input-label">Phone Number</span>
+                  <div className="phone-input-row">
+                    <select value={countryCode} onChange={e => setCountryCode(e.target.value)}>
+                      <option value="+91">+91</option>
+                      <option value="+1">+1</option>
+                      <option value="+44">+44</option>
+                      <option value="+61">+61</option>
+                      <option value="+81">+81</option>
+                    </select>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={e => setPhone(e.target.value)}
+                      placeholder="Enter your mobile number"
+                      required
+                    />
+                  </div>
                 </label>
 
-                <label>
-                  Confirm Password <span className="required">*</span>
-                  <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirm your password" required />
+                <div className="form-row">
+                  <label className="input-with-icon">
+                    <span className="input-label">Password</span>
+                    <div className="input-row">
+                      <span className="icon">🔒</span>
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        placeholder="Create a password"
+                        required
+                      />
+                    </div>
+                  </label>
+
+                  <label className="input-with-icon">
+                    <span className="input-label">Confirm Password</span>
+                    <div className="input-row">
+                      <span className="icon">🔒</span>
+                      <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm your password"
+                        required
+                      />
+                    </div>
+                  </label>
+                </div>
+
+                <div className="form-row">
+                  <label className="input-with-icon">
+                    <span className="input-label">Date of Birth</span>
+                    <div className="input-row">
+                      <span className="icon">📅</span>
+                      <input
+                        type="date"
+                        value={dateOfBirth}
+                        onChange={e => setDateOfBirth(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </label>
+
+                  <label className="input-with-icon">
+                    <span className="input-label">Gender</span>
+                    <div className="input-row">
+                      <span className="icon">🚻</span>
+                      <select value={gender} onChange={e => setGender(e.target.value)} required>
+                        <option value="">Select gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Prefer not to say">Prefer not to say</option>
+                      </select>
+                    </div>
+                  </label>
+                </div>
+
+                <label className="terms-row">
+                  <input type="checkbox" checked={agreeTerms} onChange={e => setAgreeTerms(e.target.checked)} />
+                  I agree to the <a href="#">Terms of Use</a> and <a href="#">Privacy Policy</a>.
                 </label>
-              </div>
 
+                {error && <div className="login-error">{error}</div>}
 
+                <button type="submit" className="btn-primary" disabled={loading}>
+                  {loading ? 'Creating account…' : 'Create Account'}
+                </button>
 
-              <div className="form-row">
-                <label>
-                  Date of Birth <span className="required">*</span>
-                  <input type="date" value={dateOfBirth} onChange={e => setDateOfBirth(e.target.value)} />
-                </label>
+                <div className="divider"><span>or sign up with</span></div>
 
-                <label>
-                  Gender <span className="required">*</span>
-                  <select value={gender} onChange={e => setGender(e.target.value)}>
-                    <option value="">Select gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Prefer not to say">Prefer not to say</option>
-                  </select>
-                </label>
-              </div>
-
-              <label className="terms-row">
-                <input type="checkbox" checked={agreeTerms} onChange={e => setAgreeTerms(e.target.checked)} />
-                I agree to the <a href="#">Terms of Use</a> and <a href="#">Privacy Policy</a>.
-              </label>
-
-              {error && <div className="login-error">{error}</div>}
-
-              <button type="submit" className="btn-primary" disabled={loading}>{loading ? 'Creating account…' : 'Create Account'}</button>
-
-              <div className="social-login-section">
-                <span>or sign up with</span>
                 <div className="social-grid">
-                  <button type="button" className="social-btn google-btn">
+                  <button
+                    type="button"
+                    className="social-btn google-btn"
+                    onClick={async () => {
+                      setError('');
+                      setLoading(true);
+                      try {
+                        const response = await fetch(`${API_URL}/auth/google/url`);
+                        if (!response.ok) {
+                          const errorText = await response.text();
+                          setError(errorText || 'Unable to start Google signup.');
+                          return;
+                        }
+                        const data = await response.json();
+                        window.location.href = data.url;
+                      } catch (err) {
+                        console.error(err);
+                        setError('Unable to start Google signup.');
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                  >
                     <span className="social-icon">G</span>
                     Continue with Google
                   </button>
-                  <button type="button" className="social-btn facebook-btn">
+                  <button type="button" className="social-btn facebook-btn" disabled>
                     <span className="social-icon">f</span>
                     Continue with Facebook
                   </button>
                 </div>
-              </div>
+                <div className="social-note">Facebook signup coming soon</div>
 
-              <div className="login-hint">
-                Already have an account? <Link to="/login">Login</Link>
-              </div>
-            </form>
-          </div>
-
-          <aside className="signup-aside">
-            <div className="aside-card">
-              <div className="aside-icon">🐶</div>
-              <h2>Why create an account?</h2>
-              <p>Save time, manage orders, and keep your pet shopping preferences in one secure place.</p>
-
-              <ul className="benefits-list">
-                <li>Faster checkout</li>
-                <li>Track orders in real time</li>
-                <li>Save favorite products</li>
-                <li>Manage multiple delivery addresses</li>
-              </ul>
+                <div className="panel-footer">
+                  Already have an account? <Link to="/login">Login</Link>.
+                </div>
+              </form>
             </div>
-          </aside>
+          </div>
         </div>
       </div>
     </div>

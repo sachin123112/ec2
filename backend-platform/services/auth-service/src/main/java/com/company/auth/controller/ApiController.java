@@ -32,6 +32,8 @@ import com.company.auth.repository.RoleRepository;
 import com.company.auth.repository.UserRepository;
 import com.company.auth.security.JwtService;
 import com.company.auth.service.SearchService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -47,6 +49,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -55,6 +58,8 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/v1")
 public class ApiController {
+
+    private static final Logger logger = LoggerFactory.getLogger(ApiController.class);
 
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
@@ -130,6 +135,15 @@ public class ApiController {
         return productRepository.findAll().stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
+    }
+
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, Object>> health() {
+        logger.info("Health check requested. Elasticsearch available={}", searchService.isElasticsearchAvailable());
+        return ResponseEntity.ok(Map.of(
+                "status", "UP",
+                "elasticsearchAvailable", searchService.isElasticsearchAvailable()
+        ));
     }
 
     @GetMapping("/products/search")

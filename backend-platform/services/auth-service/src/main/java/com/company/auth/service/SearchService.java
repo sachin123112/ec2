@@ -4,11 +4,17 @@ import com.company.auth.document.OrderDocument;
 import com.company.auth.document.ProductDocument;
 import com.company.auth.model.OrderEntity;
 import com.company.auth.model.Product;
+import com.company.auth.repository.OrderRepository;
 import com.company.auth.repository.OrderSearchRepository;
+import com.company.auth.repository.ProductRepository;
 import com.company.auth.repository.ProductSearchRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -16,64 +22,117 @@ import java.util.stream.StreamSupport;
 @Service
 public class SearchService {
 
+    private static final Logger logger = LoggerFactory.getLogger(SearchService.class);
+
     private final ProductSearchRepository productSearchRepository;
     private final OrderSearchRepository orderSearchRepository;
+    private final ProductRepository productRepository;
+    private final OrderRepository orderRepository;
+    private final boolean elasticsearchAvailable;
 
-    public SearchService(ProductSearchRepository productSearchRepository,
-                         OrderSearchRepository orderSearchRepository) {
-        this.productSearchRepository = productSearchRepository;
-        this.orderSearchRepository = orderSearchRepository;
+    public SearchService(ObjectProvider<ProductSearchRepository> productSearchRepositoryProvider,
+                         ObjectProvider<OrderSearchRepository> orderSearchRepositoryProvider,
+                         ProductRepository productRepository,
+                         OrderRepository orderRepository) {
+        this.productSearchRepository = productSearchRepositoryProvider.getIfAvailable();
+        this.orderSearchRepository = orderSearchRepositoryProvider.getIfAvailable();
+        this.productRepository = productRepository;
+        this.orderRepository = orderRepository;
+        this.elasticsearchAvailable = this.productSearchRepository != null && this.orderSearchRepository != null;
+
+        if (elasticsearchAvailable) {
+            logger.info("Elasticsearch repositories are enabled. SearchService will use Elasticsearch search.");
+        } else {
+            logger.warn("Elasticsearch repositories are disabled or unavailable. SearchService will fall back to JPA search and disable indexing operations.");
+        }
+    }
+
+    public boolean isElasticsearchAvailable() {
+        return elasticsearchAvailable;
     }
 
     public List<ProductDocument> searchProducts(String search, String category) {
-        List<ProductDocument> allProducts = StreamSupport.stream(productSearchRepository.findAll().spliterator(), false)
-                .collect(Collectors.toList());
+        if (elasticsearchAvailable) {
+            List<ProductDocument> allProducts = StreamSupport.stream(productSearchRepository.findAll().spliterator(), false)
+                    .collect(Collectors.toList());
 
+            if (!StringUtils.hasText(search) && !StringUtils.hasText(category)) {
+                return allProducts;
+            }
+
+            String normalizedSearch = StringUtils.hasText(search) ? search.toLowerCase() : null;
+            String normalizedCategory = StringUtils.hasText(category) ? category.toLowerCase() : null;
+
+            return allProducts.stream()
+                    .filter(product -> productMatches(product, normalizedSearch, normalizedCategory))
+                    .collect(Collectors.toList());
+        }
+
+        List<Product> allProducts = productRepository.findAll();
         if (!StringUtils.hasText(search) && !StringUtils.hasText(category)) {
-            return allProducts;
+            return allProducts.stream().map(this::toProductDocument).collect(Collectors.toList());
         }
 
         String normalizedSearch = StringUtils.hasText(search) ? search.toLowerCase() : null;
         String normalizedCategory = StringUtils.hasText(category) ? category.toLowerCase() : null;
 
         return allProducts.stream()
-                .filter(product -> {
-                    boolean matchesSearch = normalizedSearch == null || (
-                            containsIgnoreCase(product.getName(), normalizedSearch) ||
-                            containsIgnoreCase(product.getDescription(), normalizedSearch) ||
-                            containsIgnoreCase(product.getSku(), normalizedSearch) ||
-                            containsIgnoreCase(product.getCategoryName(), normalizedSearch)
-                    );
-                    boolean matchesCategory = normalizedCategory == null ||
-                            (product.getCategoryName() != null && product.getCategoryName().toLowerCase().equals(normalizedCategory));
-                    return matchesSearch && matchesCategory;
-                })
+                .map(this::toProductDocument)
+                .filter(product -> productMatches(product, normalizedSearch, normalizedCategory))
                 .collect(Collectors.toList());
     }
 
     public List<OrderDocument> searchOrders(String search, String startDate, String endDate) {
-        List<OrderDocument> allOrders = StreamSupport.stream(orderSearchRepository.findAll().spliterator(), false)
-                .collect(Collectors.toList());
+        if (elasticsearchAvailable) {
+            List<OrderDocument> allOrders = StreamSupport.stream(orderSearchRepository.findAll().spliterator(), false)
+                    .collect(Collectors.toList());
 
+            if (!StringUtils.hasText(search) && !StringUtils.hasText(startDate) && !StringUtils.hasText(endDate)) {
+                return allOrders;
+            }
+
+            String normalizedSearch = StringUtils.hasText(search) ? search.toLowerCase() : null;
+
+            return allOrders.stream()
+                    .filter(order -> orderMatches(order, normalizedSearch, startDate, endDate))
+                    .collect(Collectors.toList());
+        }
+
+        List<OrderEntity> allOrders = orderRepository.findAll();
         if (!StringUtils.hasText(search) && !StringUtils.hasText(startDate) && !StringUtils.hasText(endDate)) {
-            return allOrders;
+            return allOrders.stream().map(this::toOrderDocument).collect(Collectors.toList());
         }
 
         String normalizedSearch = StringUtils.hasText(search) ? search.toLowerCase() : null;
 
         return allOrders.stream()
-                .filter(order -> {
-                    boolean matchesSearch = normalizedSearch == null || (
-                            containsIgnoreCase(order.getOrderNumber(), normalizedSearch) ||
-                            containsIgnoreCase(order.getStatus(), normalizedSearch)
-                    );
-                    boolean matchesStartDate = !StringUtils.hasText(startDate) ||
-                            (order.getCreatedAt() != null && !order.getCreatedAt().toLocalDate().isBefore(java.time.LocalDate.parse(startDate)));
-                    boolean matchesEndDate = !StringUtils.hasText(endDate) ||
-                            (order.getCreatedAt() != null && !order.getCreatedAt().toLocalDate().isAfter(java.time.LocalDate.parse(endDate)));
-                    return matchesSearch && matchesStartDate && matchesEndDate;
-                })
+                .map(this::toOrderDocument)
+                .filter(order -> orderMatches(order, normalizedSearch, startDate, endDate))
                 .collect(Collectors.toList());
+    }
+
+    private boolean productMatches(ProductDocument product, String normalizedSearch, String normalizedCategory) {
+        boolean matchesSearch = normalizedSearch == null || (
+                containsIgnoreCase(product.getName(), normalizedSearch) ||
+                containsIgnoreCase(product.getDescription(), normalizedSearch) ||
+                containsIgnoreCase(product.getSku(), normalizedSearch) ||
+                containsIgnoreCase(product.getCategoryName(), normalizedSearch)
+        );
+        boolean matchesCategory = normalizedCategory == null ||
+                (product.getCategoryName() != null && product.getCategoryName().toLowerCase().equals(normalizedCategory));
+        return matchesSearch && matchesCategory;
+    }
+
+    private boolean orderMatches(OrderDocument order, String normalizedSearch, String startDate, String endDate) {
+        boolean matchesSearch = normalizedSearch == null || (
+                containsIgnoreCase(order.getOrderNumber(), normalizedSearch) ||
+                containsIgnoreCase(order.getStatus(), normalizedSearch)
+        );
+        boolean matchesStartDate = !StringUtils.hasText(startDate) ||
+                (order.getCreatedAt() != null && !order.getCreatedAt().toLocalDate().isBefore(LocalDate.parse(startDate)));
+        boolean matchesEndDate = !StringUtils.hasText(endDate) ||
+                (order.getCreatedAt() != null && !order.getCreatedAt().toLocalDate().isAfter(LocalDate.parse(endDate)));
+        return matchesSearch && matchesStartDate && matchesEndDate;
     }
 
     private boolean containsIgnoreCase(String source, String search) {
@@ -81,10 +140,38 @@ public class SearchService {
     }
 
     public void indexProduct(Product product) {
-        if (product == null || product.getId() == null) {
+        if (!elasticsearchAvailable || product == null || product.getId() == null) {
             return;
         }
 
+        ProductDocument document = toProductDocument(product);
+        productSearchRepository.save(document);
+    }
+
+    public void deleteProduct(Long productId) {
+        if (!elasticsearchAvailable || productId == null) {
+            return;
+        }
+        productSearchRepository.deleteById(productId);
+    }
+
+    public void indexOrder(OrderEntity order) {
+        if (!elasticsearchAvailable || order == null || order.getId() == null) {
+            return;
+        }
+
+        OrderDocument document = toOrderDocument(order);
+        orderSearchRepository.save(document);
+    }
+
+    public void deleteOrder(Long orderId) {
+        if (!elasticsearchAvailable || orderId == null) {
+            return;
+        }
+        orderSearchRepository.deleteById(orderId);
+    }
+
+    private ProductDocument toProductDocument(Product product) {
         ProductDocument document = new ProductDocument();
         document.setId(product.getId());
         document.setName(product.getName());
@@ -99,34 +186,16 @@ public class SearchService {
                     .map(image -> image.getImageUrl())
                     .collect(Collectors.toList()));
         }
-
-        productSearchRepository.save(document);
+        return document;
     }
 
-    public void deleteProduct(Long productId) {
-        if (productId != null) {
-            productSearchRepository.deleteById(productId);
-        }
-    }
-
-    public void indexOrder(OrderEntity order) {
-        if (order == null || order.getId() == null) {
-            return;
-        }
-
+    private OrderDocument toOrderDocument(OrderEntity order) {
         OrderDocument document = new OrderDocument();
         document.setId(order.getId());
         document.setOrderNumber(order.getOrderNumber());
         document.setTotalAmount(order.getTotalAmount());
         document.setStatus(order.getStatus());
         document.setCreatedAt(order.getCreatedAt());
-
-        orderSearchRepository.save(document);
-    }
-
-    public void deleteOrder(Long orderId) {
-        if (orderId != null) {
-            orderSearchRepository.deleteById(orderId);
-        }
+        return document;
     }
 }

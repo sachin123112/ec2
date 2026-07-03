@@ -34,9 +34,14 @@ spring:
       static-locations: classpath:/static/,file:uploads/
 
   elasticsearch:
+    enabled: ${ELASTICSEARCH_ENABLED:false}
     uris: ${ELASTICSEARCH_URI:http://localhost:9200}
     username: ${ELASTICSEARCH_USERNAME:}
     password: ${ELASTICSEARCH_PASSWORD:}
+  data:
+    elasticsearch:
+      repositories:
+        enabled: ${ELASTICSEARCH_ENABLED:false}
 
 google:
   client-id: ${GOOGLE_CLIENT_ID:}
