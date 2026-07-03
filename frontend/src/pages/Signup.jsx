@@ -17,7 +17,7 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const { login, signup } = useAuth();
   const navigate = useNavigate();
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api/v1';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
   async function handleSubmit(e) {
     e.preventDefault();

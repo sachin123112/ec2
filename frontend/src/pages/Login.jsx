@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Login.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 export default function Login() {
   const [email, setEmail] = useState('admin@pawmart.com');
@@ -160,9 +160,18 @@ export default function Login() {
                     }
                   }}
                 >
-                  <span className="social-icon">G</span>
-                  Sign in with Google
+                  <span className="social-icon" aria-hidden="true">
+                    <svg viewBox="0 0 533.5 544.3" xmlns="http://www.w3.org/2000/svg">
+                      <path fill="#4285F4" d="M533.5 278.4c0-17.8-1.6-35-4.8-51.6H272v97.8h146.9c-6.3 34-25 62.9-53 82.2v68.3h85.7c50.2-46.2 81-114.4 81-196.7z"/>
+                      <path fill="#34A853" d="M272 544.3c72.6 0 133.7-24.1 178.3-65.5l-85.7-68.3c-23.8 16-54.2 25.4-92.6 25.4-71 0-131.2-47.8-152.7-112.1H31.5v70.4C76.3 483.9 168.6 544.3 272 544.3z"/>
+                      <path fill="#FBBC05" d="M119.3 323.9c-10.8-32.4-10.8-67.2 0-99.6V154H31.5c-43.5 87-43.5 190.9 0 277.9l87.8-70.4z"/>
+                      <path fill="#EA4335" d="M272 107.7c39.6 0 75.2 13.6 103.3 40.3l77.4-77.4C402.1 24.9 343.1 0 272 0 168.6 0 76.3 60.4 31.5 154l87.8 70.4C140.8 155.5 201 107.7 272 107.7z"/>
+                    </svg>
+                  </span>
+                  <span className="social-text">Sign in with Google</span>
                 </button>
+
+                <button type="button" className="btn-secondary home-btn" onClick={() => navigate('/')}>Home</button>
 
                 <div className="login-hint">
                   <strong>Hint:</strong> admin@pawmart.com / admin123

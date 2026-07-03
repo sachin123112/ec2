@@ -186,6 +186,53 @@ input[type="checkbox"] {
   cursor: not-allowed;
 }
 
+.btn-secondary {
+  width: 100%;
+  padding: 14px 18px;
+  margin-top: 12px;
+  background: #f8fafc;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: #eff6ff;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+}
+
+.home-btn {
+  background: #ffffff;
+  border-color: #86a9ff;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.home-btn:hover {
+  border-color: #5f7bff;
+}
+
+.google-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.google-btn .social-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.social-text {
+  display: block;
+  text-align: center;
+}
+
 .divider { text-align:center; margin:14px 0; position:relative }
 .divider span { background:#fff; padding:0 10px; color:#64748b }
 .divider:before { content:''; position:absolute; left:8px; right:8px; top:50%; height:1px; background:#eef2f7; z-index:0 }
