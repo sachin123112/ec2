@@ -19,6 +19,7 @@ import LinksAdmin from './pages/LinksAdmin';
 import CategoriesAdmin from './pages/CategoriesAdmin';
 import OrdersAdmin from './pages/OrdersAdmin';
 import Reports from './pages/Reports';
+import Settings from './pages/Settings';
 import GoogleCallback from './pages/GoogleCallback';
 import UserDashboard from './pages/UserDashboard';
 import './App.css';
@@ -108,6 +109,11 @@ function AppContent() {
           <Route path="/reports" element={
             <ProtectedRoute requiredRole="ADMIN">
               <Reports />
+            </ProtectedRoute>
+          } />
+          <Route path="/settings" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <Settings />
             </ProtectedRoute>
           } />
         </Routes>

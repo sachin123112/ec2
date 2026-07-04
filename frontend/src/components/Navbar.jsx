@@ -19,6 +19,13 @@ export default function Navbar() {
     }
   };
 
+  const categories = [
+    { name: 'Dogs', path: '/shop?category=Dogs' },
+    { name: 'Cats', path: '/shop?category=Cats' },
+    { name: 'Birds', path: '/shop?category=Birds' },
+    { name: 'Fish', path: '/shop?category=Fish' },
+  ];
+
   return (
     <nav className="navbar">
       <div className="navbar-container">
@@ -42,11 +49,19 @@ export default function Navbar() {
         {/* Nav Links */}
         <div className={`navbar-links ${menuOpen ? 'open' : ''}`}>
           <Link to="/" onClick={() => setMenuOpen(false)}>Home</Link>
-          <Link to="/shop" onClick={() => setMenuOpen(false)}>Shop</Link>
-          <Link to="/shop?category=Dogs" onClick={() => setMenuOpen(false)}>Dogs</Link>
-          <Link to="/shop?category=Cats" onClick={() => setMenuOpen(false)}>Cats</Link>
-          <Link to="/shop?category=Birds" onClick={() => setMenuOpen(false)}>Birds</Link>
-          <Link to="/shop?category=Fish" onClick={() => setMenuOpen(false)}>Fish</Link>
+          <div className="nav-dropdown">
+            <button type="button" className="dropdown-toggle">
+              Shop
+              <span className="dropdown-arrow">▾</span>
+            </button>
+            <div className="dropdown-menu">
+              {categories.map(category => (
+                <Link key={category.name} to={category.path} onClick={() => setMenuOpen(false)}>
+                  {category.name}
+                </Link>
+              ))}
+            </div>
+          </div>
           {isAuthenticated ? (
             <>
               <Link to={roles.includes('ADMIN') ? '/admin/dashboard' : '/dashboard'} onClick={() => setMenuOpen(false)}>
