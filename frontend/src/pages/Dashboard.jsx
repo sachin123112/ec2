@@ -22,15 +22,11 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 export default function Dashboard() {
   const { isAuthenticated, logout, token, hardRefresh } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState('products');
   const [categories, setCategories] = useState([]);
-  const [categoryForm, setCategoryForm] = useState({ name: '' });
   const [roles, setRoles] = useState([]);
   const [roleForm, setRoleForm] = useState({ name: '', description: '' });
-  const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [links, setLinks] = useState([]);
   const [status, setStatus] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [dateRange, setDateRange] = useState(() => {
@@ -40,8 +36,6 @@ export default function Dashboard() {
     const formatInput = date => date.toISOString().slice(0, 10);
     return { startDate: formatInput(start), endDate: formatInput(today) };
   });
-
-  const [userForm, setUserForm] = useState({ username: '', email: '', password: '', firstName: '', lastName: '', roleId: '' });
 
   const normalizeSearch = query => query.trim().toLowerCase();
 
@@ -71,17 +65,13 @@ export default function Dashboard() {
     };
   }, [dateRange]);
 
-  const filteredUsers = useMemo(() => users.filter(user => matchesSearch([user.username, user.email, user.firstName, user.lastName])), [users, matchesSearch]);
-  
   const filteredCategories = useMemo(() => categories.filter(category => matchesSearch([category.name, category.description])), [categories, matchesSearch]);
   const filteredRoles = useMemo(() => roles.filter(role => matchesSearch([role.name, role.description])), [roles, matchesSearch]);
-  const filteredLinks = useMemo(() => links.filter(link => matchesSearch([link.label, link.url, link.description])), [links, matchesSearch]);
   const filteredOrders = useMemo(() => orders.filter(order => {
     const dateField = order.createdAt || order.date;
     return matchesSearch([order.id, order.orderNumber, order.customerName, order.userId, order.status, order.totalAmount]) && isDateInRange(dateField);
   }), [orders, matchesSearch, isDateInRange]);
   
-  const [orderForm, setOrderForm] = useState({ userId: '', totalAmount: '0.00', status: 'PENDING' });
   const [linkForm, setLinkForm] = useState({ label: '', url: '', description: '', isActive: true });
   const [refreshing, setRefreshing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -100,16 +90,12 @@ export default function Dashboard() {
 
   const loadData = useCallback(async () => {
     try {
-      const [usersRes, productsRes, ordersRes, categoriesRes, rolesRes, linksRes] = await Promise.all([
-        fetch(`${API_URL}/users`, { headers: authHeaders }),
+      const [productsRes, ordersRes, categoriesRes, rolesRes] = await Promise.all([
         fetch(`${API_URL}/products`, { headers: authHeaders }),
         fetch(`${API_URL}/orders`, { headers: authHeaders }),
         fetch(`${API_URL}/categories`, { headers: authHeaders }),
         fetch(`${API_URL}/roles`, { headers: authHeaders }),
-        fetch(`${API_URL}/links`, { headers: authHeaders }),
       ]);
-
-      if (usersRes.ok) setUsers(await usersRes.json());
       if (productsRes.ok) {
         const productsJson = await productsRes.json();
         setProducts(productsJson);
@@ -122,8 +108,7 @@ export default function Dashboard() {
       if (ordersRes.ok) setOrders(await ordersRes.json());
       if (categoriesRes.ok) setCategories(await categoriesRes.json());
       if (rolesRes.ok) setRoles(await rolesRes.json());
-      if (linksRes.ok) setLinks(await linksRes.json());
-      setStatus('Data loaded successfully.');
+      //setStatus('Data loaded successfully.');
     } catch (error) {
       console.error(error);
       setStatus('Unable to load dashboard data.');
@@ -207,53 +192,6 @@ export default function Dashboard() {
   
 
 
-  async function handleCreateUser(event) {
-    event.preventDefault();
-    setStatus('Creating user...');
-
-    const payload = {
-      username: userForm.username,
-      email: userForm.email,
-      password: userForm.password,
-      firstName: userForm.firstName,
-      lastName: userForm.lastName,
-      roleIds: userForm.roleId ? [parseInt(userForm.roleId, 10)] : [],
-    };
-
-    const response = await fetch(`${API_URL}/users`, {
-      method: 'POST',
-      headers: authHeaders,
-      body: JSON.stringify(payload),
-    });
-
-    if (response.ok) {
-      setUserForm({ username: '', email: '', password: '', firstName: '', lastName: '', roleId: '' });
-      await loadData();
-      setStatus('User created successfully.');
-    } else {
-      setStatus('Unable to create user.');
-    }
-  }
-
-  
-
-  async function handleCreateCategory(event) {
-    event.preventDefault();
-    setStatus('Creating category...');
-    const response = await fetch(`${API_URL}/categories`, {
-      method: 'POST',
-      headers: authHeaders,
-      body: JSON.stringify({ name: categoryForm.name }),
-    });
-    if (response.ok) {
-      setCategoryForm({ name: '' });
-      await loadData();
-      setStatus('Category created successfully.');
-    } else {
-      setStatus('Unable to create category.');
-    }
-  }
-
   async function handleCreateOrder(event) {
     event.preventDefault();
     setStatus('Creating order...');
@@ -274,20 +212,6 @@ export default function Dashboard() {
       setStatus('Order created successfully.');
     } else {
       setStatus('Unable to create order.');
-    }
-  }
-
-  async function handleDeleteUser(id) {
-    setStatus('Deleting user...');
-    const response = await fetch(`${API_URL}/users/${id}`, {
-      method: 'DELETE',
-      headers: authHeaders,
-    });
-    if (response.ok) {
-      await loadData();
-      setStatus('User deleted successfully.');
-    } else {
-      setStatus('Unable to delete user.');
     }
   }
 
@@ -319,20 +243,6 @@ export default function Dashboard() {
     }
   }
 
-  async function handleDeleteCategory(id) {
-    setStatus('Deleting category...');
-    const response = await fetch(`${API_URL}/categories/${id}`, {
-      method: 'DELETE',
-      headers: authHeaders,
-    });
-    if (response.ok) {
-      await loadData();
-      setStatus('Category deleted successfully.');
-    } else {
-      setStatus('Unable to delete category.');
-    }
-  }
-
   async function handleDeleteOrder(id) {
     setStatus('Deleting order...');
     const response = await fetch(`${API_URL}/orders/${id}`, {
@@ -344,39 +254,6 @@ export default function Dashboard() {
       setStatus('Order deleted successfully.');
     } else {
       setStatus('Unable to delete order.');
-    }
-  }
-
-  async function handleCreateLink(event) {
-    event.preventDefault();
-    setStatus('Creating link...');
-
-    const response = await fetch(`${API_URL}/links`, {
-      method: 'POST',
-      headers: authHeaders,
-      body: JSON.stringify(linkForm),
-    });
-
-    if (response.ok) {
-      setLinkForm({ label: '', url: '', description: '', isActive: true });
-      await loadData();
-      setStatus('Link created successfully.');
-    } else {
-      setStatus('Unable to create link.');
-    }
-  }
-
-  async function handleDeleteLink(id) {
-    setStatus('Deleting link...');
-    const response = await fetch(`${API_URL}/links/${id}`, {
-      method: 'DELETE',
-      headers: authHeaders,
-    });
-    if (response.ok) {
-      await loadData();
-      setStatus('Link deleted successfully.');
-    } else {
-      setStatus('Unable to delete link.');
     }
   }
 
@@ -396,9 +273,6 @@ export default function Dashboard() {
     setShowDeleteModal(false);
 
     switch (entity) {
-      case 'user':
-        await handleDeleteUser(id);
-        break;
       case 'role':
         await handleDeleteRole(id);
         break;
@@ -407,12 +281,6 @@ export default function Dashboard() {
         break;
       case 'category':
         await handleDeleteCategory(id);
-        break;
-      case 'order':
-        await handleDeleteOrder(id);
-        break;
-      case 'link':
-        await handleDeleteLink(id);
         break;
       default:
         break;
@@ -430,7 +298,7 @@ export default function Dashboard() {
         <div className="dashboard-header-center">
           <input
             className="search-input"
-            placeholder="Search for products, orders, users..."
+            placeholder="Search for products, orders, categories..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
@@ -450,9 +318,6 @@ export default function Dashboard() {
               value={dateRange.endDate}
               onChange={e => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
             />
-          </div>
-          <div className="header-action">
-            <button type="button" className="btn-primary" onClick={() => navigate('/admin/products')}>Products</button>
           </div>
         </div>
         <div className="dashboard-actions-right">
@@ -496,10 +361,6 @@ export default function Dashboard() {
       </div>
 
       <div className="dashboard-summary">
-        <div className="summary-card">
-          <span>Total Users</span>
-          <strong>{users.length}</strong>
-        </div>
         <div className="summary-card">
           <span>Products</span>
           <strong>{products.length}</strong>
@@ -648,29 +509,41 @@ export default function Dashboard() {
         <div className="quick-actions-card dashboard-card">
           <h3>Quick Actions</h3>
           <div className="quick-actions-grid">
-            <button className="action-tile" onClick={() => setTab('products')}>
+            <button className="action-tile" onClick={() => navigate('/admin/products')}>
               <div className="tile-icon"> 
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
               <div className="tile-label">Add Product</div>
             </button>
-            <button className="action-tile" onClick={() => setTab('categories')}>
+            <button className="action-tile" onClick={() => navigate('/admin/categories')}>
               <div className="tile-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 7h18M3 12h18M3 17h18" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
-              <div className="tile-label">Add Category</div>
+              <div className="tile-label">Manage Categories</div>
             </button>
-            <button className="action-tile" onClick={() => setTab('users')}>
+            <button className="action-tile" onClick={() => navigate('/admin/roles')}>
               <div className="tile-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="7" r="4" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 3a4 4 0 014 4v3h1a2 2 0 012 2v2a2 2 0 01-2 2h-1v3a4 4 0 01-4 4 4 4 0 01-4-4v-3H7a2 2 0 01-2-2v-2a2 2 0 012-2h1V7a4 4 0 014-4z" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
-              <div className="tile-label">Add User</div>
+              <div className="tile-label">Manage Roles</div>
             </button>
-            <button className="action-tile" onClick={() => setTab('orders')}>
+            <button className="action-tile" onClick={() => navigate('/admin/users')}>
+              <div className="tile-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 6a4 4 0 100 8 4 4 0 000-8zm0 10c-4.418 0-8 1.79-8 4v1h16v-1c0-2.21-3.582-4-8-4z" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+              <div className="tile-label">Manage Users</div>
+            </button>
+            <button className="action-tile" onClick={() => navigate('/admin/links')}>
+              <div className="tile-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 13a5 5 0 007.5-4.33M14 11l-1.5 1.5M12 7l-1.5 1.5" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M8.5 14.5a4 4 0 010-5.5" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+              <div className="tile-label">Manage Links</div>
+            </button>
+            <button className="action-tile" onClick={() => navigate('/admin/orders')}>
               <div className="tile-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 7h18v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 3v4M8 3v4" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
-              <div className="tile-label">View Orders</div>
+              <div className="tile-label">Manage Orders</div>
             </button>
             <button className="action-tile" onClick={() => navigate('/reports')}>
               <div className="tile-icon">
@@ -686,15 +559,6 @@ export default function Dashboard() {
             </button>
           </div>
         </div>
-      </div>
-
-      <div className="dashboard-actions">
-        <button className={tab === 'users' ? 'active' : ''} onClick={() => setTab('users')}>Users</button>
-        <button className={tab === 'roles' ? 'active' : ''} onClick={() => setTab('roles')}>Roles</button>
-        <button className={tab === 'links' ? 'active' : ''} onClick={() => setTab('links')}>Links</button>
-        <button className={tab === 'products' ? 'active' : ''} onClick={() => setTab('products')}>Products</button>
-        <button className={tab === 'categories' ? 'active' : ''} onClick={() => setTab('categories')}>Categories</button>
-        <button className={tab === 'orders' ? 'active' : ''} onClick={() => setTab('orders')}>Orders</button>
       </div>
 
       <div className="dashboard-status">{status}</div>
@@ -713,321 +577,7 @@ export default function Dashboard() {
       )}
 
       <section className="dashboard-panel">
-        {tab === 'users' && (
-          <>
-            <div className="dashboard-grid">
-              <div className="dashboard-card">
-                <h2>Create User</h2>
-                <form onSubmit={handleCreateUser} className="panel-form">
-                  <label>
-                    Username
-                    <input value={userForm.username} onChange={e => setUserForm({...userForm, username: e.target.value})} required />
-                  </label>
-                  <label>
-                    Email
-                    <input type="email" value={userForm.email} onChange={e => setUserForm({...userForm, email: e.target.value})} required />
-                  </label>
-                  <label>
-                    Password
-                    <input type="password" value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} required />
-                  </label>
-                  <label>
-                    Role
-                    <select value={userForm.roleId} onChange={e => setUserForm({...userForm, roleId: e.target.value})} required>
-                      <option value="">Select role</option>
-                      {roles.map(role => (
-                        <option key={role.id} value={role.id}>{role.name}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    First Name
-                    <input value={userForm.firstName} onChange={e => setUserForm({...userForm, firstName: e.target.value})} />
-                  </label>
-                  <label>
-                    Last Name
-                    <input value={userForm.lastName} onChange={e => setUserForm({...userForm, lastName: e.target.value})} />
-                  </label>
-                  <button type="submit" className="btn-primary">Add User</button>
-                </form>
-              </div>
-
-              <div className="dashboard-card wide-card">
-                <h2>User List</h2>
-                <div className="table-scroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>Email</th>
-                        <th>Username</th>
-                        <th>Role</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredUsers.map(user => (
-                        <tr key={user.id}>
-                          <td>{user.id}</td>
-                          <td>{user.email}</td>
-                          <td>{user.username}</td>
-                          <td>{user.roles?.join(', ')}</td>
-                          <td>{user.status}</td>
-                          <td>
-                            <button className="btn-danger btn-sm" onClick={() => openDeleteModal('user', user.id, user.email)}>
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        {tab === 'roles' && (
-          <>
-            <div className="dashboard-grid">
-              <div className="dashboard-card">
-                <h2>Add Role</h2>
-                <form onSubmit={async event => {
-                  event.preventDefault();
-                  setStatus('Creating role...');
-                  const response = await fetch(`${API_URL}/roles`, {
-                    method: 'POST',
-                    headers: authHeaders,
-                    body: JSON.stringify({ name: roleForm.name, description: roleForm.description }),
-                  });
-                  if (response.ok) {
-                    setRoleForm({ name: '', description: '' });
-                    await loadData();
-                    setStatus('Role created successfully.');
-                  } else {
-                    setStatus('Unable to create role.');
-                  }
-                }} className="panel-form">
-                  <label>
-                    Name
-                    <input value={roleForm.name} onChange={e => setRoleForm({...roleForm, name: e.target.value})} required />
-                  </label>
-                  <label>
-                    Description
-                    <textarea value={roleForm.description} onChange={e => setRoleForm({...roleForm, description: e.target.value})} rows={4} />
-                  </label>
-                  <button type="submit" className="btn-primary">Save Role</button>
-                </form>
-              </div>
-
-              <div className="dashboard-card wide-card">
-                <h2>Role List</h2>
-                <div className="table-scroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredRoles.map(role => (
-                        <tr key={role.id}>
-                          <td>{role.id}</td>
-                          <td>{role.name}</td>
-                          <td>{role.description}</td>
-                          <td>
-                            <button className="btn-danger btn-sm" onClick={() => openDeleteModal('role', role.id, role.name)}>
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-        {tab === 'links' && (
-          <>
-            <div className="dashboard-grid">
-              <div className="dashboard-card">
-                <h2>Add Link</h2>
-                <form onSubmit={handleCreateLink} className="panel-form">
-                  <label>
-                    Label
-                    <input value={linkForm.label} onChange={e => setLinkForm({...linkForm, label: e.target.value})} required />
-                  </label>
-                  <label>
-                    URL
-                    <input type="url" value={linkForm.url} onChange={e => setLinkForm({...linkForm, url: e.target.value})} required />
-                  </label>
-                  <label>
-                    Description
-                    <textarea value={linkForm.description} onChange={e => setLinkForm({...linkForm, description: e.target.value})} rows={4} />
-                  </label>
-                  <label>
-                    Active
-                    <select value={linkForm.isActive ? 'true' : 'false'} onChange={e => setLinkForm({...linkForm, isActive: e.target.value === 'true'})}>
-                      <option value="true">Active</option>
-                      <option value="false">Inactive</option>
-                    </select>
-                  </label>
-                  <button type="submit" className="btn-primary">Save Link</button>
-                </form>
-              </div>
-
-              <div className="dashboard-card wide-card">
-                <h2>Link List</h2>
-                <div className="table-scroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>Label</th>
-                        <th>URL</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredLinks.map(link => (
-                        <tr key={link.id}>
-                          <td>{link.id}</td>
-                          <td>{link.label}</td>
-                          <td><a href={link.url} target="_blank" rel="noreferrer">Open</a></td>
-                          <td>{link.isActive ? 'Active' : 'Inactive'}</td>
-                          <td>
-                            <button className="btn-danger btn-sm" onClick={() => openDeleteModal('link', link.id, link.label)}>
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Product management moved to separate page: /admin/products */}
-
-        {tab === 'categories' && (
-          <>
-            <div className="dashboard-grid">
-              <div className="dashboard-card">
-                <h2>Add Category</h2>
-                <form onSubmit={handleCreateCategory} className="panel-form">
-                  <label>
-                    Name
-                    <input value={categoryForm.name} onChange={e => setCategoryForm({...categoryForm, name: e.target.value})} required />
-                  </label>
-                  <button type="submit" className="btn-primary">Save Category</button>
-                </form>
-              </div>
-
-              <div className="dashboard-card wide-card">
-                <h2>Category List</h2>
-                <div className="table-scroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredCategories.map(cat => (
-                        <tr key={cat.id}>
-                          <td>{cat.id}</td>
-                          <td>{cat.name}</td>
-                          <td>
-                            <button className="btn-danger btn-sm" onClick={() => openDeleteModal('category', cat.id, cat.name)}>
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        {tab === 'orders' && (
-          <>
-            <div className="dashboard-grid">
-              <div className="dashboard-card">
-                <h2>Track / Add Order</h2>
-                <form onSubmit={handleCreateOrder} className="panel-form">
-                  <label>
-                    User ID
-                    <input type="number" value={orderForm.userId} onChange={e => setOrderForm({...orderForm, userId: e.target.value})} required />
-                  </label>
-                  <label>
-                    Total Amount
-                    <input type="number" step="0.01" value={orderForm.totalAmount} onChange={e => setOrderForm({...orderForm, totalAmount: e.target.value})} required />
-                  </label>
-                  <label>
-                    Status
-                    <select value={orderForm.status} onChange={e => setOrderForm({...orderForm, status: e.target.value})}>
-                      <option value="PENDING">PENDING</option>
-                      <option value="PROCESSING">PROCESSING</option>
-                      <option value="COMPLETED">COMPLETED</option>
-                      <option value="CANCELED">CANCELED</option>
-                    </select>
-                  </label>
-                  <button type="submit" className="btn-primary">Add Order</button>
-                </form>
-              </div>
-
-              <div className="dashboard-card wide-card">
-                <h2>Order History</h2>
-                <div className="table-scroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>Order #</th>
-                        <th>User ID</th>
-                        <th>Total</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredOrders.map(order => (
-                        <tr key={order.id}>
-                          <td>{order.id}</td>
-                          <td>{order.orderNumber}</td>
-                          <td>{order.userId}</td>
-                          <td>{order.totalAmount}</td>
-                          <td>{order.status}</td>
-                          <td>
-                            <button className="btn-danger btn-sm" onClick={() => openDeleteModal('order', order.id, order.orderNumber)}>
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
+        {/* Link management moved to separate admin page: /admin/links */}
       </section>
     </div>
   );
