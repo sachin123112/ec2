@@ -214,6 +214,20 @@ export default function Dashboard() {
             />
           </div>
         </div>
+        <div className="dashboard-header-user">
+          <button type="button" className="notification-btn" aria-label="Notifications" title="Notifications">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5" stroke="#0f172a" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <span className="notif-badge">3</span>
+          </button>
+
+          <div className="user-menu" role="group" aria-label="User menu">
+            <div className="avatar-circle">A</div>
+            <div className="user-info">
+              <div className="user-name">Admin</div>
+              <div className="user-role">Super Admin</div>
+            </div>
+          </div>
+        </div>
         <div className="dashboard-actions-right">
           <button
             type="button"

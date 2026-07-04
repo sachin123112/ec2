@@ -349,6 +349,77 @@
   align-items: center;
 }
 
+/* Header user (notification + avatar) */
+.dashboard-header-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 8px;
+}
+
+.notification-btn {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 10px;
+  border: 1px solid #e6eef8;
+  background: #fff;
+  cursor: pointer;
+}
+
+.notif-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  min-width: 18px;
+  height: 18px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0 4px;
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: default;
+}
+
+.avatar-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: linear-gradient(90deg,#2563eb,#1d4ed8);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1;
+}
+
+.user-role {
+  font-size: 0.78rem;
+  color: #64748b;
+  line-height: 1;
+}
+
 /* Icon button used for hard refresh */
 .btn-icon {
   width: 44px;
