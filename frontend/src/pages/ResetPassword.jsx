@@ -41,31 +41,76 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="login-page">
-      <div className="login-card">
-        <h1>Reset Password</h1>
-        <p>Enter the reset token from your email and a new password.</p>
-        <form onSubmit={handleSubmit} className="login-form">
-          {!fromToken && (
-            <label>
-              Reset Token
-              <input value={token} onChange={e => setToken(e.target.value)} required />
-            </label>
-          )}
-          <label>
-            New Password
-            <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
-          </label>
-          {status && <div className="login-error">{status}</div>}
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? 'Resetting…' : 'Reset Password'}
-            </button>
-            <button type="button" className="btn-outline" onClick={() => navigate('/login')}>
-              Back
-            </button>
-          </div>
-        </form>
+    <div className="login-page reset-page">
+      <div className="login-card reset-card">
+        <div className="reset-grid">
+          <aside className="reset-aside">
+            <div className="reset-aside-header">
+              <div className="reset-aside-icon">🔒</div>
+              <div>
+                <h1>Reset Password</h1>
+                <p>Secure your account with a new password. Use the token from your email to continue.</p>
+              </div>
+            </div>
+
+            <div className="reset-feature">
+              <h2>What to expect</h2>
+              <ul>
+                <li>Enter your reset token or use the link from your email</li>
+                <li>Choose a strong password</li>
+                <li>Return to login immediately after reset</li>
+              </ul>
+            </div>
+
+            <div className="reset-tip-card">
+              <strong>Tip:</strong> If you don’t see the email, check your spam folder or request a new link.
+            </div>
+          </aside>
+
+          <section className="login-panel reset-panel">
+            <div className="panel-inner">
+              <div className="panel-avatar">🔑</div>
+              <h2>Reset your password</h2>
+              <p className="panel-sub">Enter the information below and we’ll update your password instantly.</p>
+
+              <form onSubmit={handleSubmit} className="login-form">
+                {!fromToken && (
+                  <label>
+                    Reset Token
+                    <input
+                      placeholder="Enter token from email"
+                      value={token}
+                      onChange={e => setToken(e.target.value)}
+                      required
+                    />
+                  </label>
+                )}
+
+                <label>
+                  New Password
+                  <input
+                    type="password"
+                    placeholder="Create a new password"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    required
+                  />
+                </label>
+
+                {status && <div className="login-error">{status}</div>}
+
+                <div className="form-actions">
+                  <button type="submit" className="btn-primary" disabled={loading}>
+                    {loading ? 'Resetting…' : 'Reset Password'}
+                  </button>
+                  <button type="button" className="btn-secondary" onClick={() => navigate('/login')}>
+                    Back to login
+                  </button>
+                </div>
+              </form>
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   );

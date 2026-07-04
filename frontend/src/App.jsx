@@ -11,6 +11,13 @@ import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
+import AdminNav from './pages/AdminNav';
+import ProductsAdmin from './pages/ProductsAdmin';
+import UsersAdmin from './pages/UsersAdmin';
+import RolesAdmin from './pages/RolesAdmin';
+import LinksAdmin from './pages/LinksAdmin';
+import CategoriesAdmin from './pages/CategoriesAdmin';
+import OrdersAdmin from './pages/OrdersAdmin';
 import GoogleCallback from './pages/GoogleCallback';
 import UserDashboard from './pages/UserDashboard';
 import './App.css';
@@ -52,9 +59,49 @@ function AppContent() {
               <UserDashboard />
             </ProtectedRoute>
           } />
-          <Route path="/admin/dashboard" element={
+          <Route path="/admin" element={
             <ProtectedRoute requiredRole="ADMIN">
               <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/dashboard" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <Dashboard initialTab="products" showOverview />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/users" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <UsersAdmin />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/navigation" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminNav />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/roles" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <RolesAdmin />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/links" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <LinksAdmin />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/products" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <ProductsAdmin />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/categories" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <CategoriesAdmin />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/orders" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <OrdersAdmin />
             </ProtectedRoute>
           } />
         </Routes>

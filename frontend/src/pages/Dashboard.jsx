@@ -72,7 +72,7 @@ export default function Dashboard() {
   }, [dateRange]);
 
   const filteredUsers = useMemo(() => users.filter(user => matchesSearch([user.username, user.email, user.firstName, user.lastName])), [users, matchesSearch]);
-  const filteredProducts = useMemo(() => products.filter(product => matchesSearch([product.name, product.description, product.sku])), [products, matchesSearch]);
+  
   const filteredCategories = useMemo(() => categories.filter(category => matchesSearch([category.name, category.description])), [categories, matchesSearch]);
   const filteredRoles = useMemo(() => roles.filter(role => matchesSearch([role.name, role.description])), [roles, matchesSearch]);
   const filteredLinks = useMemo(() => links.filter(link => matchesSearch([link.label, link.url, link.description])), [links, matchesSearch]);
@@ -80,9 +80,7 @@ export default function Dashboard() {
     const dateField = order.createdAt || order.date;
     return matchesSearch([order.id, order.orderNumber, order.customerName, order.userId, order.status, order.totalAmount]) && isDateInRange(dateField);
   }), [orders, matchesSearch, isDateInRange]);
-  const [productForm, setProductForm] = useState({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0', categoryId: '' });
-  const [productImages, setProductImages] = useState([]);
-  const [productImagePreviews, setProductImagePreviews] = useState([]);
+  
   const [orderForm, setOrderForm] = useState({ userId: '', totalAmount: '0.00', status: 'PENDING' });
   const [linkForm, setLinkForm] = useState({ label: '', url: '', description: '', isActive: true });
   const [refreshing, setRefreshing] = useState(false);
@@ -206,28 +204,8 @@ export default function Dashboard() {
     loadData();
   }, [isAuthenticated, navigate, loadData]);
 
-  useEffect(() => {
-    return () => {
-      productImagePreviews.forEach(URL.revokeObjectURL);
-    };
-  }, [productImagePreviews]);
+  
 
-  function handleProductImageSelection(event) {
-    const files = Array.from(event.target.files || []);
-    setProductImages(files);
-    setProductImagePreviews(prev => {
-      prev.forEach(URL.revokeObjectURL);
-      return files.map(file => URL.createObjectURL(file));
-    });
-  }
-
-  function removeProductImage(index) {
-    setProductImages(prev => prev.filter((_, i) => i !== index));
-    setProductImagePreviews(prev => {
-      if (prev[index]) URL.revokeObjectURL(prev[index]);
-      return prev.filter((_, i) => i !== index);
-    });
-  }
 
   async function handleCreateUser(event) {
     event.preventDefault();
@@ -257,56 +235,7 @@ export default function Dashboard() {
     }
   }
 
-  async function handleCreateProduct(event) {
-    event.preventDefault();
-    setStatus('Creating product...');
-
-    const payload = {
-      name: productForm.name,
-      description: productForm.description,
-      sku: productForm.sku,
-      price: parseFloat(productForm.price) || 0,
-      stockQuantity: parseInt(productForm.stockQuantity, 10) || 0,
-      categoryId: productForm.categoryId ? parseInt(productForm.categoryId, 10) : null,
-    };
-
-    let response;
-    if (productImages.length > 0) {
-      const formData = new FormData();
-      formData.append('name', payload.name);
-      if (payload.description) formData.append('description', payload.description);
-      if (payload.sku) formData.append('sku', payload.sku);
-      formData.append('price', payload.price.toString());
-      formData.append('stockQuantity', payload.stockQuantity.toString());
-      if (payload.categoryId !== null) formData.append('categoryId', payload.categoryId.toString());
-      productImages.forEach(file => formData.append('images', file));
-
-      response = await fetch(`${API_URL}/products`, {
-        method: 'POST',
-        headers: authHeaderBase,
-        body: formData,
-      });
-    } else {
-      response = await fetch(`${API_URL}/products`, {
-        method: 'POST',
-        headers: authHeaders,
-        body: JSON.stringify(payload),
-      });
-    }
-
-    if (response.ok) {
-      setProductForm({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0', categoryId: '' });
-      setProductImages([]);
-      setProductImagePreviews(prev => {
-        prev.forEach(URL.revokeObjectURL);
-        return [];
-      });
-      await loadData();
-      setStatus('Product added successfully.');
-    } else {
-      setStatus('Unable to create product.');
-    }
-  }
+  
 
   async function handleCreateCategory(event) {
     event.preventDefault();
@@ -521,6 +450,9 @@ export default function Dashboard() {
               value={dateRange.endDate}
               onChange={e => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
             />
+          </div>
+          <div className="header-action">
+            <button type="button" className="btn-primary" onClick={() => navigate('/admin/products')}>Products</button>
           </div>
         </div>
         <div className="dashboard-actions-right">
@@ -986,97 +918,7 @@ export default function Dashboard() {
           </>
         )}
 
-        {tab === 'products' && (
-          <>
-            <div className="dashboard-grid">
-              <div className="dashboard-card">
-                <h2>Add Product</h2>
-                <form onSubmit={handleCreateProduct} className="panel-form">
-                  <label>
-                    Name
-                    <input value={productForm.name} onChange={e => setProductForm({...productForm, name: e.target.value})} required />
-                  </label>
-                  <label>
-                    SKU
-                    <input value={productForm.sku} onChange={e => setProductForm({...productForm, sku: e.target.value})} required />
-                  </label>
-                  <label>
-                    Category
-                    <select value={productForm.categoryId} onChange={e => setProductForm({...productForm, categoryId: e.target.value})}>
-                      <option value="">Select category</option>
-                      {categories.map(category => (
-                        <option key={category.id} value={category.id}>{category.name}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Price
-                    <input type="number" step="0.01" value={productForm.price} onChange={e => setProductForm({...productForm, price: e.target.value})} required />
-                  </label>
-                  <label>
-                    Stock
-                    <input type="number" value={productForm.stockQuantity} onChange={e => setProductForm({...productForm, stockQuantity: e.target.value})} required />
-                  </label>
-                  <label>
-                    Description
-                    <textarea value={productForm.description} onChange={e => setProductForm({...productForm, description: e.target.value})} rows={4} />
-                  </label>
-                  <label>
-                    Product Images
-                    <input type="file" accept="image/*" multiple onChange={handleProductImageSelection} />
-                  </label>
-                  {productImagePreviews.length > 0 && (
-                    <div className="image-preview-grid">
-                      {productImagePreviews.map((src, index) => (
-                        <div key={index} className="image-preview-card">
-                          <img src={src} alt={`Preview ${index + 1}`} />
-                          <button type="button" className="btn-outline btn-sm" onClick={() => removeProductImage(index)}>
-                            Remove
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <button type="submit" className="btn-primary">Save Product</button>
-                </form>
-              </div>
-
-              <div className="dashboard-card wide-card">
-                <h2>Product Catalog</h2>
-                <div className="table-scroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>SKU</th>
-                        <th>Price</th>
-                        <th>Stock</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredProducts.map(product => (
-                        <tr key={product.id}>
-                          <td>{product.id}</td>
-                          <td>{product.name}</td>
-                          <td>{product.sku}</td>
-                          <td>{product.price}</td>
-                          <td>{product.stockQuantity}</td>
-                          <td>
-                            <button className="btn-danger btn-sm" onClick={() => openDeleteModal('product', product.id, product.name)}>
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
+        {/* Product management moved to separate page: /admin/products */}
 
         {tab === 'categories' && (
           <>
