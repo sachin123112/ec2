@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
 
@@ -133,6 +134,11 @@ export default function ProductsAdmin() {
         <div className="dashboard-header-left">
           <h1>Product Management</h1>
           <p>Manage products and catalog</p>
+          <div className="header-links" style={{ marginTop: 12, display: 'flex', gap: 12 }}>
+            <Link to="/admin/users" className="btn-outline">Users</Link>
+            <Link to="/admin/orders" className="btn-outline">Orders</Link>
+            <Link to="/admin/categories" className="btn-outline">Categories</Link>
+          </div>
         </div>
       </div>
 
@@ -188,7 +194,20 @@ export default function ProductsAdmin() {
         </div>
 
         <div className="dashboard-card wide-card">
-          <h2>Product Catalog</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2>Product Catalog</h2>
+            <div className="card-actions" style={{ display: 'flex', gap: 8 }}>
+              <Link to="/admin/users" className="icon-btn" title="Users">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 11c1.657 0 3-1.567 3-3.5S17.657 4 16 4s-3 1.567-3 3.5S14.343 11 16 11zM8 11c1.657 0 3-1.567 3-3.5S9.657 4 8 4 5 5.567 5 7.5 6.343 11 8 11z" stroke="#374151" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </Link>
+              <Link to="/admin/orders" className="icon-btn" title="Orders">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 7h18v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" stroke="#374151" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 3v4M8 3v4" stroke="#374151" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </Link>
+              <Link to="/admin/categories" className="icon-btn" title="Categories">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 7h16M4 12h16M4 17h16" stroke="#374151" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </Link>
+            </div>
+          </div>
           <div className="table-scroll">
             <table>
               <thead>

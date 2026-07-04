@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
 
@@ -71,6 +72,11 @@ export default function CategoriesAdmin() {
         <div className="dashboard-header-left">
           <h1>Categories</h1>
           <p>Manage product categories</p>
+          <div className="header-links" style={{ marginTop: 12, display: 'flex', gap: 12 }}>
+            <Link to="/admin/products" className="btn-outline">Products</Link>
+            <Link to="/admin/users" className="btn-outline">Users</Link>
+            <Link to="/admin/orders" className="btn-outline">Orders</Link>
+          </div>
         </div>
       </div>
 

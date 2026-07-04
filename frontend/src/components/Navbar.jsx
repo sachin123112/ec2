@@ -10,6 +10,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState('');
   const navigate = useNavigate();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -49,14 +50,19 @@ export default function Navbar() {
         {/* Nav Links */}
         <div className={`navbar-links ${menuOpen ? 'open' : ''}`}>
           <Link to="/" onClick={() => setMenuOpen(false)}>Home</Link>
-          <div className="nav-dropdown">
-            <button type="button" className="dropdown-toggle">
+          <div className={`nav-dropdown ${dropdownOpen ? 'open' : ''}`}>
+            <button
+              type="button"
+              className="dropdown-toggle"
+              aria-expanded={dropdownOpen}
+              onClick={() => setDropdownOpen(d => !d)}
+            >
               Shop
               <span className="dropdown-arrow">▾</span>
             </button>
-            <div className="dropdown-menu">
+            <div className={`dropdown-menu ${dropdownOpen ? 'open' : ''}`}>
               {categories.map(category => (
-                <Link key={category.name} to={category.path} onClick={() => setMenuOpen(false)}>
+                <Link key={category.name} to={category.path} onClick={() => { setMenuOpen(false); setDropdownOpen(false); }}>
                   {category.name}
                 </Link>
               ))}
