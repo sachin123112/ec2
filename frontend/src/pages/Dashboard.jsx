@@ -23,8 +23,6 @@ export default function Dashboard() {
   const { isAuthenticated, logout, token, hardRefresh } = useAuth();
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
-  const [roles, setRoles] = useState([]);
-  const [roleForm, setRoleForm] = useState({ name: '', description: '' });
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [status, setStatus] = useState('');
@@ -65,17 +63,12 @@ export default function Dashboard() {
     };
   }, [dateRange]);
 
-  const filteredCategories = useMemo(() => categories.filter(category => matchesSearch([category.name, category.description])), [categories, matchesSearch]);
-  const filteredRoles = useMemo(() => roles.filter(role => matchesSearch([role.name, role.description])), [roles, matchesSearch]);
   const filteredOrders = useMemo(() => orders.filter(order => {
     const dateField = order.createdAt || order.date;
     return matchesSearch([order.id, order.orderNumber, order.customerName, order.userId, order.status, order.totalAmount]) && isDateInRange(dateField);
   }), [orders, matchesSearch, isDateInRange]);
   
-  const [linkForm, setLinkForm] = useState({ label: '', url: '', description: '', isActive: true });
   const [refreshing, setRefreshing] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const authHeaderBase = useMemo(() => {
     const headers = {};
@@ -90,13 +83,12 @@ export default function Dashboard() {
 
   const loadData = useCallback(async () => {
     try {
-      const [productsRes, ordersRes, categoriesRes, rolesRes] = await Promise.all([
+      const [productsRes, ordersRes, categoriesRes] = await Promise.all([
         fetch(`${API_URL}/products`, { headers: authHeaders }),
         fetch(`${API_URL}/orders`, { headers: authHeaders }),
         fetch(`${API_URL}/categories`, { headers: authHeaders }),
-        fetch(`${API_URL}/roles`, { headers: authHeaders }),
       ]);
-      if (productsRes.ok) {
+        if (productsRes.ok) {
         const productsJson = await productsRes.json();
         setProducts(productsJson);
         try {
@@ -107,8 +99,6 @@ export default function Dashboard() {
       }
       if (ordersRes.ok) setOrders(await ordersRes.json());
       if (categoriesRes.ok) setCategories(await categoriesRes.json());
-      if (rolesRes.ok) setRoles(await rolesRes.json());
-      //setStatus('Data loaded successfully.');
     } catch (error) {
       console.error(error);
       setStatus('Unable to load dashboard data.');
@@ -191,102 +181,6 @@ export default function Dashboard() {
 
   
 
-
-  async function handleCreateOrder(event) {
-    event.preventDefault();
-    setStatus('Creating order...');
-
-    const response = await fetch(`${API_URL}/orders`, {
-      method: 'POST',
-      headers: authHeaders,
-      body: JSON.stringify({
-        userId: parseInt(orderForm.userId, 10),
-        totalAmount: parseFloat(orderForm.totalAmount) || 0,
-        status: orderForm.status,
-      }),
-    });
-
-    if (response.ok) {
-      setOrderForm({ userId: '', totalAmount: '0.00', status: 'PENDING' });
-      await loadData();
-      setStatus('Order created successfully.');
-    } else {
-      setStatus('Unable to create order.');
-    }
-  }
-
-  async function handleDeleteRole(id) {
-    setStatus('Deleting role...');
-    const response = await fetch(`${API_URL}/roles/${id}`, {
-      method: 'DELETE',
-      headers: authHeaders,
-    });
-    if (response.ok) {
-      await loadData();
-      setStatus('Role deleted successfully.');
-    } else {
-      setStatus('Unable to delete role.');
-    }
-  }
-
-  async function handleDeleteProduct(id) {
-    setStatus('Deleting product...');
-    const response = await fetch(`${API_URL}/products/${id}`, {
-      method: 'DELETE',
-      headers: authHeaders,
-    });
-    if (response.ok) {
-      await loadData();
-      setStatus('Product deleted successfully.');
-    } else {
-      setStatus('Unable to delete product.');
-    }
-  }
-
-  async function handleDeleteOrder(id) {
-    setStatus('Deleting order...');
-    const response = await fetch(`${API_URL}/orders/${id}`, {
-      method: 'DELETE',
-      headers: authHeaders,
-    });
-    if (response.ok) {
-      await loadData();
-      setStatus('Order deleted successfully.');
-    } else {
-      setStatus('Unable to delete order.');
-    }
-  }
-
-  function openDeleteModal(entity, id, label) {
-    setDeleteTarget({ entity, id, label });
-    setShowDeleteModal(true);
-  }
-
-  function closeDeleteModal() {
-    setShowDeleteModal(false);
-    setDeleteTarget(null);
-  }
-
-  async function confirmDelete() {
-    if (!deleteTarget) return;
-    const { entity, id } = deleteTarget;
-    setShowDeleteModal(false);
-
-    switch (entity) {
-      case 'role':
-        await handleDeleteRole(id);
-        break;
-      case 'product':
-        await handleDeleteProduct(id);
-        break;
-      case 'category':
-        await handleDeleteCategory(id);
-        break;
-      default:
-        break;
-    }
-    setDeleteTarget(null);
-  }
 
   return (
     <div className="dashboard-page">
@@ -372,95 +266,6 @@ export default function Dashboard() {
         <div className="summary-card">
           <span>Categories</span>
           <strong>{categories.length}</strong>
-        </div>
-      </div>
-
-      <div className="dashboard-main-grid">
-        <div className="sales-card dashboard-card">
-          <div className="section-header">
-            <h3>Sales Overview</h3>
-            <select className="period-select">
-              <option>Last 7 Days</option>
-              <option>Last 30 Days</option>
-            </select>
-          </div>
-          <div className="chart-placeholder">
-            <Line
-              data={salesChartData}
-              options={{
-                responsive: true,
-                interaction: { mode: 'index', intersect: false },
-                stacked: false,
-                scales: {
-                  y: { type: 'linear', display: true, position: 'left' },
-                  y1: { type: 'linear', display: false, position: 'right' },
-                },
-                plugins: { legend: { position: 'top' } },
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="top-categories-card dashboard-card">
-          <div className="top-categories-header">
-            <div className="top-categories-title">
-              <span className="category-badge">📊</span>
-              <div>
-                <h3>Top Categories</h3>
-                <p>Overview of product categories</p>
-              </div>
-            </div>
-            <button type="button" className="top-categories-action">
-              View All <span className="chevron">›</span>
-            </button>
-          </div>
-
-          <div className="top-categories-body">
-            <div className="top-categories-chart">
-              <div className="donut-chart-shell">
-                <Doughnut
-                  data={donutData}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '70%',
-                    rotation: -90,
-                    plugins: {
-                      legend: { display: false },
-                      tooltip: { enabled: true },
-                    },
-                  }}
-                />
-                <div className="donut-center-label">
-                  <strong>26</strong>
-                  <span>Categories</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="top-categories-legend">
-              <ul>
-                {topCategories.map(item => (
-                  <li key={item.name}>
-                    <span className="legend-badge" style={{ background: item.color }} />
-                    <span className="legend-label">{item.name}</span>
-                    <span className="legend-value">{item.value}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <div className="top-categories-footer">
-            <div className="footer-left">
-              <span className="trend-icon">📈</span>
-              <span>Top category is <strong>Dogs</strong></span>
-            </div>
-            <div className="footer-right">
-              <span className="trend-pill">📈 20%</span>
-              <span className="footer-note">from last 30 days</span>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -561,20 +366,97 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="dashboard-status">{status}</div>
+      <div className="dashboard-main-grid">
+        <div className="sales-card dashboard-card">
+          <div className="section-header">
+            <h3>Sales Overview</h3>
+            <select className="period-select">
+              <option>Last 7 Days</option>
+              <option>Last 30 Days</option>
+            </select>
+          </div>
+          <div className="chart-placeholder">
+            <Line
+              data={salesChartData}
+              options={{
+                responsive: true,
+                interaction: { mode: 'index', intersect: false },
+                stacked: false,
+                scales: {
+                  y: { type: 'linear', display: true, position: 'left' },
+                  y1: { type: 'linear', display: false, position: 'right' },
+                },
+                plugins: { legend: { position: 'top' } },
+              }}
+            />
+          </div>
+        </div>
 
-      {showDeleteModal && deleteTarget && (
-        <div className="modal-overlay" onClick={closeDeleteModal}>
-          <div className="modal-card" onClick={e => e.stopPropagation()}>
-            <h3>Confirm Delete</h3>
-            <p>Delete {deleteTarget.entity} <strong>{deleteTarget.label}</strong>?</p>
-            <div className="modal-actions">
-              <button className="btn-outline" type="button" onClick={closeDeleteModal}>Cancel</button>
-              <button className="btn-danger" type="button" onClick={confirmDelete}>Delete</button>
+        <div className="top-categories-card dashboard-card">
+          <div className="top-categories-header">
+            <div className="top-categories-title">
+              <span className="category-badge">📊</span>
+              <div>
+                <h3>Top Categories</h3>
+                <p>Overview of product categories</p>
+              </div>
+            </div>
+            <button type="button" className="top-categories-action">
+              View All <span className="chevron">›</span>
+            </button>
+          </div>
+
+          <div className="top-categories-body">
+            <div className="top-categories-chart">
+              <div className="donut-chart-shell">
+                <Doughnut
+                  data={donutData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    rotation: -90,
+                    plugins: {
+                      legend: { display: false },
+                      tooltip: { enabled: true },
+                    },
+                  }}
+                />
+                <div className="donut-center-label">
+                  <strong>26</strong>
+                  <span>Categories</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="top-categories-legend">
+              <ul>
+                {topCategories.map(item => (
+                  <li key={item.name}>
+                    <span className="legend-badge" style={{ background: item.color }} />
+                    <span className="legend-label">{item.name}</span>
+                    <span className="legend-value">{item.value}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div className="top-categories-footer">
+            <div className="footer-left">
+              <span className="trend-icon">📈</span>
+              <span>Top category is <strong>Dogs</strong></span>
+            </div>
+            <div className="footer-right">
+              <span className="trend-pill">📈 20%</span>
+              <span className="footer-note">from last 30 days</span>
             </div>
           </div>
         </div>
-      )}
+      </div>
+
+      <div className="dashboard-status">{status}</div>
+
 
       <section className="dashboard-panel">
         {/* Link management moved to separate admin page: /admin/links */}
