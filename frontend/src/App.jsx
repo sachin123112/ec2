@@ -18,6 +18,7 @@ import RolesAdmin from './pages/RolesAdmin';
 import LinksAdmin from './pages/LinksAdmin';
 import CategoriesAdmin from './pages/CategoriesAdmin';
 import OrdersAdmin from './pages/OrdersAdmin';
+import Reports from './pages/Reports';
 import GoogleCallback from './pages/GoogleCallback';
 import UserDashboard from './pages/UserDashboard';
 import './App.css';
@@ -102,6 +103,11 @@ function AppContent() {
           <Route path="/admin/orders" element={
             <ProtectedRoute requiredRole="ADMIN">
               <OrdersAdmin />
+            </ProtectedRoute>
+          } />
+          <Route path="/reports" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <Reports />
             </ProtectedRoute>
           } />
         </Routes>

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
 
@@ -7,7 +6,6 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 export default function CategoriesAdmin() {
   const { token } = useAuth();
-  const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [categoryForm, setCategoryForm] = useState({ name: '' });
   const [status, setStatus] = useState('');
