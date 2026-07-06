@@ -4,6 +4,211 @@
   padding: 28px 24px 40px;
 }
 
+.sales-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 28px 24px 40px;
+}
+
+.sales-header,
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  align-items: center;
+}
+
+.sales-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.sales-range-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 9999px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.sales-range-pill span {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.sales-range-pill select {
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sales-date-picker {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.sales-date-picker label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.sales-date-picker input {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-width: 150px;
+  background: #ffffff;
+}
+
+.sales-export-btn {
+  padding: 10px 20px;
+}
+
+.sales-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.sales-metric-card {
+  min-height: 132px;
+  display: grid;
+  gap: 12px;
+}
+
+.metric-label {
+  color: #6b7280;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.metric-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.metric-note {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.metric-note.positive {
+  color: #16a34a;
+}
+
+.metric-note.negative {
+  color: #dc2626;
+}
+
+.sales-main-grid {
+  display: grid;
+  grid-template-columns: 1.8fr 0.9fr 0.9fr;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.sales-trend-card,
+.sales-channel-card,
+.top-selling-card,
+.recent-sales-card {
+  position: relative;
+}
+
+.chart-shell {
+  min-height: 360px;
+}
+
+.sales-channel-summary {
+  margin-top: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.sales-channel-summary span {
+  color: #6b7280;
+}
+
+.sales-channel-summary strong {
+  color: #111827;
+}
+
+.top-selling-list {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.top-selling-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+}
+
+.top-selling-item strong {
+  display: block;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.top-selling-item span {
+  color: #475569;
+}
+
+.sales-page .dashboard-status {
+  margin-top: 16px;
+}
+
+@media (max-width: 1100px) {
+  .sales-summary-grid,
+  .sales-main-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .sales-summary-grid,
+  .sales-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sales-header,
+  .dashboard-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sales-header-actions {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .sales-export-btn {
+    width: 100%;
+  }
+}
+
 .dashboard-header {
   display: flex;
   justify-content: space-between;

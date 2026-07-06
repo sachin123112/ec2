@@ -27,6 +27,7 @@ export default function Dashboard() {
   const [orders, setOrders] = useState([]);
   const [status, setStatus] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [period, setPeriod] = useState('30');
   const [dateRange, setDateRange] = useState(() => {
     const today = new Date();
     const start = new Date(today);
@@ -36,6 +37,18 @@ export default function Dashboard() {
   });
 
   const normalizeSearch = query => query.trim().toLowerCase();
+
+  const buildDateRange = value => {
+    const today = new Date();
+    const start = new Date(today);
+    if (value === '30') {
+      start.setDate(today.getDate() - 29);
+    } else {
+      start.setDate(today.getDate() - 6);
+    }
+    const formatInput = date => date.toISOString().slice(0, 10);
+    return { startDate: formatInput(start), endDate: formatInput(today) };
+  };
 
   const searchText = useMemo(() => normalizeSearch(searchQuery), [searchQuery]);
 
@@ -83,12 +96,17 @@ export default function Dashboard() {
 
   const loadData = useCallback(async () => {
     try {
+      const params = new URLSearchParams({
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate,
+      }).toString();
+
       const [productsRes, ordersRes, categoriesRes] = await Promise.all([
         fetch(`${API_URL}/products`, { headers: authHeaders }),
-        fetch(`${API_URL}/orders`, { headers: authHeaders }),
+        fetch(`${API_URL}/orders/search?${params}`, { headers: authHeaders }),
         fetch(`${API_URL}/categories`, { headers: authHeaders }),
       ]);
-        if (productsRes.ok) {
+      if (productsRes.ok) {
         const productsJson = await productsRes.json();
         setProducts(productsJson);
         try {
@@ -103,19 +121,20 @@ export default function Dashboard() {
       console.error(error);
       setStatus('Unable to load dashboard data.');
     }
-  }, [authHeaders]);
+  }, [authHeaders, dateRange.endDate, dateRange.startDate]);
 
   const salesChartData = useMemo(() => {
-    // Build last 7 days labels
     const labels = [];
-    const today = new Date();
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
+    const start = parseDateValue(dateRange.startDate) || new Date();
+    const end = parseDateValue(dateRange.endDate) || new Date();
+    const dayCount = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+
+    for (let i = 0; i <= dayCount; i += 1) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
       labels.push(d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
     }
 
-    // Aggregate orders by day
     const ordersByDay = labels.map(() => 0);
     const revenueByDay = labels.map(() => 0);
     orders.forEach(o => {
@@ -148,7 +167,7 @@ export default function Dashboard() {
         },
       ],
     };
-  }, [orders]);
+  }, [orders, dateRange.startDate, dateRange.endDate]);
 
   const topCategories = useMemo(() => ([
     { name: 'Dogs', value: 2, color: '#2563eb' },
@@ -178,6 +197,10 @@ export default function Dashboard() {
     }
     loadData();
   }, [isAuthenticated, navigate, loadData]);
+
+  useEffect(() => {
+    setDateRange(buildDateRange(period));
+  }, [period]);
 
   
 
@@ -212,6 +235,12 @@ export default function Dashboard() {
               value={dateRange.endDate}
               onChange={e => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
             />
+          </div>
+          <div className="header-period">
+            <select className="period-select" value={period} onChange={e => setPeriod(e.target.value)}>
+              <option value="7">Last 7 Days</option>
+              <option value="30">Last 30 Days</option>
+            </select>
           </div>
         </div>
         <div className="dashboard-header-user">
@@ -383,11 +412,7 @@ export default function Dashboard() {
       <div className="dashboard-main-grid">
         <div className="sales-card dashboard-card">
           <div className="section-header">
-            <h3>Sales Overview</h3>
-            <select className="period-select">
-              <option>Last 7 Days</option>
-              <option>Last 30 Days</option>
-            </select>
+              <h3>Sales Overview</h3>
           </div>
           <div className="chart-placeholder">
             <Line

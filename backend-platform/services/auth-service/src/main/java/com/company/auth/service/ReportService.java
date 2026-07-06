@@ -9,7 +9,8 @@ import com.company.auth.repository.ProductRepository;
 import com.company.auth.repository.UserRepository;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.common.PDStream;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -151,22 +152,37 @@ public class ReportService {
         try (PDDocument doc = new PDDocument(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             PDPage page = new PDPage();
             doc.addPage(page);
-            // For simplicity write CSV-like text into PDF content stream
-            StringBuilder sb = new StringBuilder();
-            if (!rows.isEmpty()) {
-                List<String> headers = new ArrayList<>(rows.get(0).keySet());
-                sb.append(String.join(" | ", headers)).append('\n');
-                for (Map<String, String> r : rows) {
-                    List<String> vals = new ArrayList<>();
-                    for (String h : headers) vals.add(r.getOrDefault(h, ""));
-                    sb.append(String.join(" | ", vals)).append('\n');
+
+            try (PDPageContentStream content = new PDPageContentStream(doc, page)) {
+                content.beginText();
+                content.setFont(PDType1Font.HELVETICA_BOLD, 12);
+                content.setLeading(14f);
+                content.newLineAtOffset(50, 740);
+
+                if (!rows.isEmpty()) {
+                    List<String> headers = new ArrayList<>(rows.get(0).keySet());
+                    content.showText(String.join(" | ", headers));
+                    content.newLine();
+                    content.setFont(PDType1Font.HELVETICA, 10);
+
+                    int rowCount = 0;
+                    for (Map<String, String> r : rows) {
+                        if (rowCount >= 30) {
+                            break; // avoid overflowing a single page for simple export
+                        }
+                        List<String> vals = new ArrayList<>();
+                        for (String h : headers) vals.add(r.getOrDefault(h, ""));
+                        content.showText(String.join(" | ", vals));
+                        content.newLine();
+                        rowCount++;
+                    }
+                } else {
+                    content.showText("No data available");
                 }
+
+                content.endText();
             }
-            // Write text
-            PDStream pdStream = new PDStream(doc, new java.io.ByteArrayInputStream(sb.toString().getBytes()));
-            // Quick approach: attach stream as embedded file; many PDF renderers won't show it but the file is present.
-            // A full table rendering requires more code; for now return a PDF with a single empty page and include data as metadata.
-            doc.getDocumentInformation().setCustomMetadataValue("report_data", sb.toString());
+
             doc.save(out);
             return out.toByteArray();
         }
