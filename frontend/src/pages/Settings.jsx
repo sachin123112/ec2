@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import SettingsPanel from '../components/SettingsPanel';
 import './Dashboard.css';
 
@@ -119,11 +120,159 @@ export default function Settings() {
   const [dailySummary, setDailySummary] = useState(false);
   const [marketingUpdates, setMarketingUpdates] = useState(false);
   const [status, setStatus] = useState('');
+  const { token } = useAuth();
 
-  function handleSubmit(event) {
+  const authHeaders = useMemo(() => {
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    return headers;
+  }, [token]);
+
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const response = await fetch(`${API_URL}/admin/settings`, {
+          method: 'GET',
+          headers: authHeaders,
+        });
+        if (!response.ok) {
+          throw new Error('Unable to load settings');
+        }
+        const payload = await response.json();
+        setSiteName(payload.siteName || siteName);
+        setSiteTagline(payload.siteTagline || siteTagline);
+        setAdminEmail(payload.adminEmail || adminEmail);
+        setCurrency(payload.currency || currency);
+        setTimezone(payload.timezone || timezone);
+        setDateFormat(payload.dateFormat || dateFormat);
+        setMaintenanceMode(payload.maintenanceMode ?? maintenanceMode);
+        setMaintenanceMessage(payload.maintenanceMessage || maintenanceMessage);
+        setItemsPerPage(payload.itemsPerPage || itemsPerPage);
+        setLanguage(payload.language || language);
+        setSessionTimeout(payload.sessionTimeout || sessionTimeout);
+        setRememberDuration(payload.rememberDuration || rememberDuration);
+        setTwoFactorAuth(payload.twoFactorAuth ?? twoFactorAuth);
+        setPasswordPolicy(payload.passwordPolicy ?? passwordPolicy);
+        setMinimumPasswordLength(payload.minimumPasswordLength || minimumPasswordLength);
+        setSessionTimeoutSecurity(payload.sessionTimeoutSecurity || sessionTimeoutSecurity);
+        setLoginAttempts(payload.loginAttempts || loginAttempts);
+        setIpWhitelist(payload.ipWhitelist ?? ipWhitelist);
+        setStorageDriver(payload.storageDriver || storageDriver);
+        setUploadDirectory(payload.uploadDirectory || uploadDirectory);
+        setMaxFileSize(payload.maxFileSize || maxFileSize);
+        setAllowedFileTypes(payload.allowedFileTypes || allowedFileTypes);
+        setImageOptimization(payload.imageOptimization ?? imageOptimization);
+        setPublicAccess(payload.publicAccess ?? publicAccess);
+        setAutomaticBackup(payload.automaticBackup ?? automaticBackup);
+        setBackupFrequency(payload.backupFrequency || backupFrequency);
+        setBackupTime(payload.backupTime || backupTime);
+        setBackupRetention(payload.backupRetention || backupRetention);
+        setIncludeDatabase(payload.includeDatabase ?? includeDatabase);
+        setIncludeFiles(payload.includeFiles ?? includeFiles);
+        setIncludeSettings(payload.includeSettings ?? includeSettings);
+        setRazorpayKeyId(payload.razorpayKeyId || razorpayKeyId);
+        setRazorpayKeySecret(payload.razorpayKeySecret || razorpayKeySecret);
+        setStripeActive(payload.stripeActive ?? stripeActive);
+        setPaypalActive(payload.paypalActive ?? paypalActive);
+        setCashOnDeliveryActive(payload.cashOnDeliveryActive ?? cashOnDeliveryActive);
+        setMailDriver(payload.mailDriver || mailDriver);
+        setSmtpHost(payload.smtpHost || smtpHost);
+        setSmtpPort(payload.smtpPort || smtpPort);
+        setEncryption(payload.encryption || encryption);
+        setSmtpUsername(payload.smtpUsername || smtpUsername);
+        setSmtpPassword(payload.smtpPassword || smtpPassword);
+        setFromEmail(payload.fromEmail || fromEmail);
+        setFromName(payload.fromName || fromName);
+        setNewOrderNotifications(payload.newOrderNotifications ?? newOrderNotifications);
+        setLowStockAlerts(payload.lowStockAlerts ?? lowStockAlerts);
+        setCustomerReviews(payload.customerReviews ?? customerReviews);
+        setOrderStatusUpdates(payload.orderStatusUpdates ?? orderStatusUpdates);
+        setDailySummary(payload.dailySummary ?? dailySummary);
+        setMarketingUpdates(payload.marketingUpdates ?? marketingUpdates);
+      } catch (error) {
+        console.error(error);
+        setStatus('Unable to load settings from server.');
+      }
+    }
+
+    loadSettings();
+  }, [API_URL, authHeaders]);
+
+  async function handleSubmit(event) {
     event.preventDefault();
-    setStatus('System settings saved successfully.');
-    window.setTimeout(() => setStatus(''), 3000);
+    try {
+      const payload = {
+        siteName,
+        siteTagline,
+        adminEmail,
+        currency,
+        timezone,
+        dateFormat,
+        maintenanceMode,
+        maintenanceMessage,
+        itemsPerPage,
+        language,
+        sessionTimeout,
+        rememberDuration,
+        twoFactorAuth,
+        passwordPolicy,
+        minimumPasswordLength,
+        sessionTimeoutSecurity,
+        loginAttempts,
+        ipWhitelist,
+        storageDriver,
+        uploadDirectory,
+        maxFileSize,
+        allowedFileTypes,
+        imageOptimization,
+        publicAccess,
+        automaticBackup,
+        backupFrequency,
+        backupTime,
+        backupRetention,
+        includeDatabase,
+        includeFiles,
+        includeSettings,
+        razorpayKeyId,
+        razorpayKeySecret,
+        stripeActive,
+        paypalActive,
+        cashOnDeliveryActive,
+        mailDriver,
+        smtpHost,
+        smtpPort,
+        encryption,
+        smtpUsername,
+        smtpPassword,
+        fromEmail,
+        fromName,
+        newOrderNotifications,
+        lowStockAlerts,
+        customerReviews,
+        orderStatusUpdates,
+        dailySummary,
+        marketingUpdates,
+      };
+
+      const response = await fetch(`${API_URL}/admin/settings`, {
+        method: 'PUT',
+        headers: authHeaders,
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error('Unable to save settings');
+      }
+
+      setStatus('System settings saved successfully.');
+      window.setTimeout(() => setStatus(''), 3000);
+    } catch (error) {
+      console.error(error);
+      setStatus('Unable to save settings.');
+      window.setTimeout(() => setStatus(''), 3000);
+    }
   }
 
   function handleSendTestEmail(event) {

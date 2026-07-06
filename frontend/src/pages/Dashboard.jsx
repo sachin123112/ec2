@@ -350,13 +350,13 @@ export default function Dashboard() {
               <div className="tile-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 6a4 4 0 100 8 4 4 0 000-8zm0 10c-4.418 0-8 1.79-8 4v1h16v-1c0-2.21-3.582-4-8-4z" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
-              <div className="tile-label">Manage Users</div>
+              <div className="tile-label">Manage Customers</div>
             </button>
-            <button className="action-tile" onClick={() => navigate('/admin/links')}>
+            <button className="action-tile" onClick={() => navigate('/admin/sales')}>
               <div className="tile-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 13a5 5 0 007.5-4.33M14 11l-1.5 1.5M12 7l-1.5 1.5" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M8.5 14.5a4 4 0 010-5.5" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
-              <div className="tile-label">Manage Links</div>
+              <div className="tile-label">Manage Sales</div>
             </button>
             <button className="action-tile" onClick={() => navigate('/admin/orders')}>
               <div className="tile-icon">

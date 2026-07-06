@@ -28,9 +28,9 @@ export default function AdminNav() {
   return (
     <div className="admin-navigation-page">
       <div className="dashboard-actions admin-nav-list">
-        <NavLink className={({ isActive }) => isActive ? 'active' : ''} to="/admin/users"><Icon type="users" />Users</NavLink>
+        <NavLink className={({ isActive }) => isActive ? 'active' : ''} to="/admin/users"><Icon type="users" />Customers</NavLink>
         <NavLink className={({ isActive }) => isActive ? 'active' : ''} to="/admin/roles"><Icon type="roles" />Roles</NavLink>
-        <NavLink className={({ isActive }) => isActive ? 'active' : ''} to="/admin/links"><Icon type="links" />Links</NavLink>
+        <NavLink className={({ isActive }) => isActive ? 'active' : ''} to="/admin/sales"><Icon type="orders" />Sales</NavLink>
         <NavLink className={({ isActive }) => isActive ? 'active' : ''} to="/admin/products"><Icon type="products" />Products</NavLink>
         <NavLink className={({ isActive }) => isActive ? 'active' : ''} to="/admin/categories"><Icon type="categories" />Categories</NavLink>
         <NavLink className={({ isActive }) => isActive ? 'active' : ''} to="/admin/orders"><Icon type="orders" />Orders</NavLink>

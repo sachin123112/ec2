@@ -16,6 +16,7 @@ import ProductsAdmin from './pages/ProductsAdmin';
 import UsersAdmin from './pages/UsersAdmin';
 import RolesAdmin from './pages/RolesAdmin';
 import LinksAdmin from './pages/LinksAdmin';
+import SalesAdmin from './pages/SalesAdmin';
 import CategoriesAdmin from './pages/CategoriesAdmin';
 import OrdersAdmin from './pages/OrdersAdmin';
 import Reports from './pages/Reports';
@@ -89,6 +90,11 @@ function AppContent() {
           <Route path="/admin/links" element={
             <ProtectedRoute requiredRole="ADMIN">
               <LinksAdmin />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/sales" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <SalesAdmin />
             </ProtectedRoute>
           } />
           <Route path="/admin/products" element={

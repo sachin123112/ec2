@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useMemo as useMemoAlias } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
 
 const reportTypes = [
@@ -17,6 +18,8 @@ const customers = ['All Customers', 'Retail', 'Wholesale', 'Guest'];
 
 export default function Reports() {
   const navigate = useNavigate();
+  const { token } = useAuth();
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
   const [reportType, setReportType] = useState(reportTypes[0]);
   const [reportFormat, setReportFormat] = useState(reportFormats[0]);
   const [startDate, setStartDate] = useState('2026-06-01');
@@ -60,10 +63,60 @@ export default function Reports() {
     setSubmitStatus('');
   }
 
-  function generateReport(event) {
+  async function generateReport(event) {
     event.preventDefault();
     setSubmitStatus('Generating report...');
-    window.setTimeout(() => setSubmitStatus('Report generated successfully. Download will begin shortly.'), 800);
+    try {
+      const reportTypeKey = reportType.split(' ')[0].toLowerCase();
+      const formatKey = reportFormat.toLowerCase();
+      const payload = {
+        reportType: reportTypeKey,
+        startDate,
+        endDate,
+        includeCancelled,
+        includeTax: includeTaxDetails,
+        // additional filters could be mapped to ids in real app
+        category: category === 'All Categories' ? null : category,
+        product: product === 'All Products' ? null : product,
+        brand: brand === 'All Brands' ? null : brand,
+        paymentStatus: paymentStatus === 'All Status' ? null : paymentStatus,
+        orderStatus: orderStatus === 'All Status' ? null : orderStatus,
+        customer: customer === 'All Customers' ? null : customer,
+      };
+
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const res = await fetch(`${API_URL}/admin/reports?format=${encodeURIComponent(formatKey)}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error('Report generation failed');
+
+      const blob = await res.blob();
+      const disposition = res.headers.get('Content-Disposition') || '';
+      let filename = 'report.' + (formatKey === 'excel' ? 'xlsx' : formatKey);
+      if (disposition) {
+        const match = /filename\*?=(?:UTF-8''?)?([^;\n]+)/i.exec(disposition);
+        if (match && match[1]) filename = decodeURIComponent(match[1]);
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      setSubmitStatus('Report generated successfully. Download started.');
+    } catch (err) {
+      console.error(err);
+      setSubmitStatus('Unable to generate report.');
+    }
   }
 
   return (

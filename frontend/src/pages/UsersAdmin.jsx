@@ -85,8 +85,8 @@ export default function UsersAdmin() {
     <div className="dashboard-page">
       <div className="dashboard-header">
         <div className="dashboard-header-left">
-          <h1>Users</h1>
-          <p>Manage application users</p>
+          <h1>Customers</h1>
+          <p>Manage customers</p>
           <div className="header-links" style={{ marginTop: 12, display: 'flex', gap: 12 }}>
             <Link to="/admin/products" className="btn-outline">Products</Link>
             <Link to="/admin/orders" className="btn-outline">Orders</Link>
@@ -99,7 +99,7 @@ export default function UsersAdmin() {
 
       <div className="dashboard-grid">
         <div className="dashboard-card">
-          <h2>Create User</h2>
+          <h2>Create Customer</h2>
           <form onSubmit={handleCreateUser} className="panel-form">
             <label>
               Username
@@ -130,12 +130,12 @@ export default function UsersAdmin() {
               Last Name
               <input value={userForm.lastName} onChange={e => setUserForm({...userForm, lastName: e.target.value})} />
             </label>
-            <button type="submit" className="btn-primary">Add User</button>
+            <button type="submit" className="btn-primary">Add Customer</button>
           </form>
         </div>
 
         <div className="dashboard-card wide-card">
-          <h2>User List</h2>
+          <h2>Customer List</h2>
           <div className="table-scroll">
             <table>
               <thead>
@@ -149,19 +149,19 @@ export default function UsersAdmin() {
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.map(user => (
-                  <tr key={user.id}>
-                    <td>{user.id}</td>
-                    <td>{user.email}</td>
-                    <td>{user.username}</td>
-                    <td>{user.roles?.join(', ')}</td>
-                    <td>{user.status}</td>
-                    <td>
-                      <button className="btn-danger btn-sm" onClick={() => handleDeleteUser(user.id)}>Delete</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
+                  {filteredUsers.map(user => (
+                    <tr key={user.id}>
+                      <td>{user.id}</td>
+                      <td>{user.email}</td>
+                      <td>{user.username}</td>
+                      <td>{user.roles?.join(', ')}</td>
+                      <td>{user.status}</td>
+                      <td>
+                        <button className="btn-danger btn-sm" onClick={() => handleDeleteUser(user.id)}>Delete</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
             </table>
           </div>
         </div>
