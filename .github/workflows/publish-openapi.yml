@@ -1,0 +1,65 @@
+name: Publish OpenAPI artifacts
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch: {}
+
+jobs:
+  publish-openapi:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build auth-service
+        working-directory: ./backend-platform/services/auth-service
+        run: mvn clean package -DskipTests -B
+
+      - name: Run auth-service
+        working-directory: ./backend-platform/services/auth-service
+        run: |
+          nohup java -jar target/auth-service-1.0.0.jar > openapi-server.log 2>&1 &
+          echo $! > auth_service_pid
+
+      - name: Wait for service
+        run: |
+          for i in {1..30}; do
+            status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/actuator/health || true)
+            if [ "$status" = "200" ]; then
+              echo "service up"; break
+            fi
+            sleep 2
+          done
+
+      - name: Fetch OpenAPI (default)
+        run: |
+          mkdir -p openapi
+          curl -sS http://localhost:8080/v3/api-docs -o openapi/openapi.json || true
+
+      - name: Fetch OpenAPI (admin group)
+        run: |
+          curl -sS "http://localhost:8080/v3/api-docs?group=admin" -o openapi/openapi-admin.json || true
+
+      - name: Fetch OpenAPI (mobile group)
+        run: |
+          curl -sS "http://localhost:8080/v3/api-docs?group=mobile" -o openapi/openapi-mobile.json || true
+
+      - name: Upload OpenAPI artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-artifacts
+          path: openapi
+
+      - name: Stop auth-service
+        if: always()
+        run: |
+          if [ -f auth_service_pid ]; then
+            kill $(cat auth_service_pid) || true
+          fi

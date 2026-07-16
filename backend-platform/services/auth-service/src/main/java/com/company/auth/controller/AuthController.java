@@ -17,6 +17,11 @@ import com.company.auth.service.AuthService;
 import com.company.auth.service.GoogleOAuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -70,7 +75,13 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        @Operation(summary = "Login", description = "Authenticate with email and password and return access + refresh tokens")
+        @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Authenticated",
+                content = @Content(schema = @Schema(implementation = com.company.auth.dto.AuthResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Invalid credentials")
+        })
+        public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
             AuthResponse authResponse = authService.login(request);
             return ResponseEntity.ok(authResponse);
@@ -84,7 +95,13 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<?> signup(@RequestBody com.company.auth.dto.CreateUserRequest request) {
+        @Operation(summary = "Signup", description = "Create a new user and return initial auth tokens")
+        @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Created",
+                content = @Content(schema = @Schema(implementation = com.company.auth.dto.AuthResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Email already exists")
+        })
+        public ResponseEntity<?> signup(@RequestBody com.company.auth.dto.CreateUserRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already exists");
         }
@@ -110,6 +127,7 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
+    @Operation(summary = "Forgot password", description = "Request a password reset token for an email address")
     public ResponseEntity<?> forgotPassword(@RequestBody com.company.auth.dto.ForgotPasswordRequest request) {
         Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
         if (userOptional.isPresent()) {
@@ -126,6 +144,7 @@ public class AuthController {
     }
 
     @PostMapping("/reset-password")
+    @Operation(summary = "Reset password", description = "Reset a user's password using a valid reset token")
     public ResponseEntity<?> resetPassword(@RequestBody com.company.auth.dto.ResetPasswordRequest request) {
         Optional<com.company.auth.model.PasswordResetToken> resetTokenOptional = passwordResetTokenRepository.findByToken(request.getToken());
         if (resetTokenOptional.isEmpty()) {
@@ -147,6 +166,7 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
+    @Operation(summary = "Refresh token", description = "Exchange a refresh token for a new access token")
     public ResponseEntity<?> refreshToken(@RequestBody RefreshTokenRequest request) {
         try {
             AuthResponse authResponse = authService.refreshToken(request.getRefreshToken());
@@ -157,12 +177,14 @@ public class AuthController {
     }
 
     @GetMapping("/google/url")
+    @Operation(summary = "Google OAuth URL", description = "Get Google OAuth authorization URL to redirect the user")
     public ResponseEntity<?> getGoogleAuthUrl(@RequestParam(required = false) String state) {
         String url = googleOAuthService.buildAuthorizationRedirectUrl(state);
         return ResponseEntity.ok(Map.of("url", url));
     }
 
     @GetMapping("/google/callback")
+    @Operation(summary = "Google OAuth callback", description = "Handle Google OAuth callback and redirect to frontend with tokens")
     public ResponseEntity<?> handleGoogleCallback(@RequestParam(required = false) String code,
                                                   @RequestParam(required = false) String state,
                                                   @RequestParam(required = false) String error) {

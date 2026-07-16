@@ -1,0 +1,112 @@
+openapi: 3.0.3
+info:
+  title: Auth Service - Admin API
+  version: "1.0.0"
+  description: Admin-focused API surface for management dashboards and analytics.
+servers:
+  - url: http://localhost:8080
+    description: Local dev server
+tags:
+  - name: admin
+    description: Admin endpoints (requires admin role)
+paths:
+  /api/v1/admin/dashboard:
+    get:
+      tags: [admin]
+      summary: Get dashboard summary (users/orders/revenue)
+      responses:
+        '200':
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalUsers:
+                    type: integer
+                  totalOrders:
+                    type: integer
+                  revenue:
+                    type: number
+                    format: double
+  /api/v1/admin/analytics/orders:
+    get:
+      tags: [admin]
+      summary: Orders analytics (counts by status)
+      responses:
+        '200':
+          description: Orders analytics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalOrders:
+                    type: integer
+                  byStatus:
+                    type: object
+                    additionalProperties:
+                      type: integer
+  /api/v1/admin/analytics/revenue:
+    get:
+      tags: [admin]
+      summary: Revenue analytics
+      responses:
+        '200':
+          description: Revenue analytics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalRevenue:
+                    type: number
+                    format: double
+  /api/v1/admin/users:
+    get:
+      tags: [admin]
+      summary: List users for admin
+      responses:
+        '200':
+          description: Array of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserDto'
+components:
+  schemas:
+    UserDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        countryCode:
+          type: string
+        profileImageUrl:
+          type: string
+        gender:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        roles:
+          type: array
+          items:
+            type: string

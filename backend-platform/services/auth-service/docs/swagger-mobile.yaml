@@ -1,0 +1,383 @@
+openapi: 3.0.3
+info:
+  title: Auth Service - Mobile API
+  version: "1.0.0"
+  description: Mobile/public API surface (authentication, products, orders, user profile)
+servers:
+  - url: http://localhost:8080
+    description: Local dev server
+tags:
+  - name: auth
+    description: Authentication endpoints
+  - name: public
+    description: Public / mobile API endpoints
+paths:
+  /api/v1/auth/login:
+    post:
+      tags: [auth]
+      summary: Login with email/password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Authentication response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+  /api/v1/auth/signup:
+    post:
+      tags: [auth]
+      summary: Create a new user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+  /api/v1/products:
+    get:
+      tags: [public]
+      summary: List products
+      responses:
+        '200':
+          description: Array of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductDto'
+    post:
+      tags: [public]
+      summary: Create a product (JSON)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+      responses:
+        '201':
+          description: Created product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDto'
+  /api/v1/products/search:
+    get:
+      tags: [public]
+      summary: Search products by query and category
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductDto'
+  /api/v1/orders:
+    get:
+      tags: [public]
+      summary: List orders (admin or user depending on auth)
+      responses:
+        '200':
+          description: Array of orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrderDto'
+    post:
+      tags: [public]
+      summary: Create order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Created order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDto'
+  /api/v1/users/me:
+    get:
+      tags: [public]
+      summary: Get current authenticated user
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDto'
+    put:
+      tags: [public]
+      summary: Update current authenticated user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDto'
+  /api/v1/users/me/addresses:
+    get:
+      tags: [public]
+      summary: List addresses for current user
+      responses:
+        '200':
+          description: Array of addresses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AddressDto'
+    post:
+      tags: [public]
+      summary: Add address for current user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+      responses:
+        '201':
+          description: Created address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressDto'
+components:
+  schemas:
+    AuthResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        refreshToken:
+          type: string
+    CreateUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        countryCode:
+          type: string
+    ProductDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        sku:
+          type: string
+        price:
+          type: number
+          format: double
+        stockQuantity:
+          type: integer
+        imageUrls:
+          type: array
+          items:
+            type: string
+    CreateProductRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        sku:
+          type: string
+        price:
+          type: number
+          format: double
+        stockQuantity:
+          type: integer
+        categoryId:
+          type: integer
+    OrderDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        orderNumber:
+          type: string
+        totalAmount:
+          type: number
+          format: double
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    CreateOrderRequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+        totalAmount:
+          type: number
+          format: double
+        status:
+          type: string
+    UserDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        countryCode:
+          type: string
+        profileImageUrl:
+          type: string
+        gender:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        roles:
+          type: array
+          items:
+            type: string
+    UserUpdateRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        countryCode:
+          type: string
+        profileImageUrl:
+          type: string
+        gender:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+    AddressRequest:
+      type: object
+      properties:
+        label:
+          type: string
+        name:
+          type: string
+        addressLine1:
+          type: string
+        addressLine2:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postalCode:
+          type: string
+        country:
+          type: string
+        phone:
+          type: string
+        isDefault:
+          type: boolean
+    AddressDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        label:
+          type: string
+        name:
+          type: string
+        addressLine1:
+          type: string
+        addressLine2:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postalCode:
+          type: string
+        country:
+          type: string
+        phone:
+          type: string
+        isDefault:
+          type: boolean

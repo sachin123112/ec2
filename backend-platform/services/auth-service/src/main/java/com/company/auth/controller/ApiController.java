@@ -31,6 +31,12 @@ import com.company.auth.repository.UserRepository;
 import com.company.auth.service.SearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -124,11 +130,16 @@ public class ApiController {
     }
 
     @GetMapping("/products")
-    public List<ProductDto> listProducts() {
+        @Operation(summary = "List products", description = "Return all products")
+        @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Array of products",
+                content = @Content(array = @ArraySchema(schema = @Schema(implementation = ProductDto.class))))
+        })
+        public List<ProductDto> listProducts() {
         return productRepository.findAll().stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
-    }
+            .map(this::toDto)
+            .collect(Collectors.toList());
+        }
 
     @GetMapping("/health")
     public ResponseEntity<Map<String, Object>> health() {
@@ -140,15 +151,25 @@ public class ApiController {
     }
 
     @GetMapping("/products/search")
-    public List<ProductDto> searchProducts(@RequestParam(required = false) String q,
-                                           @RequestParam(required = false) String category) {
+        @Operation(summary = "Search products", description = "Search products by query or category")
+        @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Search results",
+                content = @Content(array = @ArraySchema(schema = @Schema(implementation = ProductDto.class))))
+        })
+        public List<ProductDto> searchProducts(@RequestParam(required = false) String q,
+                           @RequestParam(required = false) String category) {
         return searchService.searchProducts(q, category).stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
     @PostMapping(value = "/products", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ProductDto> createProduct(@RequestBody CreateProductRequest request) {
+        @Operation(summary = "Create product (JSON)", description = "Create a product from JSON payload")
+        @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Created product",
+                content = @Content(schema = @Schema(implementation = ProductDto.class)))
+        })
+        public ResponseEntity<ProductDto> createProduct(@RequestBody CreateProductRequest request) {
         Product product = new Product();
         product.setName(request.getName());
         product.setDescription(request.getDescription());
@@ -164,6 +185,11 @@ public class ApiController {
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(product));
     }
 
+    @Operation(summary = "Create product (multipart)", description = "Create a product with optional images (multipart/form-data)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Created product",
+            content = @Content(schema = @Schema(implementation = ProductDto.class)))
+    })
     @PostMapping(value = "/products", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ProductDto> createProduct(
             @RequestParam String name,
@@ -293,13 +319,19 @@ public class ApiController {
     }
 
     @GetMapping("/orders")
-    public List<OrderDto> listOrders() {
+        @Operation(summary = "List orders", description = "Return all orders (admin or scoped to user)")
+        @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Array of orders",
+                content = @Content(array = @ArraySchema(schema = @Schema(implementation = OrderDto.class))))
+        })
+        public List<OrderDto> listOrders() {
         return orderRepository.findAll().stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
     @GetMapping("/orders/search")
+    @Operation(summary = "Search orders", description = "Search orders by query and date range")
     public List<OrderDto> searchOrders(@RequestParam(required = false) String q,
                                        @RequestParam(required = false) String startDate,
                                        @RequestParam(required = false) String endDate) {
@@ -309,7 +341,12 @@ public class ApiController {
     }
 
     @PostMapping("/orders")
-    public ResponseEntity<OrderDto> createOrder(@RequestBody CreateOrderRequest request) {
+        @Operation(summary = "Create order", description = "Create a new order")
+        @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Created order",
+                content = @Content(schema = @Schema(implementation = OrderDto.class)))
+        })
+        public ResponseEntity<OrderDto> createOrder(@RequestBody CreateOrderRequest request) {
         OrderEntity order = new OrderEntity();
         order.setUserId(request.getUserId());
         order.setOrderNumber("ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
@@ -332,12 +369,14 @@ public class ApiController {
     }
 
     @GetMapping("/users/me")
+    @Operation(summary = "Get current user", description = "Return the currently authenticated user's profile")
     public UserDto getCurrentUser(Principal principal) {
         User user = findUserByEmail(principal);
         return toDto(user);
     }
 
     @PutMapping("/users/me")
+    @Operation(summary = "Update current user", description = "Update profile fields for current authenticated user")
     public UserDto updateCurrentUser(Principal principal, @RequestBody UserUpdateRequest request) {
         User user = findUserByEmail(principal);
         if (request.getFirstName() != null) user.setFirstName(request.getFirstName());
@@ -352,6 +391,7 @@ public class ApiController {
     }
 
     @GetMapping("/users/me/addresses")
+    @Operation(summary = "List addresses for current user")
     public List<AddressDto> listCurrentUserAddresses(Principal principal) {
         User user = findUserByEmail(principal);
         return addressRepository.findAllByUserId(user.getId()).stream()
@@ -360,6 +400,7 @@ public class ApiController {
     }
 
     @PostMapping("/users/me/addresses")
+    @Operation(summary = "Add address for current user")
     public ResponseEntity<AddressDto> addCurrentUserAddress(Principal principal, @RequestBody AddressRequest request) {
         User user = findUserByEmail(principal);
         Address address = new Address();

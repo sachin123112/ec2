@@ -5,6 +5,11 @@ import com.company.auth.repository.OrderRepository;
 import com.company.auth.repository.UserRepository;
 import com.company.auth.model.User;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -26,7 +31,12 @@ public class AdminController {
     }
 
     @GetMapping("/dashboard")
-    public Map<String, Object> dashboard() {
+        @Operation(summary = "Dashboard summary", description = "Totals for users, orders and revenue")
+        @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Dashboard summary",
+                content = @Content(schema = @Schema(implementation = java.util.Map.class)))
+        })
+        public Map<String, Object> dashboard() {
         long totalUsers = userRepository.count();
         long totalOrders = orderRepository.count();
         BigDecimal revenue = orderRepository.findAll().stream()
@@ -42,6 +52,7 @@ public class AdminController {
     }
 
     @GetMapping("/analytics/orders")
+    @Operation(summary = "Orders analytics", description = "Order counts grouped by status")
     public Map<String, Object> ordersAnalytics() {
         long totalOrders = orderRepository.count();
         Map<String, Long> byStatus = orderRepository.findAll().stream()
@@ -55,6 +66,7 @@ public class AdminController {
     }
 
     @GetMapping("/analytics/revenue")
+    @Operation(summary = "Revenue analytics", description = "Total revenue")
     public Map<String, Object> revenueAnalytics() {
         BigDecimal revenue = orderRepository.findAll().stream()
                 .map(order -> order.getTotalAmount())
