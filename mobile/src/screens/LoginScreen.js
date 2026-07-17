@@ -34,12 +34,14 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>PawMart Login</Text>
+      <Text style={styles.heading}>Welcome Back</Text>
+      <Text style={styles.subtitle}>Sign in to continue shopping for your pet.</Text>
       <TextInput
         style={styles.input}
         placeholder="Email"
         value={email}
         autoCapitalize="none"
+        keyboardType="email-address"
         onChangeText={setEmail}
       />
       <TextInput
@@ -60,10 +62,11 @@ export default function LoginScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 24, backgroundColor: '#fff' },
-  heading: { fontSize: 28, fontWeight: '700', marginBottom: 24, textAlign: 'center' },
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 10, padding: 12, marginBottom: 12 },
-  button: { backgroundColor: '#2d6cdf', padding: 14, borderRadius: 10, alignItems: 'center', marginVertical: 12 },
-  buttonText: { color: '#fff', fontWeight: '700' },
-  link: { textAlign: 'center', color: '#2d6cdf', marginTop: 12 },
+  container: { flex: 1, justifyContent: 'center', padding: 24, backgroundColor: '#f7f2ff' },
+  heading: { fontSize: 34, fontWeight: '800', marginBottom: 10, color: '#4a2d90' },
+  subtitle: { fontSize: 16, color: '#6f5ecb', marginBottom: 28 },
+  input: { backgroundColor: '#fff', borderRadius: 16, padding: 16, fontSize: 16, marginBottom: 14, borderWidth: 1, borderColor: '#ede9ff' },
+  button: { backgroundColor: '#6941c6', padding: 16, borderRadius: 16, alignItems: 'center', marginVertical: 12 },
+  buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  link: { textAlign: 'center', color: '#4a2d90', marginTop: 12, fontWeight: '700' },
 });

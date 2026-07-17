@@ -1,64 +1,79 @@
 import React from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { useCart } from '../context/CartContext';
+import BottomTabBar from '../components/BottomTabBar';
+import theme from '../theme';
 
 export default function CartScreen() {
   const { cart, totalItems, totalPrice, removeFromCart, updateQty, clearCart } = useCart();
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Cart</Text>
-      {cart.length === 0 ? (
-        <Text style={styles.empty}>Your cart is empty.</Text>
-      ) : (
-        <>
-          <FlatList
-            data={cart}
-            keyExtractor={(item) => String(item.id)}
-            renderItem={({ item }) => (
-              <View style={styles.card}>
-                <Text style={styles.cardTitle}>{item.name}</Text>
-                <Text>Qty: {item.qty}</Text>
-                <Text>Price: ₹{item.price.toLocaleString()}</Text>
-                <View style={styles.actions}>
-                  <TouchableOpacity style={styles.actionButton} onPress={() => updateQty(item.id, item.qty - 1)}>
-                    <Text>-</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.actionButton} onPress={() => updateQty(item.id, item.qty + 1)}>
-                    <Text>+</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.removeButton} onPress={() => removeFromCart(item.id)}>
-                    <Text style={styles.removeText}>Remove</Text>
-                  </TouchableOpacity>
+      <View style={styles.content}>
+        <Text style={styles.heading}>Your Cart</Text>
+        {cart.length === 0 ? (
+          <Text style={styles.empty}>No items yet — start shopping!</Text>
+        ) : (
+          <>
+            <FlatList
+              data={cart}
+              keyExtractor={(item) => String(item.id)}
+              renderItem={({ item }) => (
+                <View style={styles.card}>
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.cardTitle}>{item.name}</Text>
+                    <Text style={styles.cardPrice}>₹{item.price.toLocaleString()}</Text>
+                  </View>
+                  <Text style={styles.cardSubtitle}>Qty: {item.qty}</Text>
+                  <View style={styles.actions}>
+                    <TouchableOpacity style={styles.qtyButton} onPress={() => updateQty(item.id, Math.max(1, item.qty - 1))}>
+                      <Text style={styles.qtyButtonText}>−</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.qtyButton} onPress={() => updateQty(item.id, item.qty + 1)}>
+                      <Text style={styles.qtyButtonText}>+</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.removeButton} onPress={() => removeFromCart(item.id)}>
+                      <Text style={styles.removeText}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
-            )}
-          />
-          <View style={styles.summary}>
-            <Text style={styles.summaryText}>Items: {totalItems}</Text>
-            <Text style={styles.summaryText}>Total: ₹{totalPrice.toLocaleString()}</Text>
-            <TouchableOpacity style={styles.clearButton} onPress={clearCart}>
-              <Text style={styles.clearButtonText}>Clear Cart</Text>
-            </TouchableOpacity>
-          </View>
-        </>
-      )}
+              )}
+            />
+            <View style={styles.summary}>
+              <Text style={styles.summaryText}>Items</Text>
+              <Text style={styles.summaryValue}>{totalItems}</Text>
+              <Text style={styles.summaryText}>Total</Text>
+              <Text style={styles.summaryValue}>₹{totalPrice.toLocaleString()}</Text>
+              <TouchableOpacity style={styles.clearButton} onPress={clearCart}>
+                <Text style={styles.clearButtonText}>Clear Cart</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+      </View>
+      <BottomTabBar activeTab="Cart" />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#fff' },
-  heading: { fontSize: 24, fontWeight: '700', marginBottom: 16 },
-  empty: { textAlign: 'center', marginTop: 32, color: '#666' },
-  card: { padding: 16, borderWidth: 1, borderColor: '#eee', borderRadius: 12, marginBottom: 12, backgroundColor: '#fafafa' },
-  cardTitle: { fontSize: 18, fontWeight: '700', marginBottom: 8 },
-  actions: { flexDirection: 'row', alignItems: 'center', marginTop: 12 },
-  actionButton: { width: 40, height: 40, borderRadius: 8, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#ccc', marginRight: 8 },
+  container: { flex: 1, backgroundColor: theme.colors.background, paddingBottom: 90 },
+  content: { flex: 1, padding: theme.spacing.lg },
+  heading: { fontSize: 28, fontWeight: '800', color: theme.colors.primaryDark, marginBottom: 16 },
+  empty: { textAlign: 'center', marginTop: 32, color: theme.colors.textSecondary, fontSize: 16 },
+  card: { padding: 18, borderRadius: theme.radius.xl, backgroundColor: theme.colors.surface, marginBottom: 14, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 12, shadowOffset: { width: 0, height: 8 }, elevation: 4 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+  cardTitle: { fontSize: 18, fontWeight: '700', color: theme.colors.text },
+  cardPrice: { fontSize: 16, fontWeight: '700', color: theme.colors.primary },
+  cardSubtitle: { fontSize: 14, color: theme.colors.muted, marginBottom: 14 },
+  actions: { flexDirection: 'row', alignItems: 'center' },
+  qtyButton: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center', borderRadius: theme.radius.md, backgroundColor: '#f0ebff', marginRight: 12 },
+  qtyButtonText: { fontSize: 20, color: theme.colors.primaryDark, fontWeight: '700' },
   removeButton: { marginLeft: 'auto' },
-  removeText: { color: '#d32f2f' },
-  summary: { padding: 16, borderTopWidth: 1, borderTopColor: '#eee', marginTop: 16 },
-  summaryText: { fontSize: 16, marginBottom: 8 },
-  clearButton: { backgroundColor: '#d32f2f', padding: 12, borderRadius: 10, alignItems: 'center' },
-  clearButtonText: { color: '#fff', fontWeight: '700' },
+  removeText: { color: theme.colors.danger, fontWeight: '700' },
+  summary: { padding: 20, borderRadius: theme.radius.xl, backgroundColor: theme.colors.surface, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 12, shadowOffset: { width: 0, height: 8 }, elevation: 4 },
+  summaryText: { fontSize: 14, color: theme.colors.muted, marginTop: 10 },
+  summaryValue: { fontSize: 24, fontWeight: '800', color: theme.colors.text },
+  clearButton: { marginTop: 20, backgroundColor: theme.colors.primary, padding: 16, borderRadius: theme.radius.xl, alignItems: 'center' },
+  clearButtonText: { color: theme.colors.surface, fontWeight: '700' },
 });

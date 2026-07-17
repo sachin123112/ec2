@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, FlatList, StyleSheet, Alert } from 'react-native';
 import { useCart } from '../context/CartContext';
 import { fetchProducts } from '../api/products';
 import { categories, products as staticProducts } from '../data/products';
+import ProductCard from '../components/ProductCard';
+import BottomTabBar from '../components/BottomTabBar';
+import theme from '../theme';
 
 export default function ShopScreen() {
   const [search, setSearch] = useState('');
@@ -37,6 +40,7 @@ export default function ShopScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Shop</Text>
+      <Text style={styles.subtitle}>Discover pet products made for health and happiness.</Text>
       <TextInput
         style={styles.search}
         placeholder="Search products"
@@ -46,31 +50,28 @@ export default function ShopScreen() {
       <FlatList
         data={filtered}
         keyExtractor={(item) => String(item.id)}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>{item.name}</Text>
-            <Text style={styles.cardSubtitle}>{item.category} · {item.subCategory}</Text>
-            <Text style={styles.cardPrice}>₹{item.price.toLocaleString()}</Text>
-            <TouchableOpacity style={styles.button} onPress={() => addToCart(item)}>
-              <Text style={styles.buttonText}>Add to Cart</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        renderItem={({ item }) => <ProductCard item={item} onAdd={addToCart} />}
+        contentContainerStyle={styles.list}
         ListEmptyComponent={<Text style={styles.empty}>No products found.</Text>}
       />
+      <BottomTabBar activeTab="Shop" />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#fff' },
-  heading: { fontSize: 24, fontWeight: '700', marginBottom: 12 },
-  search: { borderWidth: 1, borderColor: '#ccc', borderRadius: 10, padding: 12, marginBottom: 16 },
-  card: { padding: 16, borderWidth: 1, borderColor: '#eee', borderRadius: 12, marginBottom: 12, backgroundColor: '#fafafa' },
-  cardTitle: { fontSize: 18, fontWeight: '700' },
-  cardSubtitle: { color: '#666', marginVertical: 8 },
-  cardPrice: { fontSize: 16, fontWeight: '700', marginBottom: 12 },
-  button: { backgroundColor: '#2d6cdf', padding: 12, borderRadius: 10, alignItems: 'center' },
-  buttonText: { color: '#fff', fontWeight: '700' },
-  empty: { textAlign: 'center', marginTop: 24, color: '#666' },
+  container: { flex: 1, backgroundColor: theme.colors.background, padding: theme.spacing.lg },
+  heading: { fontSize: 28, fontWeight: '800', color: theme.colors.primaryDark, marginBottom: 4 },
+  subtitle: { fontSize: 16, color: theme.colors.textSecondary, marginBottom: 16 },
+  search: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.xl,
+    padding: theme.spacing.md,
+    fontSize: theme.typography.body,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    marginBottom: 16,
+  },
+  list: { paddingBottom: 100 },
+  empty: { textAlign: 'center', marginTop: 24, color: theme.colors.textSecondary },
 });

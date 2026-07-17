@@ -4,11 +4,13 @@ This service exposes OpenAPI documentation in two ways:
 
 - Dynamic (recommended): `springdoc-openapi` generates OpenAPI at runtime.
   - Swagger UI: http://localhost:8080/swagger-ui/index.html
+  - Admin UI alias: http://localhost:8080/swagger-admin.html
+  - Mobile UI alias: http://localhost:8080/swagger-mobile.html
   - Raw OpenAPI JSON: http://localhost:8080/v3/api-docs
+  - Admin OpenAPI JSON: http://localhost:8080/v3/api-docs/admin
+  - Mobile OpenAPI JSON: http://localhost:8080/v3/api-docs/mobile
 
 - Static snapshots (kept for reference):
-  - Static Admin UI: http://localhost:8080/swagger-admin.html
-  - Static Mobile UI: http://localhost:8080/swagger-mobile.html
   - Static YAML files: `/static/docs/swagger-admin.yaml` and `/static/docs/swagger-mobile.yaml`
 
 Authentication (JWT) in Swagger UI

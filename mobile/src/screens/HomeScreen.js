@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import BottomTabBar from '../components/BottomTabBar';
+import theme from '../theme';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
@@ -9,32 +11,97 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome to PawMart</Text>
-      <Text style={styles.subtitle}>Shop for your pets and manage orders on the go.</Text>
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Shop')}>
-        <Text style={styles.buttonText}>Browse Shop</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.buttonSecondary} onPress={() => navigation.navigate('Cart')}>
-        <Text style={styles.buttonText}>View Cart</Text>
-      </TouchableOpacity>
-      {isAdmin && (
-        <TouchableOpacity style={styles.buttonSecondary} onPress={() => navigation.navigate('AdminDashboard')}>
-          <Text style={styles.buttonText}>Admin Dashboard</Text>
+      <View style={styles.content}>
+        <Text style={styles.title}>PawMart</Text>
+        <Text style={styles.subtitle}>Your pet essentials delivered with love.</Text>
+        <Text style={styles.description}>Shop premium products, manage your orders, and keep your furry family happy.</Text>
+
+        <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('Shop')}>
+          <Text style={styles.primaryButtonText}>Browse Shop</Text>
         </TouchableOpacity>
-      )}
-      <TouchableOpacity style={styles.buttonTertiary} onPress={logout}>
-        <Text style={styles.buttonText}>Log Out</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Cart')}>
+          <Text style={styles.secondaryButtonText}>View Cart</Text>
+        </TouchableOpacity>
+        {isAdmin && (
+          <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('AdminDashboard')}>
+            <Text style={styles.secondaryButtonText}>Admin Dashboard</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity style={styles.tertiaryButton} onPress={logout}>
+          <Text style={styles.tertiaryButtonText}>Log Out</Text>
+        </TouchableOpacity>
+      </View>
+      <BottomTabBar activeTab="Home" />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: '#fff' },
-  title: { fontSize: 28, fontWeight: '700', marginBottom: 12 },
-  subtitle: { fontSize: 16, color: '#666', textAlign: 'center', marginBottom: 24 },
-  button: { width: '100%', backgroundColor: '#2d6cdf', padding: 14, borderRadius: 10, alignItems: 'center', marginBottom: 12 },
-  buttonSecondary: { width: '100%', backgroundColor: '#4caf50', padding: 14, borderRadius: 10, alignItems: 'center', marginBottom: 12 },
-  buttonTertiary: { width: '100%', backgroundColor: '#999', padding: 14, borderRadius: 10, alignItems: 'center', marginBottom: 12 },
-  buttonText: { color: '#fff', fontWeight: '700' },
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    paddingBottom: 90,
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: theme.spacing.lg,
+  },
+  title: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: theme.colors.primaryDark,
+    marginBottom: 12,
+  },
+  subtitle: {
+    fontSize: 18,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  description: {
+    fontSize: 15,
+    color: '#6759a8',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  primaryButton: {
+    width: '100%',
+    backgroundColor: theme.colors.primary,
+    padding: 16,
+    borderRadius: theme.radius.xl,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  primaryButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  secondaryButton: {
+    width: '100%',
+    backgroundColor: theme.colors.accent,
+    padding: 16,
+    borderRadius: theme.radius.xl,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  secondaryButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  tertiaryButton: {
+    width: '100%',
+    backgroundColor: '#dcd0ff',
+    padding: 16,
+    borderRadius: theme.radius.xl,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  tertiaryButtonText: {
+    color: theme.colors.primaryDark,
+    fontWeight: '700',
+  },
 });

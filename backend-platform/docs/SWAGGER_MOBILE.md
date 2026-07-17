@@ -4,7 +4,7 @@ The Mobile Panel API documentation is available when the auth service is running
 
 ## Swagger UI
 
-Open [http://localhost:8080/swagger-mobile.html](http://localhost:8080/swagger-mobile.html).
+Open [http://localhost:8080/swagger-mobile.html](http://localhost:8080/swagger-mobile.html) to launch the Mobile Swagger UI.
 
 ## OpenAPI JSON
 

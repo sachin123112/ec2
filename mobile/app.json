@@ -6,6 +6,14 @@
     "orientation": "portrait",
     "platforms": ["ios", "android", "web"],
     "sdkVersion": "50.0.0",
-    "assetBundlePatterns": ["**/*"]
+    "assetBundlePatterns": ["**/*"],
+    "android": {
+      "package": "com.pawmart.mobile",
+      "versionCode": 1,
+      "permissions": [
+        "INTERNET",
+        "DETECT_SCREEN_CAPTURE"
+      ]
+    }
   }
 }

@@ -47,8 +47,9 @@ export default function SignupScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Create Account</Text>
+      <Text style={styles.subtitle}>Join PawMart and start shopping for your pet today.</Text>
       <TextInput style={styles.input} placeholder="Full name" value={fullName} onChangeText={setFullName} />
-      <TextInput style={styles.input} placeholder="Email" autoCapitalize="none" value={email} onChangeText={setEmail} />
+      <TextInput style={styles.input} placeholder="Email" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
       <TextInput style={styles.input} placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} />
       <TextInput style={styles.input} placeholder="Confirm password" secureTextEntry value={confirmPassword} onChangeText={setConfirmPassword} />
       <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={loading}>
@@ -62,10 +63,11 @@ export default function SignupScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 24, backgroundColor: '#fff' },
-  heading: { fontSize: 28, fontWeight: '700', marginBottom: 24, textAlign: 'center' },
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 10, padding: 12, marginBottom: 12 },
-  button: { backgroundColor: '#2d6cdf', padding: 14, borderRadius: 10, alignItems: 'center', marginVertical: 12 },
-  buttonText: { color: '#fff', fontWeight: '700' },
-  link: { textAlign: 'center', color: '#2d6cdf', marginTop: 12 },
+  container: { flex: 1, justifyContent: 'center', padding: 24, backgroundColor: '#f7f2ff' },
+  heading: { fontSize: 34, fontWeight: '800', marginBottom: 10, color: '#4a2d90' },
+  subtitle: { fontSize: 16, color: '#6f5ecb', marginBottom: 24 },
+  input: { backgroundColor: '#fff', borderRadius: 16, padding: 16, fontSize: 16, marginBottom: 14, borderWidth: 1, borderColor: '#ede9ff' },
+  button: { backgroundColor: '#6941c6', padding: 16, borderRadius: 16, alignItems: 'center', marginVertical: 12 },
+  buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  link: { textAlign: 'center', color: '#4a2d90', marginTop: 12, fontWeight: '700' },
 });

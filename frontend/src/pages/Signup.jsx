@@ -104,9 +104,9 @@ export default function Signup() {
   }
 
   return (
-    <div className="login-page">
-      <div className="login-card">
-        <div className="login-grid">
+    <div className="signup-page">
+      <div className="signup-card">
+        <div className="signup-grid">
           <aside className="login-aside">
             <div className="aside-brand">
               <div className="logo">🐾</div>
@@ -129,7 +129,7 @@ export default function Signup() {
             <div className="mascot">{/* illustration placeholder */}</div>
           </aside>
 
-          <div className="login-panel">
+          <div className="signup-panel">
             <div className="panel-inner">
               <div className="panel-avatar">🐶</div>
               <h2>Create Your PawMart Account</h2>

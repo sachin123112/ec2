@@ -4,7 +4,7 @@ The Admin Panel API documentation is available when the auth service is running.
 
 ## Swagger UI
 
-Open [http://localhost:8080/swagger-admin.html](http://localhost:8080/swagger-admin.html).
+Open [http://localhost:8080/swagger-admin.html](http://localhost:8080/swagger-admin.html) to launch the Admin Swagger UI.
 
 ## OpenAPI JSON
 
