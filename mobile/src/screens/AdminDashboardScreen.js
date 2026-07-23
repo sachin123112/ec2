@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import BottomTabBar from '../components/BottomTabBar';
 import config from '../api/config';
 
 export default function AdminDashboardScreen() {
@@ -27,34 +28,38 @@ export default function AdminDashboardScreen() {
   }, [token]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.heading}>Admin Dashboard</Text>
-      {loading ? (
-        <Text style={styles.message}>Loading...</Text>
-      ) : stats ? (
-        <View style={styles.grid}>
-          <View style={styles.card}>
-            <Text style={styles.label}>Total Users</Text>
-            <Text style={styles.value}>{stats.totalUsers}</Text>
+    <View style={styles.page}>
+      <View style={styles.container}>
+        <Text style={styles.heading}>Admin Dashboard</Text>
+        {loading ? (
+          <Text style={styles.message}>Loading...</Text>
+        ) : stats ? (
+          <View style={styles.grid}>
+            <View style={styles.card}>
+              <Text style={styles.label}>Total Users</Text>
+              <Text style={styles.value}>{stats.totalUsers}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.label}>Total Orders</Text>
+              <Text style={styles.value}>{stats.totalOrders}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.label}>Revenue</Text>
+              <Text style={styles.value}>₹{stats.revenue}</Text>
+            </View>
           </View>
-          <View style={styles.card}>
-            <Text style={styles.label}>Total Orders</Text>
-            <Text style={styles.value}>{stats.totalOrders}</Text>
-          </View>
-          <View style={styles.card}>
-            <Text style={styles.label}>Revenue</Text>
-            <Text style={styles.value}>₹{stats.revenue}</Text>
-          </View>
-        </View>
-      ) : (
-        <Text style={styles.error}>Unable to fetch data.</Text>
-      )}
+        ) : (
+          <Text style={styles.error}>Unable to fetch data.</Text>
+        )}
+      </View>
+      <BottomTabBar activeTab="Dashboard" />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#f7f2ff' },
+  page: { flex: 1, backgroundColor: '#f7f2ff' },
+  container: { flex: 1, padding: 20 },
   heading: { fontSize: 28, fontWeight: '800', color: '#4a2d90', marginBottom: 24 },
   message: { color: '#6f5ecb', fontSize: 16 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
