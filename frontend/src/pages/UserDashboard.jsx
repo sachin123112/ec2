@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
@@ -159,6 +160,17 @@ export default function UserDashboard() {
     }
     loadDashboard();
   }, [isAuthenticated, navigate, loadDashboard]);
+
+  // Open change-password modal if query param present
+  const location = useLocation();
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('changePassword') === 'true') {
+      setChangePasswordOpen(true);
+      // remove the param from URL without reloading
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.search, navigate, location.pathname]);
 
   function validatePhone(phone) {
     const digits = phone.replace(/\D/g, '');

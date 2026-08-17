@@ -7,6 +7,8 @@ import './Navbar.css';
 export default function Navbar() {
   const { totalItems } = useCart();
   const { isAuthenticated, logout, roles } = useAuth();
+  const { userEmail } = useAuth();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState('');
   const navigate = useNavigate();
@@ -73,9 +75,18 @@ export default function Navbar() {
               <Link to={roles.includes('ADMIN') ? '/admin/dashboard' : '/dashboard'} onClick={() => setMenuOpen(false)}>
                 Dashboard
               </Link>
-              <button type="button" className="link-button" onClick={() => { logout(); navigate('/'); }}>
-                Logout
-              </button>
+              <div className="nav-user-menu">
+                <button type="button" className="link-button" onClick={() => setUserMenuOpen(u => !u)}>
+                  {userEmail ? userEmail.split('@')[0] : 'Account'} ▾
+                </button>
+                {userMenuOpen && (
+                  <div className="nav-user-dropdown">
+                    <button type="button" className="nav-user-item" onClick={() => { setUserMenuOpen(false); setMenuOpen(false); navigate('/dashboard?changePassword=true'); }}>
+                      Change Password
+                    </button>
+                  </div>
+                )}
+              </div>
             </>
           ) : (
             <Link to="/login" onClick={() => setMenuOpen(false)}>Login</Link>
