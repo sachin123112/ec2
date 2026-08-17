@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
+import ChangePasswordModal from '../components/ChangePasswordModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
@@ -79,6 +80,7 @@ export default function UserDashboard() {
   const [addressFormVisible, setAddressFormVisible] = useState(false);
   const [editingAddress, setEditingAddress] = useState(false);
   const navigate = useNavigate();
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const sectionDescription = {
     Overview: 'Quick summary and account shortcuts.',
@@ -313,12 +315,15 @@ export default function UserDashboard() {
   return (
     <div className="dashboard-page profile-page">
       <div className="dashboard-header profile-header">
-        <div>
-          <h1>{activeSection}</h1>
-          <p>{sectionDescription[activeSection]}</p>
-        </div>
-        <button type="button" className="btn-primary">Edit Profile</button>
-      </div>
+            <div>
+              <h1>{activeSection}</h1>
+              <p>{sectionDescription[activeSection]}</p>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" className="btn-primary" onClick={() => setActiveSection('Profile Information')}>Edit Profile</button>
+              <button type="button" className="btn-outline btn-change-password" onClick={() => setChangePasswordOpen(true)}>Change Password</button>
+            </div>
+          </div>
 
       {status && (
         <div className="status-banner">
@@ -928,6 +933,7 @@ export default function UserDashboard() {
           )}
         </main>
       </div>
-    </div>
-  );
+      <ChangePasswordModal isOpen={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
+      </div>
+    );
 }

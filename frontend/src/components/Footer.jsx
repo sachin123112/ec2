@@ -32,8 +32,8 @@ export default function Footer() {
 
         <div className="footer-col">
           <h4>Contact</h4>
-          <p>📞 +91 98765 43210</p>
-          <p>📧 hello@pawmart.in</p>
+          <p>📞 +91 87488 11267</p>
+          <p>📧 sachinprakash893@gmail.com</p>
           <p>📍 123 Pet Lane, Bengaluru, Karnataka 560001</p>
         </div>
       </div>

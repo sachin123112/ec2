@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
+import ChangePasswordModal from '../components/ChangePasswordModal';
 import { Line, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -20,7 +21,15 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 export default function Dashboard() {
-  const { isAuthenticated, logout, token, hardRefresh } = useAuth();
+  const { isAuthenticated, logout, token, hardRefresh, userEmail, roles } = useAuth();
+  const displayName = useMemo(() => {
+    if (!userEmail) return '';
+    const name = userEmail.split('@')[0].replace(/[._-]/g, ' ');
+    return name
+      .split(' ')
+      .map(s => s.charAt(0).toUpperCase() + s.slice(1))
+      .join(' ');
+  }, [userEmail]);
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
@@ -69,6 +78,8 @@ export default function Dashboard() {
   }), [orders, matchesSearch, isDateInRange]);
   
   const [refreshing, setRefreshing] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const authHeaderBase = useMemo(() => {
     const headers = {};
@@ -221,11 +232,30 @@ export default function Dashboard() {
           </button>
 
           <div className="user-menu" role="group" aria-label="User menu">
-            <div className="avatar-circle">A</div>
-            <div className="user-info">
-              <div className="user-name">Admin</div>
-              <div className="user-role">Super Admin</div>
-            </div>
+            <button type="button" className="user-menu-button" onClick={() => setUserMenuOpen(u => !u)} aria-expanded={userMenuOpen}>
+              <div className="avatar-circle">{displayName ? displayName.charAt(0) : 'A'}</div>
+              <div className="user-info">
+                <div className="user-name">{displayName || 'User'}</div>
+                {roles?.length > 0 && (
+                  <div className="user-role">{roles.includes('ADMIN') ? 'Admin' : roles[0]}</div>
+                )}
+              </div>
+              <span className={`user-menu-caret ${userMenuOpen ? 'open' : ''}`}>▾</span>
+            </button>
+
+            {userMenuOpen && (
+              <div className="user-dropdown" role="menu">
+                <button type="button" className="user-dropdown-item" onClick={() => { setChangePasswordOpen(true); setUserMenuOpen(false); }}>
+                  Change password
+                </button>
+                <button type="button" className="user-dropdown-item" onClick={() => { navigate('/profile'); setUserMenuOpen(false); }}>
+                  Profile
+                </button>
+                <button type="button" className="user-dropdown-item" onClick={() => { logout(); navigate('/login'); }}>
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
         </div>
         <div className="dashboard-actions-right">
@@ -262,9 +292,7 @@ export default function Dashboard() {
               </svg>
             )}
           </button>
-          <button type="button" className="btn-outline" onClick={() => { logout(); navigate('/login'); }}>
-            Logout
-          </button>
+          {/* Logout button removed as requested */}
         </div>
       </div>
 
@@ -475,6 +503,7 @@ export default function Dashboard() {
       <section className="dashboard-panel">
         {/* Link management moved to separate admin page: /admin/links */}
       </section>
+      <ChangePasswordModal isOpen={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
     </div>
   );
 }

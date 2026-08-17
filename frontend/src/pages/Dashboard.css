@@ -12,6 +12,26 @@
   align-items: center;
 }
 
+/* Ensure header action buttons (Edit Profile / Change Password) are same size */
+.dashboard-header.profile-header > div[style] > button,
+.dashboard-header.profile-header > div[style] > .btn-outline,
+.dashboard-header.profile-header > div[style] > .btn-primary {
+  min-width: 140px;
+  height: 40px;
+  padding: 8px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  box-sizing: border-box;
+  font-weight: 700;
+}
+
+/* Slight downward nudge for the Change Password header button */
+.btn-change-password {
+  transform: translateY(8px);
+}
+
 .dashboard-header-left h1 {
   font-size: 1.6rem;
   margin: 0 0 6px 0;
@@ -65,6 +85,114 @@
 
 .dashboard-header h1 {
   margin: 0;
+}
+
+/* User menu dropdown */
+.user-menu {
+  position: relative;
+}
+.user-menu-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px 8px;
+}
+.user-menu-caret {
+  margin-left: 6px;
+  transition: transform 120ms ease;
+}
+.user-menu-caret.open {
+  transform: rotate(180deg);
+}
+.user-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(2,6,23,0.08);
+  min-width: 180px;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+}
+.user-dropdown-item {
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #0f172a;
+}
+.user-dropdown-item:hover {
+  background: #f8fafc;
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2,6,23,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1500;
+}
+.modal-card {
+  width: 420px;
+  max-width: calc(100% - 32px);
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(2,6,23,0.2);
+  overflow: hidden;
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 18px;
+  border-bottom: 1px solid #eef2f7;
+}
+.modal-header h3 { margin: 0; }
+.modal-close {
+  border: none;
+  background: transparent;
+  font-size: 20px;
+  cursor: pointer;
+}
+.modal-body { padding: 16px 18px; display:flex; flex-direction:column; gap:10px; }
+.modal-body label { display:flex; flex-direction:column; gap:6px; font-weight:600; color:#0f172a; }
+.modal-body input { padding:10px 12px; border-radius:8px; border:1px solid #e6eef8; }
+.modal-status { color:#dc2626; font-weight:600; margin-top:8px; }
+.modal-actions { display:flex; gap:12px; justify-content:center; margin-top:12px; flex-wrap:nowrap; align-items:center; box-sizing:border-box; }
+/* Make modal action buttons consistent size and height */
+.modal-actions .btn-primary,
+.modal-actions .btn-outline {
+  padding: 8px 12px;
+  min-width: 96px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-weight: 600;
+}
+.modal-actions .btn-primary { padding: 8px 14px; min-width: 128px; }
+
+/* Nudge outline (Cancel) button down slightly for visual alignment */
+.modal-actions .btn-outline {
+  transform: translateY(2px);
+}
+
+/* If viewport is very narrow, allow buttons to shrink but keep them on one line */
+@media (max-width: 420px) {
+  .modal-card { width: calc(100% - 24px); }
+  .modal-actions .btn-primary, .modal-actions .btn-outline { min-width: 80px; padding: 6px 10px; }
 }
 
 .breadcrumb {
@@ -145,6 +273,54 @@
   gap: 12px;
   flex-wrap: wrap;
   margin-top: 18px;
+}
+
+/* Ensure Save/Cancel in profile are same size and on one line */
+.save-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  margin-top: 18px;
+}
+.save-actions .btn-outline,
+.save-actions .btn-primary {
+  flex: 1 1 0;
+  min-width: 120px;
+  height: 48px;
+  padding: 12px 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  box-sizing: border-box;
+  font-weight: 700;
+}
+.save-actions .btn-outline { background: #fff; border: 1px solid #d1d5db; color: #0f172a; }
+.save-actions .btn-primary { background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%); color: #fff; }
+
+@media (max-width: 720px) {
+  .save-actions { flex-direction: column; gap: 10px; }
+  .save-actions .btn-outline, .save-actions .btn-primary { width: 100%; flex: none; }
+}
+
+/* Force equal-width buttons on one line for profile save actions (override other .btn rules) */
+.save-actions {
+  justify-content: flex-end; /* keep buttons at the end */
+}
+.save-actions .btn-outline {
+  width: 30% !important;
+  flex: none !important;
+  box-sizing: border-box;
+}
+.save-actions .btn-outline {
+  transform: translateY(4px) !important;
+}
+.save-actions .btn-primary {
+  width: 70% !important;
+  flex: none !important;
+  box-sizing: border-box;
 }
 
 .btn-full {
