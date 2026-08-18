@@ -7,6 +7,7 @@ import HomeScreen from '../screens/HomeScreen';
 import ShopScreen from '../screens/ShopScreen';
 import CartScreen from '../screens/CartScreen';
 import DashboardScreen from '../screens/DashboardScreen';
+import AccountScreen from '../screens/AccountScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 
 const Stack = createNativeStackNavigator();
@@ -21,6 +22,7 @@ export default function AppNavigator() {
       <Stack.Screen name="Shop" component={ShopScreen} options={{ title: 'Shop' }} />
       <Stack.Screen name="Cart" component={CartScreen} options={{ title: 'Cart' }} />
       <Stack.Screen name="Dashboard" component={DashboardScreen} options={{ title: 'Dashboard' }} />
+      <Stack.Screen name="Account" component={AccountScreen} options={{ title: 'Account' }} />
       <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ title: 'Admin Dashboard' }} />
     </Stack.Navigator>
   );

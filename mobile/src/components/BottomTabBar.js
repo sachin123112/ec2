@@ -8,6 +8,7 @@ const tabs = [
   { key: 'Shop', label: 'Shop', icon: '🛍️' },
   { key: 'Cart', label: 'Cart', icon: '🛒' },
   { key: 'Dashboard', label: 'Dashboard', icon: '📊' },
+  { key: 'Account', label: 'Account', icon: '👤' },
 ];
 
 export default function BottomTabBar({ activeTab }) {
