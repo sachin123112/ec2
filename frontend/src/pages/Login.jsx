@@ -16,7 +16,7 @@ export default function Login() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      const destination = roles.includes('ADMIN') ? '/admin/dashboard' : '/dashboard';
+      const destination = roles.includes('ADMIN') ? '/admin/dashboard#overview' : '/dashboard#profile-information';
       navigate(destination, { replace: true });
     }
   }, [isAuthenticated, navigate, roles]);
@@ -44,9 +44,9 @@ export default function Login() {
       const data = await response.json();
       login(data.accessToken, email, data.roles || [], data.refreshToken || '');
       if (data.roles?.includes('ADMIN')) {
-        navigate('/admin/dashboard');
+        navigate('/admin/dashboard#overview');
       } else {
-        navigate('/dashboard');
+        navigate('/dashboard#profile-information');
       }
     } catch {
       setError('Server error. Please try again later.');

@@ -172,6 +172,19 @@ export default function UserDashboard() {
     }
   }, [location.search, navigate, location.pathname]);
 
+  // Handle hash-based section navigation
+  useEffect(() => {
+    const hash = location.hash.slice(1); // Remove the '#' character
+    if (hash) {
+      // Convert hash to section name (e.g., 'profile-information' -> 'Profile Information')
+      const sectionName = hash
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+      setActiveSection(sectionName);
+    }
+  }, [location.hash]);
+
   function validatePhone(phone) {
     const digits = phone.replace(/\D/g, '');
     return /^\d{7,15}$/.test(digits);
@@ -333,7 +346,6 @@ export default function UserDashboard() {
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button type="button" className="btn-primary" onClick={() => setActiveSection('Profile Information')}>Edit Profile</button>
-              <button type="button" className="btn-outline btn-change-password" onClick={() => setChangePasswordOpen(true)}>Change Password</button>
             </div>
           </div>
 

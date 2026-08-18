@@ -14,6 +14,13 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
+  const handleLogout = () => {
+    logout();
+    setUserMenuOpen(false);
+    setMenuOpen(false);
+    navigate('/login');
+  };
+
   const handleSearch = (e) => {
     e.preventDefault();
     if (search.trim()) {
@@ -57,7 +64,10 @@ export default function Navbar() {
               type="button"
               className="dropdown-toggle"
               aria-expanded={dropdownOpen}
-              onClick={() => setDropdownOpen(d => !d)}
+              onClick={() => {
+                setDropdownOpen(d => !d);
+                setUserMenuOpen(false);
+              }}
             >
               Shop
               <span className="dropdown-arrow">▾</span>
@@ -72,32 +82,37 @@ export default function Navbar() {
           </div>
           {isAuthenticated ? (
             <>
-              <Link to={roles.includes('ADMIN') ? '/admin/dashboard' : '/dashboard'} onClick={() => setMenuOpen(false)}>
-                Dashboard
+              <Link to="/cart" onClick={() => setMenuOpen(false)}>
+                🛒 Cart
               </Link>
-              <div className="nav-user-menu">
-                <button type="button" className="link-button" onClick={() => setUserMenuOpen(u => !u)}>
-                  {userEmail ? userEmail.split('@')[0] : 'Account'} ▾
-                </button>
-                {userMenuOpen && (
-                  <div className="nav-user-dropdown">
-                    <button type="button" className="nav-user-item" onClick={() => { setUserMenuOpen(false); setMenuOpen(false); navigate('/dashboard?changePassword=true'); }}>
-                      Change Password
-                    </button>
-                  </div>
-                )}
-              </div>
             </>
           ) : (
             <Link to="/login" onClick={() => setMenuOpen(false)}>Login</Link>
           )}
+          {isAuthenticated && (
+            <div className="nav-user-menu">
+              <button type="button" className="link-button" onClick={() => {
+                setUserMenuOpen(u => !u);
+                setDropdownOpen(false);
+              }}>
+                {userEmail ? userEmail.split('@')[0].charAt(0).toUpperCase() + userEmail.split('@')[0].slice(1) : 'Account'} ▾
+              </button>
+              {userMenuOpen && (
+                <div className="nav-user-dropdown">
+                  <button type="button" className="nav-user-item" onClick={() => { setUserMenuOpen(false); setMenuOpen(false); navigate(roles.includes('ADMIN') ? '/admin/dashboard' : '/dashboard#overview'); }}>
+                    Account Manager
+                  </button>
+                  <button type="button" className="nav-user-item" onClick={() => { setUserMenuOpen(false); setMenuOpen(false); navigate('/dashboard?changePassword=true'); }}>
+                    Change Password
+                  </button>
+                  <button type="button" className="nav-user-item nav-user-item-danger" onClick={handleLogout}>
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
-
-        {/* Cart */}
-        <Link to="/cart" className="navbar-cart">
-          <span className="cart-icon">🛒</span>
-          {totalItems > 0 && <span className="cart-badge">{totalItems}</span>}
-        </Link>
 
         {/* Hamburger */}
         <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)}>
