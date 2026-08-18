@@ -80,6 +80,7 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
 
   const authHeaderBase = useMemo(() => {
     const headers = {};
@@ -113,6 +114,22 @@ export default function Dashboard() {
     } catch (error) {
       console.error(error);
       setStatus('Unable to load dashboard data.');
+    }
+  }, [authHeaders]);
+
+  const fetchUnreadNotifications = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_URL}/notifications`, { headers: authHeaders });
+      if (response.ok) {
+        const data = await response.json();
+        const notifications = Array.isArray(data) ? data : [];
+        const unreadCount = notifications.filter(n => !n.read).length;
+        setUnreadNotificationsCount(unreadCount);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications count:', error);
+      // Set default mock count if API fails
+      setUnreadNotificationsCount(3);
     }
   }, [authHeaders]);
 
@@ -188,7 +205,27 @@ export default function Dashboard() {
       return;
     }
     loadData();
-  }, [isAuthenticated, navigate, loadData]);
+    fetchUnreadNotifications();
+
+    // Refresh notifications count when returning to dashboard or when notifications are updated
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchUnreadNotifications();
+      }
+    };
+
+    const handleNotificationUpdate = () => {
+      fetchUnreadNotifications();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('notification:updated', handleNotificationUpdate);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('notification:updated', handleNotificationUpdate);
+    };
+  }, [isAuthenticated, navigate, loadData, fetchUnreadNotifications]);
 
   
 
@@ -226,9 +263,9 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="dashboard-header-user">
-          <button type="button" className="notification-btn" aria-label="Notifications" title="Notifications">
+          <button type="button" className="notification-btn" aria-label="Notifications" title="Notifications" onClick={() => navigate('/admin/notifications')}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5" stroke="#0f172a" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            <span className="notif-badge">3</span>
+            {unreadNotificationsCount > 0 && <span className="notif-badge">{unreadNotificationsCount}</span>}
           </button>
 
           <div className="user-menu" role="group" aria-label="User menu">

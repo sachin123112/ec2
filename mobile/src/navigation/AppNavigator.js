@@ -9,6 +9,7 @@ import CartScreen from '../screens/CartScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import AccountScreen from '../screens/AccountScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
+import NotificationScreen from '../screens/NotificationScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -24,6 +25,7 @@ export default function AppNavigator() {
       <Stack.Screen name="Dashboard" component={DashboardScreen} options={{ title: 'Dashboard' }} />
       <Stack.Screen name="Account" component={AccountScreen} options={{ title: 'Account' }} />
       <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ title: 'Admin Dashboard' }} />
+      <Stack.Screen name="Notifications" component={NotificationScreen} options={{ title: 'Notifications' }} />
     </Stack.Navigator>
   );
 }

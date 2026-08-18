@@ -15,6 +15,8 @@ function Icon({ type }) {
       return <svg className="nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 7h16M4 12h16M4 17h16" stroke="#374151" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
     case 'orders':
       return <svg className="nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 7h18v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" stroke="#374151" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 3v4M8 3v4" stroke="#374151" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+    case 'notifications':
+      return <svg className="nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5" stroke="#374151" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
     case 'reports':
       return <svg className="nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 3h12a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2z" stroke="#374151" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M8 7h8M8 11h8M8 15h4" stroke="#374151" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
     case 'settings':
@@ -34,6 +36,7 @@ export default function AdminNav() {
         <NavLink className={({ isActive }) => isActive ? 'active' : ''} to="/admin/products"><Icon type="products" />Products</NavLink>
         <NavLink className={({ isActive }) => isActive ? 'active' : ''} to="/admin/categories"><Icon type="categories" />Categories</NavLink>
         <NavLink className={({ isActive }) => isActive ? 'active' : ''} to="/admin/orders"><Icon type="orders" />Orders</NavLink>
+        <NavLink className={({ isActive }) => isActive ? 'active' : ''} to="/admin/notifications"><Icon type="notifications" />Notifications</NavLink>
         <NavLink className={({ isActive }) => isActive ? 'active' : ''} to="/reports"><Icon type="reports" />Reports</NavLink>
         <NavLink className={({ isActive }) => isActive ? 'active' : ''} to="/settings"><Icon type="settings" />Settings</NavLink>
       </div>
