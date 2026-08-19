@@ -7,6 +7,7 @@ import com.company.auth.dto.CreateLinkRequest;
 import com.company.auth.dto.CreateOrderRequest;
 import com.company.auth.dto.CreateProductRequest;
 import com.company.auth.dto.CreateUserRequest;
+import com.company.auth.dto.ChangePasswordRequest;
 import com.company.auth.dto.LinkDto;
 import com.company.auth.dto.OrderDto;
 import com.company.auth.dto.ProductDto;
@@ -388,6 +389,23 @@ public class ApiController {
         if (request.getDateOfBirth() != null) user.setDateOfBirth(request.getDateOfBirth());
         user = userRepository.save(user);
         return toDto(user);
+    }
+
+    @PostMapping("/users/me/change-password")
+    @Operation(summary = "Change current user's password")
+    public ResponseEntity<Void> changeCurrentUserPassword(
+            Principal principal, @RequestBody ChangePasswordRequest request) {
+        User user = findUserByEmail(principal);
+        if (!StringUtils.hasText(request.getOldPassword())
+                || !passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Current password is incorrect");
+        }
+        if (!StringUtils.hasText(request.getNewPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "New password is required");
+        }
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/users/me/addresses")

@@ -5,7 +5,7 @@ import './Dashboard.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
-export default function NotificationsAdmin() {
+export default function NotificationsUser() {
   const { token } = useAuth();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
@@ -33,33 +33,33 @@ export default function NotificationsAdmin() {
         setNotifications([
           {
             id: 1,
-            title: 'New Order Received',
-            message: 'Order #ORD-12345 from John Doe for $250.00',
+            title: 'Order Shipped',
+            message: 'Your order #ORD-12345 has been shipped and is on the way!',
             timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
             type: 'order',
             read: true,
           },
           {
             id: 2,
-            title: 'Low Stock Alert',
-            message: 'Premium Dog Food (SKU: PF-001) stock is below 10 units',
+            title: 'Price Drop Alert',
+            message: 'Premium Dog Food (SKU: PF-001) price has dropped to $25.99',
             timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
             type: 'product',
             read: true,
           },
           {
             id: 3,
-            title: 'User Registration',
-            message: 'New user registered: sarah.johnson@email.com',
+            title: 'Account Update',
+            message: 'Your account profile was successfully updated.',
             timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
             type: 'user',
             read: true,
           },
           {
             id: 4,
-            title: 'System Maintenance',
-            message: 'Database backup completed successfully',
-            timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+            title: 'Special Offer',
+            message: 'Enjoy 20% off on all pet accessories this weekend!',
+            timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
             type: 'system',
             read: true,
           },
@@ -87,7 +87,7 @@ export default function NotificationsAdmin() {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
       });
-      // Notify Dashboard to refresh notification count
+      // Notify UserDashboard to refresh notification count
       window.dispatchEvent(new CustomEvent('notification:updated'));
     } catch (err) {
       console.error('Error marking notification as read:', err);
@@ -102,7 +102,7 @@ export default function NotificationsAdmin() {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
-      // Notify Dashboard to refresh notification count
+      // Notify UserDashboard to refresh notification count
       window.dispatchEvent(new CustomEvent('notification:updated'));
     } catch (err) {
       console.error('Error deleting notification:', err);
@@ -117,7 +117,7 @@ export default function NotificationsAdmin() {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
-      // Notify Dashboard to refresh notification count
+      // Notify UserDashboard to refresh notification count
       window.dispatchEvent(new CustomEvent('notification:updated'));
     } catch (err) {
       console.error('Error clearing notifications:', err);
@@ -135,121 +135,108 @@ export default function NotificationsAdmin() {
       case 'system':
         return '⚙️';
       default:
-        return '📢';
+        return '🔔';
     }
   };
 
   const getNotificationColor = (type) => {
     switch (type) {
       case 'order':
-        return '#3b82f6';
+        return '#2563eb';
       case 'product':
         return '#f59e0b';
       case 'user':
-        return '#10b981';
-      case 'system':
         return '#8b5cf6';
-      default:
+      case 'system':
         return '#6b7280';
+      default:
+        return '#3b82f6';
     }
   };
 
   const formatTime = (timestamp) => {
+    if (!timestamp) return '';
     const date = new Date(timestamp);
     const now = new Date();
-    const diff = now - date;
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
 
-    if (hours < 1) {
-      const mins = Math.floor(diff / (1000 * 60));
-      return `${mins}m ago`;
-    } else if (hours < 24) {
-      return `${hours}h ago`;
-    } else if (days < 7) {
-      return `${days}d ago`;
-    } else {
-      return date.toLocaleDateString();
-    }
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <div className="admin-page">
+    <div className="notifications-container">
       <div className="notifications-header">
-        <div className="notifications-title">
-          <h2>Notifications</h2>
-          {unreadCount > 0 && (
-            <span className="unread-badge">{unreadCount}</span>
-          )}
+        <div className="notifications-title-section">
+          <h2 className="notifications-title">Notifications</h2>
+          {unreadCount > 0 && <span className="unread-badge">{unreadCount}</span>}
         </div>
         {notifications.length > 0 && (
-          <button
-            className="clear-all-btn"
-            onClick={handleClearAll}
-            title="Clear all notifications"
-          >
+          <button type="button" className="clear-all-btn" onClick={handleClearAll}>
             Clear All
           </button>
         )}
       </div>
 
-      {loading ? (
-        <div className="loading-state">
-          <p>Loading notifications...</p>
-        </div>
-      ) : error && notifications.length === 0 ? (
-        <div className="error-state">
-          <p>⚠️ Using demo notifications (API connection failed)</p>
-        </div>
-      ) : notifications.length === 0 ? (
+      {loading && <div className="loading-state">Loading notifications...</div>}
+
+      {error && <div className="error-state">Error: {error}</div>}
+
+      {!loading && !error && notifications.length === 0 && (
         <div className="empty-state">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5" stroke="#9ca3af" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          <p>No notifications</p>
-          <p className="empty-subtext">You're all caught up!</p>
+          <p>No notifications yet</p>
+          <p style={{ fontSize: '12px', color: '#999' }}>You'll see updates about your orders and account here</p>
         </div>
-      ) : (
+      )}
+
+      {!loading && !error && notifications.length > 0 && (
         <div className="notifications-list">
           {notifications.map(notification => (
             <div
               key={notification.id}
               className={`notification-item ${notification.read ? 'read' : 'unread'}`}
-              onClick={() => handleMarkAsRead(notification.id)}
+              style={{
+                borderLeftColor: getNotificationColor(notification.type),
+              }}
             >
               <div className="notification-icon-wrapper">
-                <div
-                  className="notification-icon"
-                  style={{ backgroundColor: getNotificationColor(notification.type) }}
-                >
-                  {getNotificationIcon(notification.type)}
-                </div>
+                <span className="notification-icon">{getNotificationIcon(notification.type)}</span>
               </div>
 
               <div className="notification-content">
-                <div className="notification-title">
-                  {notification.title}
-                </div>
-                <div className="notification-message">
-                  {notification.message}
-                </div>
-                <div className="notification-time">
-                  {formatTime(notification.timestamp)}
-                </div>
+                <div className="notification-title">{notification.title}</div>
+                <div className="notification-message">{notification.message}</div>
+                <div className="notification-time">{formatTime(notification.timestamp)}</div>
               </div>
 
-              <button
-                className="delete-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteNotification(notification.id);
-                }}
-                title="Delete notification"
-              >
-                ✕
-              </button>
+              <div className="notification-actions">
+                {!notification.read && (
+                  <button
+                    type="button"
+                    className="notification-action-btn"
+                    title="Mark as read"
+                    onClick={() => handleMarkAsRead(notification.id)}
+                  >
+                    ✓
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="delete-btn"
+                  title="Delete"
+                  onClick={() => handleDeleteNotification(notification.id)}
+                >
+                  ✕
+                </button>
+              </div>
             </div>
           ))}
         </div>

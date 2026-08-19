@@ -78,7 +78,6 @@ export default function Dashboard() {
   }), [orders, matchesSearch, isDateInRange]);
   
   const [refreshing, setRefreshing] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
 
@@ -204,6 +203,13 @@ export default function Dashboard() {
       navigate('/login');
       return;
     }
+    
+    // Check if changePassword query param is set
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('changePassword') === 'true') {
+      setChangePasswordOpen(true);
+    }
+    
     loadData();
     fetchUnreadNotifications();
 
@@ -267,33 +273,6 @@ export default function Dashboard() {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5" stroke="#0f172a" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
             {unreadNotificationsCount > 0 && <span className="notif-badge">{unreadNotificationsCount}</span>}
           </button>
-
-          <div className="user-menu" role="group" aria-label="User menu">
-            <button type="button" className="user-menu-button" onClick={() => setUserMenuOpen(u => !u)} aria-expanded={userMenuOpen}>
-              <div className="avatar-circle">{displayName ? displayName.charAt(0) : 'A'}</div>
-              <div className="user-info">
-                <div className="user-name">{displayName || 'User'}</div>
-                {roles?.length > 0 && (
-                  <div className="user-role">{roles.includes('ADMIN') ? 'Admin' : roles[0]}</div>
-                )}
-              </div>
-              <span className={`user-menu-caret ${userMenuOpen ? 'open' : ''}`}>▾</span>
-            </button>
-
-            {userMenuOpen && (
-              <div className="user-dropdown" role="menu">
-                <button type="button" className="user-dropdown-item" onClick={() => { setChangePasswordOpen(true); setUserMenuOpen(false); }}>
-                  Change password
-                </button>
-                <button type="button" className="user-dropdown-item" onClick={() => { navigate('/profile'); setUserMenuOpen(false); }}>
-                  Profile
-                </button>
-                <button type="button" className="user-dropdown-item" onClick={() => { logout(); navigate('/login'); }}>
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
         </div>
         <div className="dashboard-actions-right">
           <button

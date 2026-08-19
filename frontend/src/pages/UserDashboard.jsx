@@ -55,6 +55,7 @@ export default function UserDashboard() {
     { id: 1, name: 'Buddy', type: 'Dog', age: '3 yrs' },
     { id: 2, name: 'Milo', type: 'Cat', age: '1 yr' },
   ]);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const [userProfile, setUserProfile] = useState({
     firstName: '',
     lastName: '',
@@ -102,6 +103,21 @@ export default function UserDashboard() {
     if (token) headers.Authorization = `Bearer ${token}`;
     return headers;
   }, [token]);
+
+  const fetchUnreadNotifications = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_URL}/notifications`, { headers: authHeaders });
+      if (response.ok) {
+        const data = await response.json();
+        const notifications = Array.isArray(data) ? data : [];
+        const unreadCount = notifications.filter(n => !n.read).length;
+        setUnreadNotificationsCount(unreadCount);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications count:', error);
+      setUnreadNotificationsCount(0);
+    }
+  }, [authHeaders]);
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -159,7 +175,15 @@ export default function UserDashboard() {
       return;
     }
     loadDashboard();
-  }, [isAuthenticated, navigate, loadDashboard]);
+    fetchUnreadNotifications();
+
+    const handleNotificationUpdate = () => {
+      fetchUnreadNotifications();
+    };
+
+    window.addEventListener('notification:updated', handleNotificationUpdate);
+    return () => window.removeEventListener('notification:updated', handleNotificationUpdate);
+  }, [isAuthenticated, navigate, loadDashboard, fetchUnreadNotifications]);
 
   // Open change-password modal if query param present
   const location = useLocation();
@@ -344,7 +368,11 @@ export default function UserDashboard() {
               <h1>{activeSection}</h1>
               <p>{sectionDescription[activeSection]}</p>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button type="button" className="notification-btn" aria-label="Notifications" title="Notifications" onClick={() => navigate('/notifications')}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5" stroke="#0f172a" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                {unreadNotificationsCount > 0 && <span className="notif-badge">{unreadNotificationsCount}</span>}
+              </button>
               <button type="button" className="btn-primary" onClick={() => setActiveSection('Profile Information')}>Edit Profile</button>
             </div>
           </div>
