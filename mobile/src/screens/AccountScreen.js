@@ -41,8 +41,23 @@ export default function AccountScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.heading}>Account</Text>
+      <View style={styles.topBar}>
+        <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()} accessibilityLabel="Go back">
+          <Text style={styles.headerIcon}>‹</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Account</Text>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.headerButton} onPress={() => navigation.navigate('Notifications')} accessibilityLabel="Notifications">
+            <Text style={styles.headerActionIcon}>♧</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerButton} onPress={() => navigation.navigate('Cart')} accessibilityLabel="Cart">
+            <Text style={styles.headerActionIcon}>🛒</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+        <Text style={styles.heading}>Account Settings</Text>
         
         {/* Profile Card */}
         <View style={styles.profileCard}>
@@ -59,36 +74,41 @@ export default function AccountScreen() {
         {loading ? (
           <Text style={styles.message}>Loading profile...</Text>
         ) : userProfile ? (
-          <View style={styles.section}>
+          <View style={styles.infoSection}>
             <Text style={styles.sectionTitle}>Personal Information</Text>
-            <View style={styles.detailRow}>
-              <Text style={styles.label}>First Name</Text>
-              <Text style={styles.value}>{userProfile.firstName || 'Not provided'}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.label}>Last Name</Text>
-              <Text style={styles.value}>{userProfile.lastName || 'Not provided'}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.label}>Phone</Text>
-              <Text style={styles.value}>{userProfile.phone || 'Not provided'}</Text>
+            <View style={styles.infoCard}>
+              <View style={styles.detailRow}>
+                <Text style={styles.label}>First Name</Text>
+                <Text style={styles.value}>{userProfile.firstName || 'Not provided'}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.label}>Last Name</Text>
+                <Text style={styles.value}>{userProfile.lastName || 'Not provided'}</Text>
+              </View>
+              <View style={styles.detailRowLast}>
+                <Text style={styles.label}>Phone</Text>
+                <Text style={styles.value}>{userProfile.phone || 'Not provided'}</Text>
+              </View>
             </View>
           </View>
         ) : null}
 
         {/* Action Buttons */}
-        <View style={styles.section}>
+        <View style={styles.actionsSection}>
           <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Dashboard')}>
-            <Text style={styles.actionButtonText}>📊 View Dashboard</Text>
+            <Text style={styles.actionIcon}>▥</Text>
+            <Text style={styles.actionButtonText}>View Dashboard</Text>
+            <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Cart')}>
-            <Text style={styles.actionButtonText}>🛒 View Cart</Text>
+            <Text style={styles.actionIcon}>🛒</Text>
+            <Text style={styles.actionButtonText}>View Cart</Text>
+            <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Shop')}>
-            <Text style={styles.actionButtonText}>🛍️ Continue Shopping</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.dangerButton]} onPress={handleLogout}>
-            <Text style={[styles.actionButtonText, styles.dangerButtonText]}>🚪 Logout</Text>
+          <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Account')}>
+            <Text style={styles.actionIcon}>⚙</Text>
+            <Text style={styles.actionButtonText}>Settings</Text>
+            <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -101,24 +121,61 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
-    paddingBottom: 90,
+  },
+  topBar: {
+    height: 76,
+    paddingHorizontal: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e8defb',
+  },
+  headerButton: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerIcon: {
+    color: theme.colors.text,
+    fontSize: 30,
+    lineHeight: 30,
+  },
+  headerTitle: {
+    flex: 1,
+    marginLeft: 8,
+    color: theme.colors.text,
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  headerActionIcon: {
+    color: theme.colors.primary,
+    fontSize: 22,
   },
   content: {
     flex: 1,
-    padding: theme.spacing.lg,
+    paddingHorizontal: 18,
+  },
+  contentContainer: {
+    paddingTop: 28,
+    paddingBottom: 20,
   },
   heading: {
-    fontSize: 28,
+    fontSize: 27,
     fontWeight: '800',
-    color: theme.colors.primaryDark,
-    marginBottom: 24,
+    color: '#5933a5',
+    marginBottom: 20,
   },
   profileCard: {
     flexDirection: 'row',
     backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.xl,
-    padding: theme.spacing.lg,
-    marginBottom: 24,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 20,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.05,
@@ -127,13 +184,13 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     backgroundColor: theme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: theme.spacing.lg,
+    marginRight: 14,
   },
   avatarText: {
     fontSize: 28,
@@ -156,16 +213,30 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
   },
+  infoSection: {
+    marginBottom: 20,
+  },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: theme.colors.text,
     marginBottom: 12,
   },
+  infoCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: '#e8defb',
+  },
   detailRow: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    borderBottomColor: '#e8defb',
+  },
+  detailRowLast: {
+    paddingVertical: 12,
   },
   label: {
     fontSize: 12,
@@ -182,26 +253,35 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
   },
+  actionsSection: {
+    marginBottom: 0,
+  },
   actionButton: {
     backgroundColor: theme.colors.surface,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: theme.radius.lg,
+    minHeight: 48,
+    paddingHorizontal: 14,
+    borderRadius: 18,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: '#e8defb',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionIcon: {
+    width: 28,
+    color: theme.colors.primary,
+    fontSize: 18,
+    textAlign: 'center',
+    marginRight: 8,
   },
   actionButtonText: {
-    fontSize: 16,
+    flex: 1,
+    fontSize: 14,
     fontWeight: '600',
     color: theme.colors.text,
-    textAlign: 'center',
   },
-  dangerButton: {
-    backgroundColor: '#ffe5e5',
-    borderColor: '#ff6b6b',
-  },
-  dangerButtonText: {
-    color: '#d32f2f',
+  chevron: {
+    color: theme.colors.muted,
+    fontSize: 24,
   },
 });

@@ -93,7 +93,7 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background, paddingBottom: 90 },
+  container: { flex: 1, backgroundColor: theme.colors.background },
   header: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 

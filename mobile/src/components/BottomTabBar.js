@@ -6,8 +6,6 @@ import theme from '../theme';
 const tabs = [
   { key: 'Home', label: 'Home', icon: '🏠' },
   { key: 'Shop', label: 'Shop', icon: '🛍️' },
-  { key: 'Cart', label: 'Cart', icon: '🛒' },
-  { key: 'Notifications', label: 'Notifications', icon: '🔔' },
   { key: 'Dashboard', label: 'Dashboard', icon: '📊' },
   { key: 'Account', label: 'Account', icon: '👤' },
 ];
@@ -36,13 +34,25 @@ export default function BottomTabBar({ activeTab }) {
 
 const styles = StyleSheet.create({
   container: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 78,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     backgroundColor: theme.colors.surface,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
+    paddingTop: 8,
+    paddingBottom: 10,
+    paddingHorizontal: 12,
+    zIndex: 10,
+    elevation: 12,
+    shadowColor: '#30205f',
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: -4 },
   },
   tab: {
     flex: 1,

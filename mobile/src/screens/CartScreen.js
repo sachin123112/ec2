@@ -57,7 +57,7 @@ export default function CartScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background, paddingBottom: 90 },
+  container: { flex: 1, backgroundColor: theme.colors.background },
   content: { flex: 1, padding: theme.spacing.lg },
   heading: { fontSize: 28, fontWeight: '800', color: theme.colors.primaryDark, marginBottom: 16 },
   empty: { textAlign: 'center', marginTop: 32, color: theme.colors.textSecondary, fontSize: 16 },
