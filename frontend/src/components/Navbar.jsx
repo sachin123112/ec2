@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import ChangePasswordModal from './ChangePasswordModal';
 import './Navbar.css';
 
 export default function Navbar() {
-  const { totalItems } = useCart();
   const { isAuthenticated, logout, roles } = useAuth();
   const { userEmail } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -27,6 +27,14 @@ export default function Navbar() {
       navigate(`/shop?search=${encodeURIComponent(search.trim())}`);
       setSearch('');
     }
+  };
+
+  const handleChangePassword = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setUserMenuOpen(false);
+    setMenuOpen(false);
+    setChangePasswordOpen(true);
   };
 
   const categories = [
@@ -102,7 +110,7 @@ export default function Navbar() {
                   <button type="button" className="nav-user-item" onClick={() => { setUserMenuOpen(false); setMenuOpen(false); navigate(roles.includes('ADMIN') ? '/admin/dashboard' : '/dashboard#overview'); }}>
                     Account Manager
                   </button>
-                  <button type="button" className="nav-user-item" onClick={() => { setUserMenuOpen(false); setMenuOpen(false); navigate('/dashboard?changePassword=true'); }}>
+                  <button type="button" className="nav-user-item" onClick={handleChangePassword}>
                     Change Password
                   </button>
                   <button type="button" className="nav-user-item nav-user-item-danger" onClick={handleLogout}>
@@ -119,6 +127,9 @@ export default function Navbar() {
           <span /><span /><span />
         </button>
       </div>
+      
+      {/* Change Password Modal */}
+      <ChangePasswordModal isOpen={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
     </nav>
   );
 }

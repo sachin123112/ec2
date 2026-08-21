@@ -63,9 +63,9 @@ export default function SettingsScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   topBar: {
-    height: 76,
+    height: 108,
     paddingHorizontal: 18,
-    paddingTop: 8,
+    paddingTop: 40,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,

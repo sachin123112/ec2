@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import QRCode from 'react-native-qrcode-svg';
+import { TextEncoder } from 'text-encoding';
 import BottomTabBar from '../components/BottomTabBar';
 import { goBackOrNavigate } from '../navigation/safeBack';
 import theme from '../theme';
 
-const initialMethods = [
+if (typeof globalThis.TextEncoder === 'undefined') {
+  globalThis.TextEncoder = TextEncoder;
+}
+
 function PaymentRow({ icon, title, subtitle, action, expanded, disabled, onPress, children }) {
   return (
     <View style={[styles.paymentRow, disabled && styles.paymentRowDisabled]}>
@@ -21,8 +26,56 @@ function PaymentRow({ icon, title, subtitle, action, expanded, disabled, onPress
   );
 }
 
+const initialMethods = [
   { id: 'upi', name: 'UPI', description: 'Accept payments through UPI.', active: false },
   { id: 'cod', name: 'Cash on Delivery', description: 'Accept payment on delivery.', active: true },
+];
+
+const hardcodedUpiId = 'sachinprakash893@ybl';
+
+const bankOptions = [
+  { id: 'sbi', name: 'State Bank of India', logo: 'SBI', color: '#1f5aa6' },
+  { id: 'bob', name: 'Bank of Baroda', logo: 'BOB', color: '#e87524' },
+  { id: 'pnb', name: 'Punjab National Bank', logo: 'PNB', color: '#b51f2a' },
+  { id: 'canara', name: 'Canara Bank', logo: 'CB', color: '#0a7044' },
+  { id: 'union', name: 'Union Bank of India', logo: 'UB', color: '#ed1c24' },
+  { id: 'indian', name: 'Indian Bank', logo: 'IB', color: '#1b4d9b' },
+  { id: 'boi', name: 'Bank of India', logo: 'BOI', color: '#0b5ca8' },
+  { id: 'central', name: 'Central Bank of India', logo: 'CBI', color: '#d21f2b' },
+  { id: 'uco', name: 'UCO Bank', logo: 'UCO', color: '#0069a6' },
+  { id: 'bom', name: 'Bank of Maharashtra', logo: 'BOM', color: '#00844a' },
+  { id: 'iob', name: 'Indian Overseas Bank', logo: 'IOB', color: '#14539a' },
+  { id: 'psb', name: 'Punjab & Sind Bank', logo: 'PSB', color: '#0067a5' },
+  { id: 'hdfc', name: 'HDFC Bank', logo: 'HDFC', color: '#004c8f' },
+  { id: 'icici', name: 'ICICI Bank', logo: 'ICICI', color: '#f58220' },
+  { id: 'axis', name: 'Axis Bank', logo: 'AXIS', color: '#97144d' },
+  { id: 'kotak', name: 'Kotak Mahindra Bank', logo: 'KMB', color: '#ed1c24' },
+  { id: 'indusind', name: 'IndusInd Bank', logo: 'IND', color: '#982b5d' },
+  { id: 'idfc', name: 'IDFC FIRST Bank', logo: 'IDFC', color: '#9d1d27' },
+  { id: 'federal', name: 'Federal Bank', logo: 'FB', color: '#006d9c' },
+  { id: 'yes', name: 'YES BANK', logo: 'YES', color: '#00549f' },
+  { id: 'bandhan', name: 'Bandhan Bank', logo: 'BDB', color: '#ed1c24' },
+  { id: 'rbl', name: 'RBL Bank', logo: 'RBL', color: '#e31837' },
+  { id: 'au', name: 'AU Small Finance Bank', logo: 'AU', color: '#f58220' },
+  { id: 'equitas', name: 'Equitas Small Finance Bank', logo: 'ESF', color: '#ed1c24' },
+  { id: 'ujjivan', name: 'Ujjivan Small Finance Bank', logo: 'USF', color: '#0072bc' },
+  { id: 'utkarsh', name: 'Utkarsh Small Finance Bank', logo: 'USB', color: '#004b8d' },
+  { id: 'esaf', name: 'ESAF Small Finance Bank', logo: 'ESAF', color: '#f58220' },
+  { id: 'jana', name: 'Jana Small Finance Bank', logo: 'JSF', color: '#00549f' },
+  { id: 'suryoday', name: 'Suryoday Small Finance Bank', logo: 'SSB', color: '#e87524' },
+  { id: 'capital', name: 'Capital Small Finance Bank', logo: 'CSF', color: '#1b4d9b' },
+  { id: 'shivalik', name: 'Shivalik Small Finance Bank', logo: 'SSFB', color: '#00844a' },
+  { id: 'dcb', name: 'DCB Bank', logo: 'DCB', color: '#00549f' },
+  { id: 'karnataka', name: 'Karnataka Bank', logo: 'KB', color: '#ed1c24' },
+  { id: 'southindian', name: 'South Indian Bank', logo: 'SIB', color: '#0072bc' },
+  { id: 'karur', name: 'Karur Vysya Bank', logo: 'KVB', color: '#00549f' },
+  { id: 'csb', name: 'CSB Bank', logo: 'CSB', color: '#e87524' },
+  { id: 'cityunion', name: 'City Union Bank', logo: 'CUB', color: '#1b4d9b' },
+  { id: 'tmb', name: 'Tamilnad Mercantile Bank', logo: 'TMB', color: '#006d9c' },
+  { id: 'dbs', name: 'DBS Bank India', logo: 'DBS', color: '#ed1c24' },
+  { id: 'hsbc', name: 'HSBC India', logo: 'HSBC', color: '#db0011' },
+  { id: 'standardchartered', name: 'Standard Chartered Bank', logo: 'SC', color: '#0072bc' },
+  { id: 'citibank', name: 'Citi India', logo: 'CITI', color: '#056dae' },
 ];
 
 export default function PaymentScreen({ navigation }) {
@@ -35,6 +88,14 @@ export default function PaymentScreen({ navigation }) {
   const [expiry, setExpiry] = useState('');
   const [cvv, setCvv] = useState('');
   const [cardType, setCardType] = useState('Debit Card');
+  const [bankName, setBankName] = useState('');
+  const [ifscCode, setIfscCode] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [accountHolderName, setAccountHolderName] = useState('');
+  const [addingBank, setAddingBank] = useState(false);
+  const [bankDropdownOpen, setBankDropdownOpen] = useState(false);
+  const [upiId, setUpiId] = useState('');
+  const [upiMode, setUpiMode] = useState('upiId');
   const [expandedSection, setExpandedSection] = useState(null);
 
   const toggleSection = (section) => {
@@ -90,6 +151,60 @@ export default function PaymentScreen({ navigation }) {
     setAdding(false);
   };
 
+  const handleAddBankAccount = () => {
+    const normalizedIfsc = ifscCode.trim().toUpperCase();
+    const digits = accountNumber.replace(/\D/g, '');
+    const validIfsc = /^[A-Z]{4}0[A-Z0-9]{6}$/.test(normalizedIfsc);
+    const validAccountNumber = /^\d{9,18}$/.test(digits);
+
+    if (!bankName.trim() || !accountHolderName.trim()) {
+      Alert.alert('Missing details', 'Enter the bank name and account holder name.');
+      return;
+    }
+    if (!validIfsc) {
+      Alert.alert('Invalid IFSC code', 'Enter a valid 11-character IFSC code, such as SBIN0001234.');
+      return;
+    }
+    if (!validAccountNumber) {
+      Alert.alert('Invalid account number', 'Enter an account number with 9 to 18 digits.');
+      return;
+    }
+
+    setMethods((current) => [...current, {
+      id: `bank-${Date.now()}`,
+      name: bankName.trim(),
+      description: `Account ending in ${digits.slice(-4)}`,
+      accountHolderName: accountHolderName.trim(),
+      ifscCode: normalizedIfsc,
+      accountLast4: digits.slice(-4),
+      methodType: 'bank',
+      active: false,
+    }]);
+    setBankName('');
+    setIfscCode('');
+    setAccountNumber('');
+    setAccountHolderName('');
+    setAddingBank(false);
+  };
+
+  const handlePhonePeLink = async () => {
+    const normalizedUpiId = upiId.trim().toLowerCase();
+
+    if (!isValidUpiId(normalizedUpiId)) {
+      Alert.alert('Invalid UPI ID', 'Enter a valid UPI ID, such as yourname@oksbi.');
+      return;
+    }
+
+    const phonePeUrl = `phonepe://pay?pa=${encodeURIComponent(normalizedUpiId)}&pn=${encodeURIComponent('PawMart')}`;
+    const canOpenPhonePe = await Linking.canOpenURL(phonePeUrl);
+    if (!canOpenPhonePe) {
+      Alert.alert('PhonePe unavailable', 'Install PhonePe on this device to continue with this UPI ID.');
+      return;
+    }
+
+    await Linking.openURL(phonePeUrl);
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
@@ -100,16 +215,95 @@ export default function PaymentScreen({ navigation }) {
       </View>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.paymentHeader}>
-          <Text style={styles.stepText}>Step 3 of 3</Text>
           <Text style={styles.heading}>Payments</Text>
           <Text style={styles.secureBadge}>🔒 100% Secure</Text>
         </View>
-        <View style={styles.totalCard}>
-          <Text style={styles.totalLabel}>Total Amount⌄</Text>
-          <Text style={styles.totalValue}>₹139</Text>
-        </View>
 
-        <PaymentRow icon="♧" title="Recommended for You" expanded={expandedSection === 'recommended'} onPress={() => toggleSection('recommended')} />
+        <PaymentRow icon="♧" title="Net Banking" expanded={expandedSection === 'netBanking'} onPress={() => toggleSection('netBanking')}>
+          {expandedSection === 'netBanking' && (
+            <View style={styles.cardOptions}>
+              {methods.filter((method) => method.methodType === 'bank').map((method) => (
+                <View style={styles.savedCard} key={method.id}>
+                  <Text style={styles.savedCardTitle}>{method.name}</Text>
+                  <Text style={styles.savedCardText}>Account ending in {method.accountLast4}</Text>
+                  <Text style={styles.savedCardText}>IFSC: {method.ifscCode}</Text>
+                </View>
+              ))}
+              {addingBank && (
+                <View style={styles.addCard}>
+                  <Text style={styles.fieldLabel}>Bank name</Text>
+                  <TouchableOpacity style={styles.bankSelector} onPress={() => setBankDropdownOpen((current) => !current)}>
+                    {bankName ? (
+                      <>
+                        <View style={[styles.bankLogo, { backgroundColor: bankOptions.find((bank) => bank.name === bankName)?.color || theme.colors.primary }]}>
+                          <Text style={styles.bankLogoText}>{bankOptions.find((bank) => bank.name === bankName)?.logo}</Text>
+                        </View>
+                        <Text style={styles.bankSelectorText}>{bankName}</Text>
+                      </>
+                    ) : <Text style={styles.bankPlaceholder}>Select your bank</Text>}
+                    <Text style={styles.bankSelectorChevron}>{bankDropdownOpen ? '⌃' : '⌄'}</Text>
+                  </TouchableOpacity>
+                  {bankDropdownOpen && (
+                    <View style={styles.bankDropdown}>
+                      <ScrollView nestedScrollEnabled style={styles.bankDropdownList}>
+                        {bankOptions.map((bank) => (
+                          <TouchableOpacity
+                            key={bank.id}
+                            style={styles.bankOption}
+                            onPress={() => {
+                              setBankName(bank.name);
+                              setBankDropdownOpen(false);
+                            }}
+                          >
+                            <View style={[styles.bankLogo, { backgroundColor: bank.color }]}>
+                              <Text style={styles.bankLogoText}>{bank.logo}</Text>
+                            </View>
+                            <Text style={styles.bankOptionText}>{bank.name}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                  <Text style={styles.fieldLabel}>IFSC code</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g. SBIN0001234"
+                    value={ifscCode}
+                    autoCapitalize="characters"
+                    maxLength={11}
+                    onChangeText={(value) => setIfscCode(value.replace(/\s/g, '').toUpperCase())}
+                  />
+                  <Text style={styles.fieldLabel}>Account number</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter account number"
+                    value={accountNumber}
+                    keyboardType="number-pad"
+                    maxLength={18}
+                    onChangeText={(value) => setAccountNumber(value.replace(/\D/g, ''))}
+                  />
+                  <Text style={styles.fieldLabel}>Account holder name</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter account holder name"
+                    value={accountHolderName}
+                    autoCapitalize="words"
+                    onChangeText={setAccountHolderName}
+                  />
+                  <View style={styles.formActions}>
+                    <TouchableOpacity style={styles.cancelButton} onPress={() => setAddingBank(false)}>
+                      <Text style={styles.cancelText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.addButton} onPress={handleAddBankAccount}>
+                      <Text style={styles.addButtonText}>Save Bank</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+              {!addingBank && <TouchableOpacity style={styles.addMethodButton} onPress={() => setAddingBank(true)}><Text style={styles.addMethodText}>+ Add Bank Account</Text></TouchableOpacity>}
+            </View>
+          )}
+        </PaymentRow>
         <PaymentRow icon="◴" title="Cards" expanded={expandedSection === 'cards'} onPress={() => toggleSection('cards')}>
           {expandedSection === 'cards' && (
             <View style={styles.cardOptions}>
@@ -181,7 +375,51 @@ export default function PaymentScreen({ navigation }) {
           )}
         </PaymentRow>
         <PaymentRow icon="▣" title="UPI" subtitle="Pay by any UPI app" expanded={expandedSection === 'upi'} onPress={() => toggleSection('upi')}>
-          {expandedSection === 'upi' && <Text style={styles.detailText}>Choose your preferred UPI app at checkout.</Text>}
+          {expandedSection === 'upi' && (
+            <View style={styles.upiOptions}>
+              <View style={styles.upiModeToggle}>
+                <TouchableOpacity
+                  style={[styles.upiModeButton, upiMode === 'upiId' && styles.upiModeButtonSelected]}
+                  onPress={() => setUpiMode('upiId')}
+                >
+                  <Text style={[styles.upiModeText, upiMode === 'upiId' && styles.upiModeTextSelected]}>UPI ID</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.upiModeButton, upiMode === 'qr' && styles.upiModeButtonSelected]}
+                  onPress={() => setUpiMode('qr')}
+                >
+                  <Text style={[styles.upiModeText, upiMode === 'qr' && styles.upiModeTextSelected]}>QR Code</Text>
+                </TouchableOpacity>
+              </View>
+              {upiMode === 'upiId' && (
+                <>
+                  <Text style={styles.fieldLabel}>UPI ID</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="yourname@oksbi"
+                    value={upiId}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    onChangeText={setUpiId}
+                  />
+                  <Text style={styles.upiHint}>Enter your UPI ID to continue securely with PhonePe.</Text>
+                  <TouchableOpacity style={styles.phonePeButton} onPress={handlePhonePeLink}>
+                    <Text style={styles.phonePeButtonText}>Continue with PhonePe</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+              {upiMode === 'qr' && (
+                <View style={styles.qrContainer}>
+                  <QRCode
+                    value={`upi://pay?pa=${encodeURIComponent(hardcodedUpiId)}&pn=${encodeURIComponent('PawMart')}&cu=INR`}
+                    size={210}
+                    backgroundColor="#ffffff"
+                    color="#101828"
+                  />
+                </View>
+              )}
+            </View>
+          )}
         </PaymentRow>
         <PaymentRow icon="▤" title="Cash on Delivery" expanded={expandedSection === 'cod'} onPress={() => toggleSection('cod')}>
           {expandedSection === 'cod' && <Text style={styles.detailText}>Pay when your order is delivered.</Text>}
@@ -196,7 +434,7 @@ export default function PaymentScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
-  topBar: { height: 76, paddingHorizontal: 18, paddingTop: 8, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#e8defb' },
+  topBar: { height: 108, paddingHorizontal: 18, paddingTop: 40, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#e8defb' },
   backButton: { width: 34, height: 34, justifyContent: 'center', alignItems: 'center' },
   backIcon: { color: theme.colors.text, fontSize: 30, lineHeight: 30 },
   topBarTitle: { marginLeft: 8, color: theme.colors.text, fontSize: 20, fontWeight: '800' },
@@ -223,6 +461,19 @@ const styles = StyleSheet.create({
   savedCardTitle: { color: '#101828', fontWeight: '800' },
   savedCardText: { color: '#667085', marginTop: 5 },
   detailText: { color: '#667085', paddingHorizontal: 60, paddingBottom: 14 },
+  upiOptions: { paddingHorizontal: 12, paddingBottom: 12 },
+  upiModeToggle: { flexDirection: 'row', backgroundColor: '#f2f4f7', borderRadius: 8, padding: 3, marginBottom: 14 },
+  upiModeButton: { flex: 1, alignItems: 'center', borderRadius: 6, paddingVertical: 9 },
+  upiModeButtonSelected: { backgroundColor: theme.colors.primary },
+  upiModeText: { color: '#475467', fontSize: 13, fontWeight: '700' },
+  upiModeTextSelected: { color: theme.colors.surface },
+  disabledInput: { backgroundColor: '#eaecf0', color: '#667085' },
+  upiHint: { color: '#667085', fontSize: 12, marginTop: -4, marginBottom: 10 },
+  qrContainer: { alignItems: 'center', backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e4e7ec', borderRadius: 10, padding: 14, marginBottom: 12 },
+  qrTitle: { color: '#101828', fontSize: 16, fontWeight: '800', marginBottom: 12 },
+  qrUpiId: { color: '#667085', fontSize: 12, marginTop: 10 },
+  phonePeButton: { backgroundColor: '#5f259f', borderRadius: 8, padding: 12, alignItems: 'center' },
+  phonePeButtonText: { color: theme.colors.surface, fontWeight: '700' },
   methodCard: { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: '#dfe3ea', borderRadius: 16, padding: 14, marginBottom: 12 },
   methodHeader: { flexDirection: 'row', alignItems: 'flex-start' },
   methodCopy: { flex: 1, marginRight: 12 },
@@ -232,6 +483,16 @@ const styles = StyleSheet.create({
   credentials: { marginTop: 14 },
   fieldLabel: { color: '#34517a', fontSize: 12, marginBottom: 5 },
   input: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 8, padding: 11, fontSize: 14, marginBottom: 10 },
+  bankSelector: { minHeight: 48, flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 8, paddingHorizontal: 11, marginBottom: 6 },
+  bankSelectorText: { flex: 1, color: '#101828', fontSize: 14, marginLeft: 10 },
+  bankPlaceholder: { flex: 1, color: '#98a2b3', fontSize: 14 },
+  bankSelectorChevron: { color: '#101828', fontSize: 20, paddingLeft: 8 },
+  bankDropdown: { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 8, marginBottom: 10, overflow: 'hidden' },
+  bankDropdownList: { maxHeight: 250 },
+  bankOption: { minHeight: 52, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: '#eef2f6' },
+  bankOptionText: { flex: 1, color: '#101828', fontSize: 14, marginLeft: 10 },
+  bankLogo: { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center' },
+  bankLogoText: { color: '#ffffff', fontSize: 9, fontWeight: '800', textAlign: 'center' },
   cardRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
   halfInput: { flex: 1 },
   methodFooter: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginTop: 12, gap: 8 },
@@ -266,4 +527,8 @@ function luhnCheck(value) {
     shouldDouble = !shouldDouble;
   }
   return sum % 10 === 0;
+}
+
+function isValidUpiId(value) {
+  return /^[a-z0-9][a-z0-9._-]{1,255}@[a-z][a-z0-9.-]{1,63}$/i.test(value);
 }

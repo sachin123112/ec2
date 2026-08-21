@@ -35,8 +35,6 @@ export default function AccountScreen() {
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
-        <Text style={styles.heading}>Account Settings</Text>
-        
         {/* Profile Card */}
         <TouchableOpacity
           style={styles.profileCard}
@@ -68,6 +66,11 @@ export default function AccountScreen() {
           <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('OrderHistory')}>
             <Text style={styles.actionIcon}>📋</Text>
             <Text style={styles.actionButtonText}>Order History</Text>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('OrderTracking')}>
+            <Text style={styles.actionIcon}>📦</Text>
+            <Text style={styles.actionButtonText}>Order Tracking</Text>
             <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Payments')}>
@@ -108,9 +111,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   topBar: {
-    height: 76,
+    height: 108,
     paddingHorizontal: 18,
-    paddingTop: 8,
+    paddingTop: 40,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,

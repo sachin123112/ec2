@@ -12,6 +12,9 @@ export default function WishlistScreen({ navigation }) {
           <Text style={styles.backIcon}>‹</Text>
         </TouchableOpacity>
         <Text style={styles.topBarTitle}>Wishlist</Text>
+        <TouchableOpacity style={styles.cartButton} onPress={() => navigation.navigate('Cart')} accessibilityLabel="Cart">
+          <Text style={styles.cartIcon}>🛒</Text>
+        </TouchableOpacity>
       </View>
       <View style={styles.content}>
         <Text style={styles.heading}>Wishlist</Text>
@@ -24,10 +27,12 @@ export default function WishlistScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
-  topBar: { height: 76, paddingHorizontal: 18, paddingTop: 8, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#e8defb' },
+  topBar: { height: 108, paddingHorizontal: 18, paddingTop: 40, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#e8defb' },
   backButton: { width: 34, height: 34, justifyContent: 'center', alignItems: 'center' },
   backIcon: { color: theme.colors.text, fontSize: 30, lineHeight: 30 },
-  topBarTitle: { marginLeft: 8, color: theme.colors.text, fontSize: 20, fontWeight: '800' },
+  topBarTitle: { flex: 1, marginLeft: 8, color: theme.colors.text, fontSize: 20, fontWeight: '800' },
+  cartButton: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  cartIcon: { fontSize: 22 },
   content: { flex: 1, padding: theme.spacing.lg },
   heading: { fontSize: 28, fontWeight: '800', color: theme.colors.primaryDark, marginBottom: 16 },
   empty: { color: theme.colors.textSecondary, fontSize: 16 },

@@ -24,7 +24,6 @@ export default function HomeScreen() {
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => <ProductCard item={item} onAdd={addToCart} />}
         contentContainerStyle={styles.listContent}
-        ListHeaderComponent={<Text style={styles.productsHeading}>All Products</Text>}
         ListEmptyComponent={<Text style={styles.empty}>No products available.</Text>}
       />
       <BottomTabBar activeTab="Home" />
@@ -40,12 +39,6 @@ const styles = StyleSheet.create({
   listContent: {
     padding: theme.spacing.lg,
     paddingBottom: 100,
-  },
-  productsHeading: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: theme.colors.primaryDark,
-    marginBottom: 16,
   },
   empty: {
     textAlign: 'center',

@@ -48,7 +48,6 @@ export default function ShopScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Products</Text>
       <Text style={styles.sectionLabel}>SEARCH</Text>
       <TextInput
         style={styles.search}
