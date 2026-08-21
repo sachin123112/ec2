@@ -20,11 +20,7 @@ export default function LoginScreen({ navigation }) {
       }
       const data = await response.json();
       login(data.accessToken, email, data.roles || [], data.refreshToken || '');
-      if (data.roles?.includes('ADMIN')) {
-        navigation.replace('AdminDashboard');
-      } else {
-        navigation.replace('Home');
-      }
+      navigation.replace('Home');
     } catch (err) {
       Alert.alert('Error', 'Unable to login. Please try again later.');
     } finally {

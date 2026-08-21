@@ -5,8 +5,8 @@ import theme from '../theme';
 
 const tabs = [
   { key: 'Home', label: 'Home', icon: '🏠' },
-  { key: 'Shop', label: 'Shop', icon: '🛍️' },
-  { key: 'Dashboard', label: 'Dashboard', icon: '📊' },
+  { key: 'Shop', label: 'Products', icon: '🛍️' },
+  { key: 'Wishlist', label: 'Wishlist', icon: '♡' },
   { key: 'Account', label: 'Account', icon: '👤' },
 ];
 

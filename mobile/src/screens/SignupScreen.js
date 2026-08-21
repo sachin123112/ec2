@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { signup as signupApi } from '../api/auth';
+import { goBackOrNavigate } from '../navigation/safeBack';
 
 export default function SignupScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -55,7 +56,7 @@ export default function SignupScreen({ navigation }) {
       <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={loading}>
         <Text style={styles.buttonText}>{loading ? 'Creating account...' : 'Sign Up'}</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.goBack()}>
+      <TouchableOpacity onPress={() => goBackOrNavigate(navigation, 'Login')}>
         <Text style={styles.link}>Already have an account? Sign in</Text>
       </TouchableOpacity>
     </View>

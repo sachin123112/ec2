@@ -1,36 +1,32 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { useAuth } from '../context/AuthContext';
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { fetchProducts } from '../api/products';
+import { products as staticProducts } from '../data/products';
+import { useCart } from '../context/CartContext';
+import ProductCard from '../components/ProductCard';
 import BottomTabBar from '../components/BottomTabBar';
 import theme from '../theme';
 
 export default function HomeScreen() {
-  const navigation = useNavigation();
-  const { logout, isAdmin } = useAuth();
+  const { addToCart } = useCart();
+  const [products, setProducts] = useState(staticProducts);
+
+  useEffect(() => {
+    fetchProducts()
+      .then(setProducts)
+      .catch((error) => console.warn('Unable to load products from backend:', error));
+  }, []);
 
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>PawMart</Text>
-        <Text style={styles.subtitle}>Your pet essentials delivered with love.</Text>
-        <Text style={styles.description}>Shop premium products, manage your orders, and keep your furry family happy.</Text>
-
-        <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('Shop')}>
-          <Text style={styles.primaryButtonText}>Browse Shop</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Cart')}>
-          <Text style={styles.secondaryButtonText}>View Cart</Text>
-        </TouchableOpacity>
-        {isAdmin && (
-          <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('AdminDashboard')}>
-            <Text style={styles.secondaryButtonText}>Admin Dashboard</Text>
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity style={styles.tertiaryButton} onPress={logout}>
-          <Text style={styles.tertiaryButtonText}>Log Out</Text>
-        </TouchableOpacity>
-      </View>
+      <FlatList
+        data={products}
+        keyExtractor={(item) => String(item.id)}
+        renderItem={({ item }) => <ProductCard item={item} onAdd={addToCart} />}
+        contentContainerStyle={styles.listContent}
+        ListHeaderComponent={<Text style={styles.productsHeading}>All Products</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>No products available.</Text>}
+      />
       <BottomTabBar activeTab="Home" />
     </View>
   );
@@ -41,66 +37,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  listContent: {
     padding: theme.spacing.lg,
+    paddingBottom: 100,
   },
-  title: {
-    fontSize: 36,
+  productsHeading: {
+    fontSize: 24,
     fontWeight: '800',
     color: theme.colors.primaryDark,
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  subtitle: {
-    fontSize: 18,
+  empty: {
+    textAlign: 'center',
     color: theme.colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  description: {
-    fontSize: 15,
-    color: '#6759a8',
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 22,
-  },
-  primaryButton: {
-    width: '100%',
-    backgroundColor: theme.colors.primary,
-    padding: 16,
-    borderRadius: theme.radius.xl,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  primaryButtonText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  secondaryButton: {
-    width: '100%',
-    backgroundColor: theme.colors.accent,
-    padding: 16,
-    borderRadius: theme.radius.xl,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  secondaryButtonText: {
-    color: '#fff',
-    fontWeight: '700',
-  },
-  tertiaryButton: {
-    width: '100%',
-    backgroundColor: '#dcd0ff',
-    padding: 16,
-    borderRadius: theme.radius.xl,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  tertiaryButtonText: {
-    color: theme.colors.primaryDark,
-    fontWeight: '700',
   },
 });

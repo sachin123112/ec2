@@ -1,33 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
-import config from '../api/config';
 import BottomTabBar from '../components/BottomTabBar';
+import { goBackOrNavigate } from '../navigation/safeBack';
 import theme from '../theme';
 
 export default function AccountScreen() {
   const navigation = useNavigation();
-  const { userEmail, logout, token } = useAuth();
-  const [userProfile, setUserProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await fetch(`${config.API_URL}/users/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!response.ok) throw new Error('Unable to load profile');
-        setUserProfile(await response.json());
-      } catch (err) {
-        console.warn(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (token) fetchProfile();
-  }, [token]);
+  const { userEmail, logout } = useAuth();
 
   const handleLogout = () => {
     logout();
@@ -42,14 +23,11 @@ export default function AccountScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()} accessibilityLabel="Go back">
+        <TouchableOpacity style={styles.headerButton} onPress={() => goBackOrNavigate(navigation, 'Home')} accessibilityLabel="Go back">
           <Text style={styles.headerIcon}>‹</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Account</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.headerButton} onPress={() => navigation.navigate('Notifications')} accessibilityLabel="Notifications">
-            <Text style={styles.headerActionIcon}>♧</Text>
-          </TouchableOpacity>
           <TouchableOpacity style={styles.headerButton} onPress={() => navigation.navigate('Cart')} accessibilityLabel="Cart">
             <Text style={styles.headerActionIcon}>🛒</Text>
           </TouchableOpacity>
@@ -60,7 +38,12 @@ export default function AccountScreen() {
         <Text style={styles.heading}>Account Settings</Text>
         
         {/* Profile Card */}
-        <View style={styles.profileCard}>
+        <TouchableOpacity
+          style={styles.profileCard}
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate('Profile')}
+          accessibilityLabel="Open profile"
+        >
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{userName.charAt(0).toUpperCase()}</Text>
           </View>
@@ -68,47 +51,37 @@ export default function AccountScreen() {
             <Text style={styles.name}>{userName}</Text>
             <Text style={styles.email}>{userEmail}</Text>
           </View>
-        </View>
-
-        {/* Profile Details */}
-        {loading ? (
-          <Text style={styles.message}>Loading profile...</Text>
-        ) : userProfile ? (
-          <View style={styles.infoSection}>
-            <Text style={styles.sectionTitle}>Personal Information</Text>
-            <View style={styles.infoCard}>
-              <View style={styles.detailRow}>
-                <Text style={styles.label}>First Name</Text>
-                <Text style={styles.value}>{userProfile.firstName || 'Not provided'}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.label}>Last Name</Text>
-                <Text style={styles.value}>{userProfile.lastName || 'Not provided'}</Text>
-              </View>
-              <View style={styles.detailRowLast}>
-                <Text style={styles.label}>Phone</Text>
-                <Text style={styles.value}>{userProfile.phone || 'Not provided'}</Text>
-              </View>
-            </View>
-          </View>
-        ) : null}
+        </TouchableOpacity>
 
         {/* Action Buttons */}
         <View style={styles.actionsSection}>
-          <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Dashboard')}>
-            <Text style={styles.actionIcon}>▥</Text>
-            <Text style={styles.actionButtonText}>View Dashboard</Text>
+          <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('SavedAddresses')}>
+            <Text style={styles.actionIcon}>📍</Text>
+            <Text style={styles.actionButtonText}>Saved Addresses</Text>
             <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Cart')}>
-            <Text style={styles.actionIcon}>🛒</Text>
-            <Text style={styles.actionButtonText}>View Cart</Text>
+          <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('HelpSupport')}>
+            <Text style={styles.actionIcon}>💬</Text>
+            <Text style={styles.actionButtonText}>Help & Support</Text>
             <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Account')}>
-            <Text style={styles.actionIcon}>⚙</Text>
-            <Text style={styles.actionButtonText}>Settings</Text>
+          <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('OrderHistory')}>
+            <Text style={styles.actionIcon}>📋</Text>
+            <Text style={styles.actionButtonText}>Order History</Text>
             <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Payments')}>
+            <Text style={styles.actionIcon}>💳</Text>
+            <Text style={styles.actionButtonText}>Payment Methods</Text>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('NotificationSettings')}>
+            <Text style={styles.actionIcon}>🔔</Text>
+            <Text style={styles.actionButtonText}>Notification Settings</Text>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutText}>Log Out</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -122,9 +95,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
+  logoutButton: {
+    alignItems: 'center',
+    backgroundColor: '#fee2e2',
+    borderRadius: 18,
+    marginTop: 8,
+    paddingVertical: 14,
+  },
+  logoutText: {
+    color: theme.colors.danger,
+    fontWeight: '800',
+    fontSize: 15,
+  },
   topBar: {
     height: 76,
     paddingHorizontal: 18,
+    paddingTop: 8,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
@@ -220,7 +206,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: theme.colors.text,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 12,
+  },
+  editText: {
+    color: theme.colors.primary,
+    fontWeight: '700',
   },
   infoCard: {
     backgroundColor: theme.colors.surface,
@@ -248,6 +243,34 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: theme.colors.text,
   },
+  input: {
+    color: theme.colors.text,
+    fontSize: 16,
+    paddingVertical: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.primary,
+  },
+  editActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 12,
+    gap: 10,
+  },
+  cancelButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  cancelText: { color: theme.colors.textSecondary, fontWeight: '700' },
+  saveButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.primary,
+  },
+  saveText: { color: theme.colors.surface, fontWeight: '700' },
   message: {
     color: theme.colors.textSecondary,
     fontSize: 16,

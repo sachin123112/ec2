@@ -1,0 +1,34 @@
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import BottomTabBar from '../components/BottomTabBar';
+import { goBackOrNavigate } from '../navigation/safeBack';
+import theme from '../theme';
+
+export default function WishlistScreen({ navigation }) {
+  return (
+    <View style={styles.container}>
+      <View style={styles.topBar}>
+        <TouchableOpacity style={styles.backButton} onPress={() => goBackOrNavigate(navigation, 'Home')} accessibilityLabel="Go back">
+          <Text style={styles.backIcon}>‹</Text>
+        </TouchableOpacity>
+        <Text style={styles.topBarTitle}>Wishlist</Text>
+      </View>
+      <View style={styles.content}>
+        <Text style={styles.heading}>Wishlist</Text>
+        <Text style={styles.empty}>Your wishlist is empty.</Text>
+      </View>
+      <BottomTabBar activeTab="Wishlist" />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  topBar: { height: 76, paddingHorizontal: 18, paddingTop: 8, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#e8defb' },
+  backButton: { width: 34, height: 34, justifyContent: 'center', alignItems: 'center' },
+  backIcon: { color: theme.colors.text, fontSize: 30, lineHeight: 30 },
+  topBarTitle: { marginLeft: 8, color: theme.colors.text, fontSize: 20, fontWeight: '800' },
+  content: { flex: 1, padding: theme.spacing.lg },
+  heading: { fontSize: 28, fontWeight: '800', color: theme.colors.primaryDark, marginBottom: 16 },
+  empty: { color: theme.colors.textSecondary, fontSize: 16 },
+});

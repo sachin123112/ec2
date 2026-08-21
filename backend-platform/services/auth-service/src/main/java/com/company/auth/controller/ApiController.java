@@ -376,6 +376,18 @@ public class ApiController {
         return toDto(user);
     }
 
+    @PostMapping(value = "/users/me/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload current user profile image")
+    public UserDto uploadCurrentUserProfileImage(
+            Principal principal, @RequestPart("image") MultipartFile image) {
+        if (image == null || image.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Profile image is required");
+        }
+        User user = findUserByEmail(principal);
+        user.setProfileImageUrl(saveProfileImage(image, user.getId()));
+        return toDto(userRepository.save(user));
+    }
+
     @PutMapping("/users/me")
     @Operation(summary = "Update current user", description = "Update profile fields for current authenticated user")
     public UserDto updateCurrentUser(Principal principal, @RequestBody UserUpdateRequest request) {
@@ -572,6 +584,21 @@ public class ApiController {
             return "/product-images/" + fileName;
         } catch (Exception ex) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to store product image", ex);
+        }
+    }
+
+    private String saveProfileImage(MultipartFile file, Long userId) {
+        try {
+            Path uploadRoot = Paths.get("uploads", "profile-images");
+            Files.createDirectories(uploadRoot);
+            String extension = StringUtils.getFilenameExtension(file.getOriginalFilename());
+            String safeExtension = StringUtils.hasText(extension) ? "." + extension.replaceAll("[^a-zA-Z0-9]", "") : ".jpg";
+            String fileName = String.format("%d_%d%s", userId, System.currentTimeMillis(), safeExtension);
+            Path destinationFile = uploadRoot.resolve(fileName).normalize().toAbsolutePath();
+            file.transferTo(destinationFile);
+            return "/profile-images/" + fileName;
+        } catch (Exception ex) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to store profile image", ex);
         }
     }
 

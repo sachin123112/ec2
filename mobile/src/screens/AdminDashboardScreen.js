@@ -1,16 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { useNavigation } from '@react-navigation/native';
 import BottomTabBar from '../components/BottomTabBar';
 import config from '../api/config';
+import { goBackOrNavigate } from '../navigation/safeBack';
 
-export default function AdminDashboardScreen() {
+export default function AdminDashboardScreen({ navigation }) {
   const { token } = useAuth();
-  const navigation = useNavigation();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -30,40 +28,13 @@ export default function AdminDashboardScreen() {
     if (token) fetchStats();
   }, [token]);
 
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const response = await fetch(`${config.API_URL}/notifications`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          const notifications = Array.isArray(data) ? data : [];
-          const count = notifications.filter(n => !n.read).length;
-          setUnreadCount(count);
-        }
-      } catch (err) {
-        console.warn('Error fetching notifications:', err);
-      }
-    };
-    if (token) fetchNotifications();
-  }, [token]);
-
   return (
     <View style={styles.page}>
       <View style={styles.header}>
-        <Text style={styles.heading}>Admin Dashboard</Text>
-        <TouchableOpacity
-          style={styles.notificationButton}
-          onPress={() => navigation.navigate('Notifications')}
-        >
-          <Text style={styles.notificationIcon}>🔔</Text>
-          {unreadCount > 0 && (
-            <View style={styles.badgeContainer}>
-              <Text style={styles.badgeText}>{unreadCount}</Text>
-            </View>
-          )}
+        <TouchableOpacity style={styles.backButton} onPress={() => goBackOrNavigate(navigation, 'Home')} accessibilityLabel="Go back">
+          <Text style={styles.backIcon}>‹</Text>
         </TouchableOpacity>
+        <Text style={styles.heading}>Admin Dashboard</Text>
       </View>
       <View style={styles.container}>
         {loading ? (
@@ -87,7 +58,7 @@ export default function AdminDashboardScreen() {
           <Text style={styles.error}>Unable to fetch data.</Text>
         )}
       </View>
-      <BottomTabBar activeTab="Dashboard" />
+      <BottomTabBar activeTab="Shop" />
     </View>
   );
 }
@@ -103,34 +74,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e0d7f7',
   },
+  backButton: { width: 34, height: 34, justifyContent: 'center', alignItems: 'center' },
+  backIcon: { color: '#25213c', fontSize: 30, lineHeight: 30 },
   heading: { fontSize: 28, fontWeight: '800', color: '#4a2d90' },
-  notificationButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#fff',
-    position: 'relative',
-  },
-  notificationIcon: {
-    fontSize: 24,
-  },
-  badgeContainer: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    backgroundColor: '#d32f2f',
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#f7f2ff',
-  },
-  badgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
   container: { flex: 1, padding: 20 },
   message: { color: '#6f5ecb', fontSize: 16 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
