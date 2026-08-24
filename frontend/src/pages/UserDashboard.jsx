@@ -758,7 +758,7 @@ export default function UserDashboard() {
                         <strong>{addr.label || 'Home'}</strong>
                         <p>{addr.name}</p>
                         <p>{addr.addressLine1}</p>
-                        <p>{addr.addressLine2}</p>
+                        {addr.addressLine2 && <p>Landmark: {addr.addressLine2}</p>}
                         <p>{addr.city}, {addr.state} {addr.postalCode}</p>
                         <p>{addr.country}</p>
                         <p>{addr.phone}</p>
@@ -804,21 +804,21 @@ export default function UserDashboard() {
                           />
                         </label>
                         <label>
-                          Address Line 1
+                          Address
                           <input
                             type="text"
                             value={addressForm.addressLine1}
                             onChange={e => setAddressForm(prev => ({ ...prev, addressLine1: e.target.value }))}
-                            placeholder="Street address"
+                            placeholder="Street address (address_line1)"
                           />
                         </label>
                         <label>
-                          Address Line 2
+                          Landmark
                           <input
                             type="text"
                             value={addressForm.addressLine2}
                             onChange={e => setAddressForm(prev => ({ ...prev, addressLine2: e.target.value }))}
-                            placeholder="Apartment, suite, unit"
+                            placeholder="Nearby landmark (address_line2)"
                           />
                         </label>
                         <label>

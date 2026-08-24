@@ -13,6 +13,7 @@ export default function ProductsAdmin() {
   const [productImages, setProductImages] = useState([]);
   const [productImagePreviews, setProductImagePreviews] = useState([]);
   const [status, setStatus] = useState('');
+  const [deletingProductId, setDeletingProductId] = useState(null);
 
   const authHeaderBase = useMemo(() => {
     const headers = {};
@@ -25,18 +26,34 @@ export default function ProductsAdmin() {
     'Content-Type': 'application/json',
   }), [authHeaderBase]);
 
+  function getNextSku(categoryId) {
+    const category = categories.find(item => String(item.id) === String(categoryId));
+    if (!category) return '';
+
+    const prefix = category.name.trim().toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const nextNumber = products.reduce((highest, product) => {
+      const match = product.sku?.match(new RegExp(`^${prefix}-(\\d+)$`, 'i'));
+      return match ? Math.max(highest, Number(match[1])) : highest;
+    }, 0) + 1;
+    return `${prefix}-${String(nextNumber).padStart(4, '0')}`;
+  }
+
   const loadData = useCallback(async () => {
     try {
       const [productsRes, categoriesRes] = await Promise.all([
         fetch(`${API_URL}/products`, { headers: authHeaders }),
         fetch(`${API_URL}/categories`, { headers: authHeaders }),
       ]);
-      if (productsRes.ok) setProducts(await productsRes.json());
+      if (!productsRes.ok) {
+        const errorText = await productsRes.text();
+        throw new Error(errorText || `Unable to load products (${productsRes.status}).`);
+      }
+      setProducts(await productsRes.json());
       if (categoriesRes.ok) setCategories(await categoriesRes.json());
       setStatus('Data loaded successfully.');
     } catch (err) {
       console.error(err);
-      setStatus('Unable to load products data.');
+      setStatus(err.message || 'Unable to load products data.');
     }
   }, [authHeaders]);
 
@@ -115,15 +132,24 @@ export default function ProductsAdmin() {
 
   async function handleDeleteProduct(id) {
     setStatus('Deleting product...');
-    const response = await fetch(`${API_URL}/products/${id}`, {
-      method: 'DELETE',
-      headers: authHeaders,
-    });
-    if (response.ok) {
-      await loadData();
+    setDeletingProductId(id);
+    try {
+      const response = await fetch(`${API_URL}/products/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders,
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Delete failed (${response.status}).`);
+      }
+
+      setProducts(prev => prev.filter(product => product.id !== id));
       setStatus('Product deleted successfully.');
-    } else {
-      setStatus('Unable to delete product.');
+    } catch (err) {
+      console.error('Unable to delete product', err);
+      setStatus(err.message || 'Unable to delete product.');
+    } finally {
+      setDeletingProductId(null);
     }
   }
 
@@ -155,11 +181,19 @@ export default function ProductsAdmin() {
             </label>
             <label>
               SKU
-              <input value={productForm.sku} onChange={e => setProductForm({...productForm, sku: e.target.value})} required />
+              <input value={productForm.sku} placeholder="Select a category" readOnly required />
             </label>
             <label>
               Category
-              <select value={productForm.categoryId} onChange={e => setProductForm({...productForm, categoryId: e.target.value})}>
+              <select
+                value={productForm.categoryId}
+                onChange={e => setProductForm({
+                  ...productForm,
+                  categoryId: e.target.value,
+                  sku: getNextSku(e.target.value),
+                })}
+                required
+              >
                 <option value="">Select category</option>
                 {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
               </select>
@@ -230,7 +264,14 @@ export default function ProductsAdmin() {
                     <td>{product.price}</td>
                     <td>{product.stockQuantity}</td>
                     <td>
-                      <button className="btn-danger btn-sm" onClick={() => handleDeleteProduct(product.id)}>Delete</button>
+                      <button
+                        type="button"
+                        className="btn-danger btn-sm"
+                        onClick={() => handleDeleteProduct(product.id)}
+                        disabled={deletingProductId === product.id}
+                      >
+                        {deletingProductId === product.id ? 'Deleting...' : 'Delete'}
+                      </button>
                     </td>
                   </tr>
                 ))}

@@ -1,13 +1,42 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { categories } from '../data/products';
+import { categories as defaultCategories } from '../data/products';
 import { useCart } from '../context/CartContext';
 import './Shop.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
+function categoryMatches(productCategory, selectedCategory) {
+  const productName = productCategory?.trim().toLowerCase();
+  const selectedName = selectedCategory?.trim().toLowerCase();
+  return productName === selectedName || productName === selectedName?.replace(/s$/, '') || productName?.replace(/s$/, '') === selectedName;
+}
+
+function getCategoryIcon(categoryName) {
+  const defaultCategory = defaultCategories.find(category => categoryMatches(category.name, categoryName));
+  return defaultCategory?.icon || '🐾';
+}
+
+function normalizeProduct(product) {
+  const category = typeof product.category === 'string' ? product.category : product.category?.name;
+  return {
+    id: product.id,
+    name: product.name,
+    category: product.categoryName || category || 'Uncategorized',
+    subCategory: product.subCategory || '',
+    price: product.price || 0,
+    rating: product.rating || 0,
+    reviews: product.reviews || 0,
+    image: product.imageUrls?.[0] || product.images?.[0] || product.image || 'https://via.placeholder.com/400',
+    badge: product.badge || '',
+    description: product.description || '',
+    inStock: product.stockQuantity ? product.stockQuantity > 0 : (product.inStock !== undefined ? product.inStock : true),
+  };
+}
+
 export default function Shop() {
   const [products, setProducts] = useState([]);
+  const [categoryOptions, setCategoryOptions] = useState(defaultCategories);
   const [searchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState('All');
   const [sortBy, setSortBy] = useState('default');
@@ -18,32 +47,26 @@ export default function Shop() {
   useEffect(() => {
     const cat = searchParams.get('category');
     const q = searchParams.get('search');
-    if (cat) setActiveCategory(cat);
-    if (q) setSearch(q);
+    setActiveCategory(cat || 'All');
+    setSearch(q || '');
   }, [searchParams]);
 
   useEffect(() => {
     let mounted = true;
     async function fetchProducts() {
       try {
-        const res = await fetch(`${API_URL}/products`);
+        const [res, categoriesRes] = await Promise.all([
+          fetch(`${API_URL}/products`),
+          fetch(`${API_URL}/categories`),
+        ]);
         if (!mounted) return;
         if (res.ok) {
           const all = await res.json();
-          const norm = all.map(p => ({
-            id: p.id,
-            name: p.name,
-            category: p.category || (p.category && p.category.name) || 'Uncategorized',
-            subCategory: p.subCategory || '',
-            price: p.price || 0,
-            rating: p.rating || 0,
-            reviews: p.reviews || 0,
-            image: (p.images && p.images[0]) || p.image || 'https://via.placeholder.com/400',
-            badge: p.badge || '',
-            description: p.description || '',
-            inStock: p.stockQuantity ? p.stockQuantity > 0 : (p.inStock !== undefined ? p.inStock : true),
-          }));
-          setProducts(norm);
+          setProducts(all.map(normalizeProduct));
+        }
+        if (categoriesRes.ok) {
+          const backendCategories = await categoriesRes.json();
+          if (backendCategories.length > 0) setCategoryOptions(backendCategories);
         }
       } catch {
         // ignore
@@ -54,20 +77,7 @@ export default function Shop() {
 
     function onProductsUpdated(e) {
       if (e && e.detail) {
-        const norm = e.detail.map(p => ({
-          id: p.id,
-          name: p.name,
-          category: p.category || (p.category && p.category.name) || 'Uncategorized',
-          subCategory: p.subCategory || '',
-          price: p.price || 0,
-          rating: p.rating || 0,
-          reviews: p.reviews || 0,
-          image: (p.images && p.images[0]) || p.image || 'https://via.placeholder.com/400',
-          badge: p.badge || '',
-          description: p.description || '',
-          inStock: p.stockQuantity ? p.stockQuantity > 0 : (p.inStock !== undefined ? p.inStock : true),
-        }));
-        setProducts(norm);
+        setProducts(e.detail.map(normalizeProduct));
       }
     }
 
@@ -78,7 +88,7 @@ export default function Shop() {
   let filtered = products;
 
   if (activeCategory !== 'All') {
-    filtered = filtered.filter(p => p.category === activeCategory);
+    filtered = filtered.filter(p => categoryMatches(p.category, activeCategory));
   }
 
   if (search.trim()) {
@@ -93,6 +103,8 @@ export default function Shop() {
   if (sortBy === 'price-asc') filtered = [...filtered].sort((a, b) => a.price - b.price);
   if (sortBy === 'price-desc') filtered = [...filtered].sort((a, b) => b.price - a.price);
   if (sortBy === 'rating') filtered = [...filtered].sort((a, b) => b.rating - a.rating);
+
+  const selectedCategory = categoryOptions.find(category => categoryMatches(category.name, activeCategory))?.name || activeCategory;
 
   return (
     <div className="shop">
@@ -120,21 +132,19 @@ export default function Shop() {
 
           <div className="sidebar-section">
             <h3>Categories</h3>
-            <ul className="category-list">
-              {['All', ...categories.map(c => c.name)].map(cat => (
-                <li key={cat}>
-                  <button
-                    className={`cat-btn ${activeCategory === cat ? 'active' : ''}`}
-                    onClick={() => setActiveCategory(cat)}
-                  >
-                    {cat === 'All' ? '🐾 All' : `${categories.find(c => c.name === cat)?.icon} ${cat}`}
-                    <span className="cat-count">
-                      {cat === 'All' ? products.length : products.filter(p => p.category === cat).length}
-                    </span>
-                  </button>
-                </li>
+            <select
+              className="category-select"
+              value={selectedCategory}
+              onChange={e => setActiveCategory(e.target.value)}
+              aria-label="Filter products by category"
+            >
+              <option value="All">🐾 All ({products.length})</option>
+              {categoryOptions.map(category => (
+                <option key={category.id || category.name} value={category.name}>
+                  {getCategoryIcon(category.name)} {category.name} ({products.filter(product => categoryMatches(product.category, category.name)).length})
+                </option>
               ))}
-            </ul>
+            </select>
           </div>
 
           <div className="sidebar-section">

@@ -123,6 +123,7 @@
   background: rgba(255,255,255,0.25);
 }
 
+.category-select,
 .sort-select {
   width: 100%;
   border: 1.5px solid #E0E0E0;
@@ -135,6 +136,12 @@
   background: #fff;
 }
 
+.category-select {
+  color: #444;
+  font-weight: 600;
+}
+
+.category-select:focus,
 .sort-select:focus {
   border-color: #FF6B35;
 }

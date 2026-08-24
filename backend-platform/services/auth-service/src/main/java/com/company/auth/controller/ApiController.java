@@ -15,10 +15,12 @@ import com.company.auth.dto.RoleDto;
 import com.company.auth.dto.UserDto;
 import com.company.auth.dto.UserUpdateRequest;
 import com.company.auth.model.Address;
+import com.company.auth.model.Category;
 import com.company.auth.model.Link;
 import com.company.auth.model.OrderEntity;
 import com.company.auth.model.Product;
 import com.company.auth.model.ProductImage;
+import com.company.auth.model.Payment;
 import com.company.auth.model.User;
 import com.company.auth.document.OrderDocument;
 import com.company.auth.document.ProductDocument;
@@ -27,6 +29,7 @@ import com.company.auth.repository.CategoryRepository;
 import com.company.auth.repository.LinkRepository;
 import com.company.auth.repository.OrderRepository;
 import com.company.auth.repository.ProductRepository;
+import com.company.auth.repository.PaymentRepository;
 import com.company.auth.repository.RoleRepository;
 import com.company.auth.repository.UserRepository;
 import com.company.auth.service.SearchService;
@@ -68,6 +71,7 @@ public class ApiController {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final OrderRepository orderRepository;
+    private final PaymentRepository paymentRepository;
     private final CategoryRepository categoryRepository;
     private final RoleRepository roleRepository;
     private final AddressRepository addressRepository;
@@ -80,6 +84,7 @@ public class ApiController {
             UserRepository userRepository,
             ProductRepository productRepository,
             OrderRepository orderRepository,
+            PaymentRepository paymentRepository,
             CategoryRepository categoryRepository,
             RoleRepository roleRepository,
             AddressRepository addressRepository,
@@ -90,6 +95,7 @@ public class ApiController {
         this.userRepository = userRepository;
         this.productRepository = productRepository;
         this.orderRepository = orderRepository;
+        this.paymentRepository = paymentRepository;
         this.categoryRepository = categoryRepository;
         this.roleRepository = roleRepository;
         this.addressRepository = addressRepository;
@@ -175,18 +181,14 @@ public class ApiController {
                 content = @Content(schema = @Schema(implementation = ProductDto.class)))
         })
         public ResponseEntity<ProductDto> createProduct(@RequestBody CreateProductRequest request) {
-        if (request.getSku() != null && productRepository.findBySku(request.getSku()).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "SKU already exists: " + request.getSku());
-        }
+            Category category = getRequiredCategory(request.getCategoryId());
         Product product = new Product();
         product.setName(request.getName());
         product.setDescription(request.getDescription());
-        product.setSku(request.getSku());
+            product.setSku(generateSku(category));
         product.setPrice(request.getPrice());
         product.setStockQuantity(request.getStockQuantity());
-        if (request.getCategoryId() != null) {
-            categoryRepository.findById(request.getCategoryId()).ifPresent(product::setCategory);
-        }
+            product.setCategory(category);
 
         product = productRepository.save(product);
         searchService.indexProduct(product);
@@ -207,18 +209,14 @@ public class ApiController {
             @RequestParam(required = false) Integer stockQuantity,
             @RequestParam(required = false) Long categoryId,
             @RequestPart(value = "images", required = false) MultipartFile[] images) {
-        if (sku != null && productRepository.findBySku(sku).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "SKU already exists: " + sku);
-        }
+        Category category = getRequiredCategory(categoryId);
         Product product = new Product();
         product.setName(name);
         product.setDescription(description);
-        product.setSku(sku);
+        product.setSku(generateSku(category));
         product.setPrice(price);
         product.setStockQuantity(stockQuantity != null ? stockQuantity : 0);
-        if (categoryId != null) {
-            categoryRepository.findById(categoryId).ifPresent(product::setCategory);
-        }
+        product.setCategory(category);
 
         product = productRepository.save(product);
 
@@ -363,8 +361,18 @@ public class ApiController {
         order.setOrderNumber("ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         order.setTotalAmount(request.getTotalAmount());
         order.setStatus(request.getStatus() == null ? "PENDING" : request.getStatus());
+        String paymentMethod = request.getPaymentMethod() == null
+            ? "COD"
+            : request.getPaymentMethod().trim().toUpperCase();
+        if (!List.of("CARD", "UPI", "COD").contains(paymentMethod)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported payment method");
+        }
 
         order = orderRepository.save(order);
+        Payment payment = new Payment();
+        payment.setOrderId(order.getId());
+        payment.setPaymentMethod(paymentMethod);
+        paymentRepository.save(payment);
         OrderEntity savedOrder = order;
         searchService.indexOrder(savedOrder);
         userRepository.findById(savedOrder.getUserId()).ifPresent(user -> emailNotificationService.sendOrderCreated(savedOrder, user));
@@ -541,6 +549,27 @@ public class ApiController {
         dto.setPhone(address.getPhone());
         dto.setIsDefault(address.getIsDefault());
         return dto;
+    }
+
+    private Category getRequiredCategory(Long categoryId) {
+        if (categoryId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category is required to generate SKU");
+        }
+        return categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category not found: " + categoryId));
+    }
+
+    private String generateSku(Category category) {
+        String prefix = category.getName().trim().toUpperCase()
+                .replaceAll("[^A-Z0-9]+", "-")
+                .replaceAll("^-|-$", "");
+        int nextNumber = productRepository.findTopBySkuStartingWithOrderBySkuDesc(prefix + "-")
+            .map(product -> product.getSku())
+                .map(sku -> sku.substring(prefix.length() + 1))
+                .filter(suffix -> suffix.matches("\\d+"))
+                .map(Integer::parseInt)
+                .orElse(0) + 1;
+        return prefix + "-" + String.format("%04d", nextNumber);
     }
 
     private ProductDto toDto(Product product) {

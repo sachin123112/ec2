@@ -29,12 +29,16 @@ export default function UsersAdmin() {
         fetch(`${API_URL}/users`, { headers: authHeaders }),
         fetch(`${API_URL}/roles`, { headers: authHeaders }),
       ]);
-      if (usersRes.ok) setUsers(await usersRes.json());
+      if (!usersRes.ok) {
+        const errorText = await usersRes.text();
+        throw new Error(errorText || `Unable to load users (${usersRes.status}).`);
+      }
+      setUsers(await usersRes.json());
       if (rolesRes.ok) setRoles(await rolesRes.json());
       setStatus('Data loaded successfully.');
     } catch (err) {
       console.error(err);
-      setStatus('Unable to load users data.');
+      setStatus(err.message || 'Unable to load users data.');
     }
   }, [authHeaders]);
 

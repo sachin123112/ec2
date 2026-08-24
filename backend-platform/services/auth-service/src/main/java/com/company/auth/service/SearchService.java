@@ -152,7 +152,11 @@ public class SearchService {
         if (!elasticsearchAvailable || productId == null) {
             return;
         }
-        productSearchRepository.deleteById(productId);
+        try {
+            productSearchRepository.deleteById(productId);
+        } catch (RuntimeException ex) {
+            logger.warn("Unable to remove product {} from search index", productId, ex);
+        }
     }
 
     public void indexOrder(OrderEntity order) {

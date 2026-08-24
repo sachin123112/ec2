@@ -1,22 +1,10 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import './Cart.css';
 
 export default function Cart() {
   const { cart, removeFromCart, updateQty, clearCart, totalPrice } = useCart();
-  const [ordered, setOrdered] = useState(false);
-
-  if (ordered) {
-    return (
-      <div className="cart-success">
-        <span>🎉</span>
-        <h2>Order Placed!</h2>
-        <p>Thank you for shopping at PawMart. Your furry friend will love it!</p>
-        <Link to="/shop" className="btn-primary">Continue Shopping</Link>
-      </div>
-    );
-  }
+  const navigate = useNavigate();
 
   if (cart.length === 0) {
     return (
@@ -94,7 +82,7 @@ export default function Cart() {
 
           <button
             className="btn-checkout"
-            onClick={() => { clearCart(); setOrdered(true); }}
+            onClick={() => navigate('/checkout')}
           >
             Proceed to Checkout →
           </button>

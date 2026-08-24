@@ -6,6 +6,7 @@ public class CreateOrderRequest {
     private Long userId;
     private BigDecimal totalAmount;
     private String status;
+    private String paymentMethod;
 
     public Long getUserId() {
         return userId;
@@ -29,5 +30,13 @@ public class CreateOrderRequest {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
     }
 }
