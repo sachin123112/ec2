@@ -108,7 +108,8 @@ export default function ProductsAdmin() {
       await loadData();
       setStatus('Product added successfully.');
     } else {
-      setStatus('Unable to create product.');
+      const errorText = await response.text();
+      setStatus(errorText || `Unable to create product (${response.status}).`);
     }
   }
 

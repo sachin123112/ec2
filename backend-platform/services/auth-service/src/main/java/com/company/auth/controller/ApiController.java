@@ -175,6 +175,9 @@ public class ApiController {
                 content = @Content(schema = @Schema(implementation = ProductDto.class)))
         })
         public ResponseEntity<ProductDto> createProduct(@RequestBody CreateProductRequest request) {
+        if (request.getSku() != null && productRepository.findBySku(request.getSku()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "SKU already exists: " + request.getSku());
+        }
         Product product = new Product();
         product.setName(request.getName());
         product.setDescription(request.getDescription());
@@ -204,6 +207,9 @@ public class ApiController {
             @RequestParam(required = false) Integer stockQuantity,
             @RequestParam(required = false) Long categoryId,
             @RequestPart(value = "images", required = false) MultipartFile[] images) {
+        if (sku != null && productRepository.findBySku(sku).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "SKU already exists: " + sku);
+        }
         Product product = new Product();
         product.setName(name);
         product.setDescription(description);
