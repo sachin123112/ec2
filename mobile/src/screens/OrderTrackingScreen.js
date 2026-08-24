@@ -7,6 +7,7 @@ import { goBackOrNavigate } from '../navigation/safeBack';
 import theme from '../theme';
 
 const trackingSteps = ['Pending', 'Confirmed', 'Shipped', 'Delivered'];
+const trackingEmailRecipient = 'gitsachin720@gmail.com';
 
 function getStepIndex(status) {
 	const normalizedStatus = String(status || 'Pending').toLowerCase();
@@ -16,15 +17,10 @@ function getStepIndex(status) {
 	return 0;
 }
 
-function isValidEmail(value) {
-	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
-
 export default function OrderTrackingScreen({ navigation }) {
 	const { token } = useAuth();
 	const [orders, setOrders] = useState([]);
 	const [loading, setLoading] = useState(true);
-	const [recipientEmail, setRecipientEmail] = useState('');
 
 	const loadOrders = async () => {
 		setLoading(true);
@@ -43,11 +39,6 @@ export default function OrderTrackingScreen({ navigation }) {
 	};
 
 	const handleTrackingEmail = async () => {
-		const email = recipientEmail.trim().toLowerCase();
-		if (!isValidEmail(email)) {
-			Alert.alert('Invalid email address', 'Enter a valid email address to receive the tracking details.');
-			return;
-		}
 		if (orders.length === 0) {
 			Alert.alert('No orders to send', 'There are no order tracking details available yet.');
 			return;
@@ -61,7 +52,7 @@ export default function OrderTrackingScreen({ navigation }) {
 		});
 		const subject = 'PawMart Order Tracking';
 		const body = `Hello,\n\nHere are the latest PawMart order tracking details:\n\n${orderLines.join('\n')}\n\nThank you,\nPawMart`;
-		const mailUrl = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+		const mailUrl = `mailto:${encodeURIComponent(trackingEmailRecipient)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
 		if (await Linking.canOpenURL(mailUrl)) {
 			await Linking.openURL(mailUrl);
@@ -89,11 +80,8 @@ export default function OrderTrackingScreen({ navigation }) {
 					<Text style={styles.fieldLabel}>Send tracking details to</Text>
 					<TextInput
 						style={styles.input}
-						placeholder="customer@example.com"
-						value={recipientEmail}
-						autoCapitalize="none"
-						keyboardType="email-address"
-						onChangeText={setRecipientEmail}
+						value={trackingEmailRecipient}
+						editable={false}
 					/>
 					<TouchableOpacity style={styles.emailButton} onPress={handleTrackingEmail}>
 						<Text style={styles.emailButtonText}>Tracking Email</Text>

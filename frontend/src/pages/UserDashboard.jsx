@@ -6,6 +6,7 @@ import './Dashboard.css';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+const TRACKING_EMAIL_RECIPIENT = 'gitsachin720@gmail.com';
 
 function formatUserName(email) {
   if (!email) return 'Valued Customer';
@@ -83,12 +84,14 @@ export default function UserDashboard() {
   const [editingAddress, setEditingAddress] = useState(false);
   const navigate = useNavigate();
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [trackingEmail, setTrackingEmail] = useState(TRACKING_EMAIL_RECIPIENT);
 
   const sectionDescription = {
     Overview: 'Quick summary and account shortcuts.',
     Orders: 'View your order history and status updates.',
     Wishlist: 'Your saved items, ready to buy.',
     Addresses: 'Manage and edit your delivery addresses.',
+    'Order Tracking': 'Follow the latest status of your orders.',
     'Profile Information': 'Manage your personal details and account information.',
     'Payment Methods': 'Saved payment cards and billing options.',
     'Saved Cards': 'Your stored cards for faster checkout.',
@@ -347,11 +350,36 @@ export default function UserDashboard() {
     }
   }
 
+  function sendTrackingEmail(event) {
+    event.preventDefault();
+    const email = trackingEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setStatus('Enter a valid email address for the tracking update.');
+      return;
+    }
+    if (orders.length === 0) {
+      setStatus('No orders are available to include in the tracking email.');
+      return;
+    }
+
+    const orderLines = orders.map(order => {
+      const orderNumber = order.orderNumber || order.id || 'Order';
+      const status = order.status || 'Pending';
+      const updatedAt = order.updatedAt || order.createdAt;
+      const date = updatedAt ? new Date(updatedAt).toLocaleDateString() : 'Date unavailable';
+      return `Order #${orderNumber}: ${status} (${date})`;
+    });
+    const subject = 'PawMart Order Tracking';
+    const body = `Hello,\n\nHere are the latest PawMart order tracking details:\n\n${orderLines.join('\n')}\n\nThank you,\nPawMart`;
+    window.location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
+
   const navItems = [
     'Overview',
     'Orders',
     'Wishlist',
     'Addresses',
+    'Order Tracking',
     'Profile Information',
     'Payment Methods',
     'Saved Cards',
@@ -854,6 +882,48 @@ export default function UserDashboard() {
                   </div>
                 )}
               </section>
+            </div>
+          )}
+
+          {activeSection === 'Order Tracking' && (
+            <div className="dashboard-card wide-card">
+              <h2>Order Tracking</h2>
+              <form className="panel-form" onSubmit={sendTrackingEmail}>
+                <label>
+                  Send tracking details to
+                  <input
+                    type="email"
+                    value={trackingEmail}
+                    onChange={event => setTrackingEmail(event.target.value)}
+                    required
+                  />
+                </label>
+                <button type="submit" className="btn-primary">Tracking Email</button>
+              </form>
+              {orders.length === 0 ? (
+                <p>No orders available to track yet.</p>
+              ) : (
+                <div className="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Order #</th>
+                        <th>Status</th>
+                        <th>Last Updated</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {orders.map(order => (
+                        <tr key={order.id || order.orderNumber}>
+                          <td>{order.orderNumber || `#${order.id}`}</td>
+                          <td>{order.status || 'Pending'}</td>
+                          <td>{order.updatedAt || order.createdAt ? new Date(order.updatedAt || order.createdAt).toLocaleDateString() : 'Date unavailable'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 

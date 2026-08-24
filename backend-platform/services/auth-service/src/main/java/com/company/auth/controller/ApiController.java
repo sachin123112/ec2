@@ -30,6 +30,7 @@ import com.company.auth.repository.ProductRepository;
 import com.company.auth.repository.RoleRepository;
 import com.company.auth.repository.UserRepository;
 import com.company.auth.service.SearchService;
+import com.company.auth.service.EmailNotificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.swagger.v3.oas.annotations.Operation;
@@ -73,6 +74,7 @@ public class ApiController {
     private final LinkRepository linkRepository;
     private final PasswordEncoder passwordEncoder;
     private final SearchService searchService;
+    private final EmailNotificationService emailNotificationService;
 
     public ApiController(
             UserRepository userRepository,
@@ -83,7 +85,8 @@ public class ApiController {
             AddressRepository addressRepository,
             LinkRepository linkRepository,
             PasswordEncoder passwordEncoder,
-            SearchService searchService) {
+            SearchService searchService,
+            EmailNotificationService emailNotificationService) {
         this.userRepository = userRepository;
         this.productRepository = productRepository;
         this.orderRepository = orderRepository;
@@ -93,6 +96,7 @@ public class ApiController {
         this.linkRepository = linkRepository;
         this.passwordEncoder = passwordEncoder;
         this.searchService = searchService;
+        this.emailNotificationService = emailNotificationService;
     }
 
     @GetMapping("/users")
@@ -355,8 +359,22 @@ public class ApiController {
         order.setStatus(request.getStatus() == null ? "PENDING" : request.getStatus());
 
         order = orderRepository.save(order);
-        searchService.indexOrder(order);
-        return ResponseEntity.status(HttpStatus.CREATED).body(toDto(order));
+        OrderEntity savedOrder = order;
+        searchService.indexOrder(savedOrder);
+        userRepository.findById(savedOrder.getUserId()).ifPresent(user -> emailNotificationService.sendOrderCreated(savedOrder, user));
+        return ResponseEntity.status(HttpStatus.CREATED).body(toDto(savedOrder));
+    }
+
+    @PatchMapping("/orders/{id}/status")
+    @Operation(summary = "Update order status", description = "Update an order status and email the order owner")
+    public OrderDto updateOrderStatus(@PathVariable Long id, @RequestParam String status) {
+        OrderEntity order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+        order.setStatus(status);
+        OrderEntity saved = orderRepository.save(order);
+        searchService.indexOrder(saved);
+        userRepository.findById(saved.getUserId()).ifPresent(user -> emailNotificationService.sendOrderStatusChanged(saved, user));
+        return toDto(saved);
     }
 
     @DeleteMapping("/orders/{id}")
