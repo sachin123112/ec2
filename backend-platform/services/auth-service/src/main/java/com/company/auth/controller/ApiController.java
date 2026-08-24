@@ -34,6 +34,7 @@ import com.company.auth.repository.RoleRepository;
 import com.company.auth.repository.UserRepository;
 import com.company.auth.service.SearchService;
 import com.company.auth.service.EmailNotificationService;
+import com.company.auth.service.GoogleDriveImageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,15 +47,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.Authentication;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
@@ -79,6 +78,7 @@ public class ApiController {
     private final PasswordEncoder passwordEncoder;
     private final SearchService searchService;
     private final EmailNotificationService emailNotificationService;
+    private final GoogleDriveImageService googleDriveImageService;
 
     public ApiController(
             UserRepository userRepository,
@@ -91,7 +91,8 @@ public class ApiController {
             LinkRepository linkRepository,
             PasswordEncoder passwordEncoder,
             SearchService searchService,
-            EmailNotificationService emailNotificationService) {
+            EmailNotificationService emailNotificationService,
+            GoogleDriveImageService googleDriveImageService) {
         this.userRepository = userRepository;
         this.productRepository = productRepository;
         this.orderRepository = orderRepository;
@@ -103,6 +104,7 @@ public class ApiController {
         this.passwordEncoder = passwordEncoder;
         this.searchService = searchService;
         this.emailNotificationService = emailNotificationService;
+        this.googleDriveImageService = googleDriveImageService;
     }
 
     @GetMapping("/users")
@@ -223,7 +225,7 @@ public class ApiController {
         if (images != null && images.length > 0) {
             for (MultipartFile image : images) {
                 if (image != null && !image.isEmpty()) {
-                    String imageUrl = saveProductImage(image, product.getId());
+                    String imageUrl = googleDriveImageService.uploadProductImage(image, product.getId());
                     ProductImage productImage = new ProductImage();
                     productImage.setProduct(product);
                     productImage.setImageUrl(imageUrl);
@@ -333,8 +335,18 @@ public class ApiController {
             @ApiResponse(responseCode = "200", description = "Array of orders",
                 content = @Content(array = @ArraySchema(schema = @Schema(implementation = OrderDto.class))))
         })
-        public List<OrderDto> listOrders() {
-        return orderRepository.findAll().stream()
+        public List<OrderDto> listOrders(Authentication authentication) {
+        List<OrderEntity> orders;
+        boolean isAdmin = authentication.getAuthorities().stream()
+            .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+        if (isAdmin) {
+            orders = orderRepository.findAll();
+        } else {
+            User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+            orders = orderRepository.findByUserId(user.getId());
+        }
+        return orders.stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
@@ -355,9 +367,21 @@ public class ApiController {
             @ApiResponse(responseCode = "201", description = "Created order",
                 content = @Content(schema = @Schema(implementation = OrderDto.class)))
         })
-        public ResponseEntity<OrderDto> createOrder(@RequestBody CreateOrderRequest request) {
+        public ResponseEntity<OrderDto> createOrder(
+            Authentication authentication, @RequestBody CreateOrderRequest request) {
         OrderEntity order = new OrderEntity();
-        order.setUserId(request.getUserId());
+        boolean isAdmin = authentication.getAuthorities().stream()
+            .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+        Long orderUserId = request.getUserId();
+        if (!isAdmin) {
+            orderUserId = userRepository.findByEmail(authentication.getName())
+                .map(user -> user.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+        }
+        if (orderUserId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User is required to create an order");
+        }
+        order.setUserId(orderUserId);
         order.setOrderNumber("ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         order.setTotalAmount(request.getTotalAmount());
         order.setStatus(request.getStatus() == null ? "PENDING" : request.getStatus());
@@ -384,10 +408,18 @@ public class ApiController {
     public OrderDto updateOrderStatus(@PathVariable Long id, @RequestParam String status) {
         OrderEntity order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
-        order.setStatus(status);
+        String nextStatus = status == null ? "" : status.trim().toUpperCase();
+        if (!List.of("PENDING", "PROCESSING", "COMPLETED", "CANCELED").contains(nextStatus)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported order status");
+        }
+        boolean statusChanged = !nextStatus.equalsIgnoreCase(order.getStatus());
+        order.setStatus(nextStatus);
         OrderEntity saved = orderRepository.save(order);
         searchService.indexOrder(saved);
-        userRepository.findById(saved.getUserId()).ifPresent(user -> emailNotificationService.sendOrderStatusChanged(saved, user));
+        if (statusChanged) {
+            userRepository.findById(saved.getUserId())
+                    .ifPresent(user -> emailNotificationService.sendOrderStatusChanged(saved, user));
+        }
         return toDto(saved);
     }
 
@@ -416,7 +448,7 @@ public class ApiController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Profile image is required");
         }
         User user = findUserByEmail(principal);
-        user.setProfileImageUrl(saveProfileImage(image, user.getId()));
+        user.setProfileImageUrl(googleDriveImageService.uploadUserImage(image, user.getId()));
         return toDto(userRepository.save(user));
     }
 
@@ -626,38 +658,8 @@ public class ApiController {
         return dto;
     }
 
-    private String saveProductImage(MultipartFile file, Long productId) {
-        try {
-            Path uploadRoot = Paths.get("uploads", "product-images");
-            Files.createDirectories(uploadRoot);
-            String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
-            String fileName = String.format("%d_%d_%s", productId, System.currentTimeMillis(), originalFileName.replaceAll("[^a-zA-Z0-9._-]", "_"));
-            Path destinationFile = uploadRoot.resolve(fileName).normalize().toAbsolutePath();
-            file.transferTo(destinationFile);
-            return "/product-images/" + fileName;
-        } catch (Exception ex) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to store product image", ex);
-        }
-    }
-
-    private String saveProfileImage(MultipartFile file, Long userId) {
-        try {
-            Path uploadRoot = Paths.get("uploads", "profile-images");
-            Files.createDirectories(uploadRoot);
-            String extension = StringUtils.getFilenameExtension(file.getOriginalFilename());
-            String safeExtension = StringUtils.hasText(extension) ? "." + extension.replaceAll("[^a-zA-Z0-9]", "") : ".jpg";
-            String fileName = String.format("%d_%d%s", userId, System.currentTimeMillis(), safeExtension);
-            Path destinationFile = uploadRoot.resolve(fileName).normalize().toAbsolutePath();
-            file.transferTo(destinationFile);
-            return "/profile-images/" + fileName;
-        } catch (Exception ex) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to store profile image", ex);
-        }
-    }
-
     private LinkDto toDto(Link link) {
         LinkDto dto = new LinkDto();
-        dto.setId(link.getId());
         dto.setLabel(link.getLabel());
         dto.setUrl(link.getUrl());
         dto.setDescription(link.getDescription());

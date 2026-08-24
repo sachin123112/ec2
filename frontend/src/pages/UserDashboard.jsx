@@ -6,7 +6,6 @@ import './Dashboard.css';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
-const TRACKING_EMAIL_RECIPIENT = 'gitsachin720@gmail.com';
 
 function formatUserName(email) {
   if (!email) return 'Valued Customer';
@@ -84,14 +83,12 @@ export default function UserDashboard() {
   const [editingAddress, setEditingAddress] = useState(false);
   const navigate = useNavigate();
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
-  const [trackingEmail, setTrackingEmail] = useState(TRACKING_EMAIL_RECIPIENT);
 
   const sectionDescription = {
     Overview: 'Quick summary and account shortcuts.',
-    Orders: 'View your order history and status updates.',
+    'Order History': 'View your order history and status updates.',
     Wishlist: 'Your saved items, ready to buy.',
     Addresses: 'Manage and edit your delivery addresses.',
-    'Order Tracking': 'Follow the latest status of your orders.',
     'Profile Information': 'Manage your personal details and account information.',
     'Payment Methods': 'Saved payment cards and billing options.',
     'Saved Cards': 'Your stored cards for faster checkout.',
@@ -131,7 +128,10 @@ export default function UserDashboard() {
       ]);
 
       if (!ordersResponse.ok) {
-        setStatus('Unable to fetch orders at the moment.');
+        setOrders([]);
+        setStatus(ordersResponse.status === 401
+          ? 'Your session expired. Please log in again.'
+          : `Unable to fetch orders (${ordersResponse.status}).`);
       } else {
         const ordersData = await ordersResponse.json();
         setOrders(Array.isArray(ordersData) ? ordersData : []);
@@ -271,15 +271,31 @@ export default function UserDashboard() {
     }
   }
 
-  function handleProfileImageUpload(event) {
+  async function handleProfileImageUpload(event) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (loadEvent) => {
-      setProfileForm(prev => ({ ...prev, profileImageUrl: loadEvent.target?.result || prev.profileImageUrl }));
-    };
-    reader.readAsDataURL(file);
+    const formData = new FormData();
+    formData.append('image', file);
+    setStatus('Uploading profile image...');
+    try {
+      const response = await fetch(`${API_URL}/users/me/profile-image`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+      if (!response.ok) throw new Error('Unable to upload profile image.');
+      const updatedUser = await response.json();
+      const profileImageUrl = updatedUser.profileImageUrl || '';
+      setUserProfile(previous => ({ ...previous, profileImageUrl }));
+      setProfileForm(previous => ({ ...previous, profileImageUrl }));
+      setStatus('Profile image uploaded successfully.');
+    } catch (error) {
+      console.error(error);
+      setStatus(error.message || 'Unable to upload profile image.');
+    } finally {
+      event.target.value = '';
+    }
   }
 
   async function saveAddress() {
@@ -350,36 +366,11 @@ export default function UserDashboard() {
     }
   }
 
-  function sendTrackingEmail(event) {
-    event.preventDefault();
-    const email = trackingEmail.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setStatus('Enter a valid email address for the tracking update.');
-      return;
-    }
-    if (orders.length === 0) {
-      setStatus('No orders are available to include in the tracking email.');
-      return;
-    }
-
-    const orderLines = orders.map(order => {
-      const orderNumber = order.orderNumber || order.id || 'Order';
-      const status = order.status || 'Pending';
-      const updatedAt = order.updatedAt || order.createdAt;
-      const date = updatedAt ? new Date(updatedAt).toLocaleDateString() : 'Date unavailable';
-      return `Order #${orderNumber}: ${status} (${date})`;
-    });
-    const subject = 'PawMart Order Tracking';
-    const body = `Hello,\n\nHere are the latest PawMart order tracking details:\n\n${orderLines.join('\n')}\n\nThank you,\nPawMart`;
-    window.location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  }
-
   const navItems = [
     'Overview',
-    'Orders',
+    'Order History',
     'Wishlist',
     'Addresses',
-    'Order Tracking',
     'Profile Information',
     'Payment Methods',
     'Saved Cards',
@@ -453,7 +444,7 @@ export default function UserDashboard() {
 
           <div className="profile-actions-row">
             <button type="button" className="btn-outline" onClick={() => setActiveSection('Overview')}>Overview</button>
-            <button type="button" className="btn-outline" onClick={() => setActiveSection('Orders')}>View Orders</button>
+            <button type="button" className="btn-outline" onClick={() => setActiveSection('Order History')}>View Order History</button>
             <button type="button" className="btn-outline" onClick={() => navigate('/shop')}>Browse Products</button>
           </div>
 
@@ -671,9 +662,9 @@ export default function UserDashboard() {
             </div>
           )}
 
-          {activeSection === 'Orders' && (
+          {activeSection === 'Order History' && (
             <div className="dashboard-card wide-card">
-              <h2>Your Orders</h2>
+              <h2>Order History</h2>
               <div className="table-scroll">
                 <table>
                   <thead>
@@ -882,104 +873,6 @@ export default function UserDashboard() {
                   </div>
                 )}
               </section>
-            </div>
-          )}
-
-          {activeSection === 'Order Tracking' && (
-            <div className="dashboard-card wide-card">
-              <h2>Order Tracking</h2>
-              <form className="panel-form" onSubmit={sendTrackingEmail}>
-                <label>
-                  Send tracking details to
-                  <input
-                    type="email"
-                    value={trackingEmail}
-                    onChange={event => setTrackingEmail(event.target.value)}
-                    required
-                  />
-                </label>
-                <button type="submit" className="btn-primary">Tracking Email</button>
-              </form>
-              {orders.length === 0 ? (
-                <p>No orders available to track yet.</p>
-              ) : (
-                <div className="table-scroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Order #</th>
-                        <th>Status</th>
-                        <th>Last Updated</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {orders.map(order => (
-                        <tr key={order.id || order.orderNumber}>
-                          <td>{order.orderNumber || `#${order.id}`}</td>
-                          <td>{order.status || 'Pending'}</td>
-                          <td>{order.updatedAt || order.createdAt ? new Date(order.updatedAt || order.createdAt).toLocaleDateString() : 'Date unavailable'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeSection === 'Payment Methods' && (
-            <div className="dashboard-card wide-card">
-              <h2>Payment Methods</h2>
-              <div className="table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Card</th>
-                      <th>Expires</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {savedCards.map(card => (
-                      <tr key={card.id}>
-                        <td>{card.brand} •••• {card.last4}</td>
-                        <td>{card.expires}</td>
-                        <td>
-                          <button type="button" className="btn-link">Edit</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {activeSection === 'Saved Cards' && (
-            <div className="dashboard-card wide-card">
-              <h2>Saved Cards</h2>
-              <div className="table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Card</th>
-                      <th>Expires</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {savedCards.map(card => (
-                      <tr key={card.id}>
-                        <td>{card.brand} •••• {card.last4}</td>
-                        <td>{card.expires}</td>
-                        <td>
-                          <button type="button" className="btn-link">Remove</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
             </div>
           )}
 

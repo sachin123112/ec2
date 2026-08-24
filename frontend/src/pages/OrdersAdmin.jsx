@@ -4,12 +4,13 @@ import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+const orderStatuses = ['PENDING', 'PROCESSING', 'COMPLETED', 'CANCELED'];
 
 export default function OrdersAdmin() {
   const { token } = useAuth();
   const [orders, setOrders] = useState([]);
-  const [orderForm, setOrderForm] = useState({ userId: '', totalAmount: '0.00', status: 'PENDING' });
   const [status, setStatus] = useState('');
+  const [openMenuId, setOpenMenuId] = useState(null);
 
   const authHeaderBase = useMemo(() => {
     const headers = {};
@@ -25,7 +26,13 @@ export default function OrdersAdmin() {
   const loadData = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/orders`, { headers: authHeaders });
-      if (res.ok) setOrders(await res.json());
+      if (!res.ok) {
+        if (res.status === 401) setStatus('Your session expired. Please log in again.');
+        else if (res.status === 403) setStatus('Admin access is required to view all orders.');
+        else setStatus(`Unable to load orders (${res.status}).`);
+        return;
+      }
+      setOrders(await res.json());
       setStatus('Data loaded successfully.');
     } catch (err) {
       console.error(err);
@@ -34,27 +41,6 @@ export default function OrdersAdmin() {
   }, [authHeaders]);
 
   useEffect(() => { loadData(); }, [loadData]);
-
-  async function handleCreateOrder(event) {
-    event.preventDefault();
-    setStatus('Creating order...');
-    const response = await fetch(`${API_URL}/orders`, {
-      method: 'POST',
-      headers: authHeaders,
-      body: JSON.stringify({
-        userId: parseInt(orderForm.userId, 10),
-        totalAmount: parseFloat(orderForm.totalAmount) || 0,
-        status: orderForm.status,
-      }),
-    });
-    if (response.ok) {
-      setOrderForm({ userId: '', totalAmount: '0.00', status: 'PENDING' });
-      await loadData();
-      setStatus('Order created successfully.');
-    } else {
-      setStatus('Unable to create order.');
-    }
-  }
 
   async function handleDeleteOrder(id) {
     setStatus('Deleting order...');
@@ -67,6 +53,21 @@ export default function OrdersAdmin() {
       setStatus('Order deleted successfully.');
     } else {
       setStatus('Unable to delete order.');
+    }
+  }
+
+  async function handleUpdateStatus(id, nextStatus) {
+    setStatus('Updating order status...');
+    const response = await fetch(`${API_URL}/orders/${id}/status?status=${encodeURIComponent(nextStatus)}`, {
+      method: 'PATCH',
+      headers: authHeaders,
+    });
+    if (response.ok) {
+      setOrders(previous => previous.map(order => order.id === id ? { ...order, status: nextStatus } : order));
+      setOpenMenuId(null);
+      setStatus('Order status updated successfully.');
+    } else {
+      setStatus('Unable to update order status.');
     }
   }
 
@@ -87,30 +88,6 @@ export default function OrdersAdmin() {
       <div className="dashboard-status">{status}</div>
 
       <div className="dashboard-grid">
-        <div className="dashboard-card">
-          <h2>Track / Add Order</h2>
-          <form onSubmit={handleCreateOrder} className="panel-form">
-            <label>
-              User ID
-              <input type="number" value={orderForm.userId} onChange={e => setOrderForm({...orderForm, userId: e.target.value})} required />
-            </label>
-            <label>
-              Total Amount
-              <input type="number" step="0.01" value={orderForm.totalAmount} onChange={e => setOrderForm({...orderForm, totalAmount: e.target.value})} required />
-            </label>
-            <label>
-              Status
-              <select value={orderForm.status} onChange={e => setOrderForm({...orderForm, status: e.target.value})}>
-                <option value="PENDING">PENDING</option>
-                <option value="PROCESSING">PROCESSING</option>
-                <option value="COMPLETED">COMPLETED</option>
-                <option value="CANCELED">CANCELED</option>
-              </select>
-            </label>
-            <button type="submit" className="btn-primary">Add Order</button>
-          </form>
-        </div>
-
         <div className="dashboard-card wide-card">
           <h2>Order History</h2>
           <div className="table-scroll">
@@ -134,7 +111,36 @@ export default function OrdersAdmin() {
                     <td>{order.totalAmount}</td>
                     <td>{order.status}</td>
                     <td>
+                      <div className="order-actions">
+                        <div className="order-menu">
+                          <button
+                            type="button"
+                            className="order-menu-trigger"
+                            aria-label={`Edit status for order ${order.orderNumber}`}
+                            aria-expanded={openMenuId === order.id}
+                            onClick={() => setOpenMenuId(openMenuId === order.id ? null : order.id)}
+                          >
+                            ⋮
+                          </button>
+                          {openMenuId === order.id && (
+                            <div className="order-menu-dropdown" role="menu">
+                              <span className="order-menu-title">Edit status</span>
+                              {orderStatuses.map(orderStatus => (
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  className={order.status === orderStatus ? 'active' : ''}
+                                  key={orderStatus}
+                                  onClick={() => handleUpdateStatus(order.id, orderStatus)}
+                                >
+                                  {orderStatus}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       <button className="btn-danger btn-sm" onClick={() => handleDeleteOrder(order.id)}>Delete</button>
+                      </div>
                     </td>
                   </tr>
                 ))}

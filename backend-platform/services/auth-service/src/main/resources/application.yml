@@ -60,6 +60,9 @@ google:
   client-id: ${GOOGLE_CLIENT_ID:}
   client-secret: ${GOOGLE_CLIENT_SECRET:}
   redirect-uri: ${GOOGLE_REDIRECT_URI:http://localhost:8080/api/v1/auth/google/callback}
+  drive:
+    credentials-file: ${GOOGLE_DRIVE_CREDENTIALS_FILE:}
+    folder-id: ${GOOGLE_DRIVE_FOLDER_ID:10tD0L0f_pMAYLlseUw22hL1g3Z3zQbK5}
 
 jwt:
   secret: ${JWT_SECRET:ChangeThisToA256BitSecretKeyForProduction}

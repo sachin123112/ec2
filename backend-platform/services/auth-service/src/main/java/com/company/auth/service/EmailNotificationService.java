@@ -34,10 +34,13 @@ public class EmailNotificationService {
     }
 
     public void sendOrderStatusChanged(OrderEntity order, User recipient) {
+        String status = order.getStatus() == null ? "updated" : order.getStatus().toLowerCase();
         sendOrderEmail(
                 recipient,
                 "PawMart Order Status - " + order.getOrderNumber(),
-                "Your PawMart order status has been updated.\n\n" + orderSummary(order)
+            "Dear Customer,\n\n"
+                + "Your order is " + status + ".\n\n"
+                + orderSummary(order)
         );
     }
 

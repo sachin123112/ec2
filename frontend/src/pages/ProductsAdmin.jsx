@@ -14,6 +14,10 @@ export default function ProductsAdmin() {
   const [productImagePreviews, setProductImagePreviews] = useState([]);
   const [status, setStatus] = useState('');
   const [deletingProductId, setDeletingProductId] = useState(null);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [nameFilter, setNameFilter] = useState('');
+  const [nameMenuOpen, setNameMenuOpen] = useState(false);
 
   const authHeaderBase = useMemo(() => {
     const headers = {};
@@ -153,7 +157,14 @@ export default function ProductsAdmin() {
     }
   }
 
-  const filteredProducts = products;
+  const filteredProducts = products.filter(product => {
+    if (nameFilter && !product.name?.toLowerCase().includes(nameFilter.toLowerCase())) return false;
+    if (!product.createdAt) return !dateFrom && !dateTo;
+    const createdAt = new Date(product.createdAt);
+    if (dateFrom && createdAt < new Date(`${dateFrom}T00:00:00`)) return false;
+    if (dateTo && createdAt >= new Date(`${dateTo}T23:59:59.999`)) return false;
+    return true;
+  });
 
   return (
     <div className="dashboard-page">
@@ -231,16 +242,20 @@ export default function ProductsAdmin() {
         <div className="dashboard-card wide-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2>Product Catalog</h2>
-            <div className="card-actions" style={{ display: 'flex', gap: 8 }}>
-              <Link to="/admin/users" className="icon-btn" title="Users">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 11c1.657 0 3-1.567 3-3.5S17.657 4 16 4s-3 1.567-3 3.5S14.343 11 16 11zM8 11c1.657 0 3-1.567 3-3.5S9.657 4 8 4 5 5.567 5 7.5 6.343 11 8 11z" stroke="#374151" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </Link>
-              <Link to="/admin/orders" className="icon-btn" title="Orders">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 7h18v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" stroke="#374151" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 3v4M8 3v4" stroke="#374151" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </Link>
-              <Link to="/admin/categories" className="icon-btn" title="Categories">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 7h16M4 12h16M4 17h16" stroke="#374151" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </Link>
+            <div className="date-range-filter">
+              <label>
+                From
+                <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+              </label>
+              <label>
+                To
+                <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+              </label>
+              {(dateFrom || dateTo) && (
+                <button type="button" className="btn-outline btn-sm" onClick={() => { setDateFrom(''); setDateTo(''); }}>
+                  Clear
+                </button>
+              )}
             </div>
           </div>
           <div className="table-scroll">
@@ -248,7 +263,35 @@ export default function ProductsAdmin() {
               <thead>
                 <tr>
                   <th>ID</th>
-                  <th>Name</th>
+                  <th>
+                    <div className="table-header-filter">
+                      <span>Name</span>
+                      <button
+                        type="button"
+                        className="table-filter-trigger"
+                        aria-label="Filter products by name"
+                        aria-expanded={nameMenuOpen}
+                        onClick={() => setNameMenuOpen(previous => !previous)}
+                      >
+                        ⋮
+                      </button>
+                      {nameMenuOpen && (
+                        <div className="table-filter-menu">
+                          <label htmlFor="product-name-filter">Filter name</label>
+                          <input
+                            id="product-name-filter"
+                            type="search"
+                            value={nameFilter}
+                            onChange={event => setNameFilter(event.target.value)}
+                            placeholder="Search product name"
+                          />
+                          <button type="button" className="btn-outline btn-sm" onClick={() => { setNameFilter(''); setNameMenuOpen(false); }}>
+                            Clear
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </th>
                   <th>SKU</th>
                   <th>Price</th>
                   <th>Stock</th>
