@@ -295,6 +295,10 @@
   order: 4;
 }
 
+.navbar-cart-link {
+  position: relative;
+}
+
 .cart-badge {
   position: absolute;
   top: -6px;

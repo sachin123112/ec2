@@ -1,8 +1,19 @@
 /* eslint-disable react-refresh/only-export-components */
 
-import { createContext, useContext, useReducer } from 'react';
+import { createContext, useContext, useEffect, useReducer } from 'react';
 
 const CartContext = createContext();
+const CART_STORAGE_KEY = 'pawmart_cart';
+
+function getInitialCart() {
+  try {
+    const savedCart = localStorage.getItem(CART_STORAGE_KEY);
+    const parsedCart = savedCart ? JSON.parse(savedCart) : [];
+    return Array.isArray(parsedCart) ? parsedCart : [];
+  } catch {
+    return [];
+  }
+}
 
 function cartReducer(state, action) {
   switch (action.type) {
@@ -34,7 +45,16 @@ function cartReducer(state, action) {
 }
 
 export function CartProvider({ children }) {
-  const [cart, dispatch] = useReducer(cartReducer, []);
+  const [cart, dispatch] = useReducer(cartReducer, undefined, getInitialCart);
+
+  useEffect(() => {
+    if (cart.length === 0) {
+      localStorage.removeItem(CART_STORAGE_KEY);
+      return;
+    }
+
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+  }, [cart]);
 
   const addToCart = (product) =>
     dispatch({ type: 'ADD_ITEM', payload: product });

@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import ChangePasswordModal from './ChangePasswordModal';
 import './Navbar.css';
 
 export default function Navbar() {
   const { isAuthenticated, logout, roles } = useAuth();
   const { userEmail } = useAuth();
+  const { totalItems } = useCart();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -90,8 +92,14 @@ export default function Navbar() {
           </div>
           {isAuthenticated ? (
             <>
-              <Link to="/cart" onClick={() => setMenuOpen(false)}>
-                🛒 Cart
+              <Link
+                to="/cart"
+                className="navbar-cart-link"
+                aria-label={`Cart${totalItems > 0 ? `, ${totalItems} item${totalItems === 1 ? '' : 's'}` : ''}`}
+                onClick={() => setMenuOpen(false)}
+              >
+                <span>🛒 Cart</span>
+                {totalItems > 0 && <span className="cart-badge">{totalItems}</span>}
               </Link>
             </>
           ) : (
