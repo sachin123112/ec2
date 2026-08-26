@@ -104,13 +104,13 @@ export default function Settings() {
   const [paypalActive, setPaypalActive] = useState(false);
   const [cashOnDeliveryActive, setCashOnDeliveryActive] = useState(true);
   const [mailDriver, setMailDriver] = useState('SMTP');
-  const [smtpHost, setSmtpHost] = useState('smtp.pawmart.com');
+  const [smtpHost, setSmtpHost] = useState('smtp.gmail.com');
   const [smtpPort, setSmtpPort] = useState('587');
   const [encryption, setEncryption] = useState('TLS');
-  const [smtpUsername, setSmtpUsername] = useState('no-reply@pawmart.com');
-  const [smtpPassword, setSmtpPassword] = useState('password123');
+  const [smtpUsername, setSmtpUsername] = useState('gitsachin720@gmail.com');
+  const [smtpPassword, setSmtpPassword] = useState('');
   const [showSmtpPassword, setShowSmtpPassword] = useState(false);
-  const [fromEmail, setFromEmail] = useState('no-reply@pawmart.com');
+  const [fromEmail, setFromEmail] = useState('gitsachin720@gmail.com');
   const [fromName, setFromName] = useState('PawMart');
   const [newOrderNotifications, setNewOrderNotifications] = useState(true);
   const [lowStockAlerts, setLowStockAlerts] = useState(true);
