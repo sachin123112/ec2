@@ -64,6 +64,11 @@ google:
     credentials-file: ${GOOGLE_DRIVE_CREDENTIALS_FILE:}
     folder-id: ${GOOGLE_DRIVE_FOLDER_ID:10tD0L0f_pMAYLlseUw22hL1g3Z3zQbK5}
 
+imagekit:
+  private-key: ${IMAGEKIT_PRIVATE_KEY:}
+  public-key: ${IMAGEKIT_PUBLIC_KEY:}
+  url-endpoint: ${IMAGEKIT_URL_ENDPOINT:}
+
 jwt:
   secret: ${JWT_SECRET:ChangeThisToA256BitSecretKeyForProduction}
   expiration: 900000

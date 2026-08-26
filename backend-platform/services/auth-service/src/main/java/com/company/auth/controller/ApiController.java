@@ -34,7 +34,7 @@ import com.company.auth.repository.RoleRepository;
 import com.company.auth.repository.UserRepository;
 import com.company.auth.service.SearchService;
 import com.company.auth.service.EmailNotificationService;
-import com.company.auth.service.GoogleDriveImageService;
+import com.company.auth.service.ImageKitImageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.swagger.v3.oas.annotations.Operation;
@@ -78,7 +78,7 @@ public class ApiController {
     private final PasswordEncoder passwordEncoder;
     private final SearchService searchService;
     private final EmailNotificationService emailNotificationService;
-    private final GoogleDriveImageService googleDriveImageService;
+    private final ImageKitImageService imageKitImageService;
 
     public ApiController(
             UserRepository userRepository,
@@ -92,7 +92,7 @@ public class ApiController {
             PasswordEncoder passwordEncoder,
             SearchService searchService,
             EmailNotificationService emailNotificationService,
-            GoogleDriveImageService googleDriveImageService) {
+            ImageKitImageService imageKitImageService) {
         this.userRepository = userRepository;
         this.productRepository = productRepository;
         this.orderRepository = orderRepository;
@@ -104,7 +104,7 @@ public class ApiController {
         this.passwordEncoder = passwordEncoder;
         this.searchService = searchService;
         this.emailNotificationService = emailNotificationService;
-        this.googleDriveImageService = googleDriveImageService;
+        this.imageKitImageService = imageKitImageService;
     }
 
     @GetMapping("/users")
@@ -225,7 +225,7 @@ public class ApiController {
         if (images != null && images.length > 0) {
             for (MultipartFile image : images) {
                 if (image != null && !image.isEmpty()) {
-                    String imageUrl = googleDriveImageService.uploadProductImage(image, product.getId());
+                    String imageUrl = imageKitImageService.uploadProductImage(image, product.getId());
                     ProductImage productImage = new ProductImage();
                     productImage.setProduct(product);
                     productImage.setImageUrl(imageUrl);
@@ -448,7 +448,7 @@ public class ApiController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Profile image is required");
         }
         User user = findUserByEmail(principal);
-        user.setProfileImageUrl(googleDriveImageService.uploadUserImage(image, user.getId()));
+        user.setProfileImageUrl(imageKitImageService.uploadUserImage(image, user.getId()));
         return toDto(userRepository.save(user));
     }
 
