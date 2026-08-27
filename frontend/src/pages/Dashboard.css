@@ -539,6 +539,37 @@
   gap: 20px;
 }
 
+.role-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 18px 0 22px;
+}
+
+.role-card {
+  border: 1px solid #dbe5f3;
+  border-radius: 14px;
+  padding: 18px;
+  background: #f8fbff;
+}
+
+.role-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.role-card h3 { color: #0f172a; margin-bottom: 6px; }
+.role-card p { color: #64748b; font-size: 0.92rem; }
+.role-card-badge { color: #1d4ed8; background: #dbeafe; padding: 5px 9px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
+.permission-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.permission-badge { color: #1d4ed8; background: #dbeafe; border: 1px solid #bfdbfe; border-radius: 8px; padding: 6px 9px; font-size: 0.82rem; font-weight: 600; }
+
+@media (max-width: 620px) {
+  .role-card-grid { grid-template-columns: 1fr; }
+}
+
 .payment-settings > .form-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: start;

@@ -108,6 +108,10 @@ export default function Settings() {
   const [paypalActive, setPaypalActive] = useState(false);
   const [cashOnDeliveryActive, setCashOnDeliveryActive] = useState(true);
   const [upiActive, setUpiActive] = useState(true);
+  const [netBankingActive, setNetBankingActive] = useState(true);
+  const [creditCardActive, setCreditCardActive] = useState(true);
+  const [debitCardActive, setDebitCardActive] = useState(true);
+  const [qrCodeActive, setQrCodeActive] = useState(true);
   const [upiId, setUpiId] = useState('sachinprakash893@ybl');
   const [freeShippingThreshold, setFreeShippingThreshold] = useState('999');
   const [shippingFee, setShippingFee] = useState('99');
@@ -195,9 +199,27 @@ export default function Settings() {
         setPaypalActive(Boolean(settings.paypalActive));
         setCashOnDeliveryActive(Boolean(settings.cashOnDeliveryActive));
         setUpiActive(Boolean(settings.upiActive));
+        setNetBankingActive(Boolean(settings.netBankingActive));
+        setCreditCardActive(Boolean(settings.creditCardActive));
+        setDebitCardActive(Boolean(settings.debitCardActive));
+        setQrCodeActive(Boolean(settings.qrCodeActive));
         setUpiId(settings.upiId || '');
         setFreeShippingThreshold(String(settings.freeShippingThreshold ?? 999));
         setShippingFee(String(settings.shippingFee ?? 99));
+      })
+      .catch(error => setStatus(error.message));
+  }, []);
+
+  useEffect(() => {
+    fetch(`${API_URL}/security-settings`)
+      .then(response => response.ok ? response.json() : Promise.reject(new Error(`Unable to load security settings (${response.status})`)))
+      .then(settings => {
+        setTwoFactorAuth(Boolean(settings.twoFactorAuth));
+        setPasswordPolicy(Boolean(settings.passwordPolicy));
+        setMinimumPasswordLength(settings.minimumPasswordLength || '8 Characters');
+        setSessionTimeoutSecurity(settings.sessionTimeout || '30 Minutes');
+        setLoginAttempts(settings.loginAttempts || '5 Attempts');
+        setIpWhitelist(Boolean(settings.ipWhitelist));
       })
       .catch(error => setStatus(error.message));
   }, []);
@@ -267,12 +289,22 @@ export default function Settings() {
           paypalActive,
           cashOnDeliveryActive,
           upiActive,
+          netBankingActive,
+          creditCardActive,
+          debitCardActive,
+          qrCodeActive,
           upiId,
           freeShippingThreshold: Number(freeShippingThreshold),
           shippingFee: Number(shippingFee),
         }),
       });
       if (!paymentResponse.ok) throw new Error(`Unable to save payment settings (${paymentResponse.status})`);
+      const securityResponse = await fetch(`${API_URL}/security-settings`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ twoFactorAuth, passwordPolicy, minimumPasswordLength, sessionTimeout: sessionTimeoutSecurity, loginAttempts, ipWhitelist }),
+      });
+      if (!securityResponse.ok) throw new Error(`Unable to save security settings (${securityResponse.status})`);
       setStatus('Settings saved for all users.');
     } catch (error) {
       setStatus(error.message);
@@ -767,6 +799,50 @@ export default function Settings() {
                     </div>
 
                     <div className="payment-methods">
+                      <div className="payment-method">
+                        <div>
+                          <strong>Net Banking</strong>
+                          <span>Accept payments through supported bank accounts.</span>
+                        </div>
+                        <div className="payment-status-row">
+                          <span className={`status-badge ${netBankingActive ? 'active' : 'inactive'}`}>{netBankingActive ? 'Active' : 'Inactive'}</span>
+                          <label className="toggle-switch"><input type="checkbox" checked={netBankingActive} onChange={e => setNetBankingActive(e.target.checked)} /><span className="slider" /></label>
+                        </div>
+                      </div>
+
+                      <div className="payment-method">
+                        <div>
+                          <strong>Credit Card</strong>
+                          <span>Accept credit card payments.</span>
+                        </div>
+                        <div className="payment-status-row">
+                          <span className={`status-badge ${creditCardActive ? 'active' : 'inactive'}`}>{creditCardActive ? 'Active' : 'Inactive'}</span>
+                          <label className="toggle-switch"><input type="checkbox" checked={creditCardActive} onChange={e => setCreditCardActive(e.target.checked)} /><span className="slider" /></label>
+                        </div>
+                      </div>
+
+                      <div className="payment-method">
+                        <div>
+                          <strong>Debit Card</strong>
+                          <span>Accept debit card payments.</span>
+                        </div>
+                        <div className="payment-status-row">
+                          <span className={`status-badge ${debitCardActive ? 'active' : 'inactive'}`}>{debitCardActive ? 'Active' : 'Inactive'}</span>
+                          <label className="toggle-switch"><input type="checkbox" checked={debitCardActive} onChange={e => setDebitCardActive(e.target.checked)} /><span className="slider" /></label>
+                        </div>
+                      </div>
+
+                      <div className="payment-method">
+                        <div>
+                          <strong>QR Code</strong>
+                          <span>Accept QR-based payment confirmations.</span>
+                        </div>
+                        <div className="payment-status-row">
+                          <span className={`status-badge ${qrCodeActive ? 'active' : 'inactive'}`}>{qrCodeActive ? 'Active' : 'Inactive'}</span>
+                          <label className="toggle-switch"><input type="checkbox" checked={qrCodeActive} onChange={e => setQrCodeActive(e.target.checked)} /><span className="slider" /></label>
+                        </div>
+                      </div>
+
                       <div className="payment-method">
                         <div>
                           <strong>UPI</strong>

@@ -31,6 +31,10 @@ public class PaymentSettingsController {
         settings.setPaypalActive(request.isPaypalActive());
         settings.setCashOnDeliveryActive(request.isCashOnDeliveryActive());
         settings.setUpiActive(request.isUpiActive());
+        settings.setNetBankingActive(request.isNetBankingActive());
+        settings.setCreditCardActive(request.isCreditCardActive());
+        settings.setDebitCardActive(request.isDebitCardActive());
+        settings.setQrCodeActive(request.isQrCodeActive());
         settings.setUpiId(request.getUpiId());
         settings.setFreeShippingThreshold(request.getFreeShippingThreshold());
         settings.setShippingFee(request.getShippingFee());
@@ -44,6 +48,10 @@ public class PaymentSettingsController {
         dto.setPaypalActive(settings.isPaypalActive());
         dto.setCashOnDeliveryActive(settings.isCashOnDeliveryActive());
         dto.setUpiActive(settings.isUpiActive());
+        dto.setNetBankingActive(settings.isNetBankingActive());
+        dto.setCreditCardActive(settings.isCreditCardActive());
+        dto.setDebitCardActive(settings.isDebitCardActive());
+        dto.setQrCodeActive(settings.isQrCodeActive());
         dto.setUpiId(settings.getUpiId());
         dto.setFreeShippingThreshold(settings.getFreeShippingThreshold());
         dto.setShippingFee(settings.getShippingFee());

@@ -9,6 +9,10 @@ public class PaymentSettingsDto {
     private boolean paypalActive;
     private boolean cashOnDeliveryActive;
     private boolean upiActive;
+    private boolean netBankingActive;
+    private boolean creditCardActive;
+    private boolean debitCardActive;
+    private boolean qrCodeActive;
     private String upiId;
     private BigDecimal freeShippingThreshold;
     private BigDecimal shippingFee;
@@ -25,6 +29,14 @@ public class PaymentSettingsDto {
     public void setCashOnDeliveryActive(boolean value) { cashOnDeliveryActive = value; }
     public boolean isUpiActive() { return upiActive; }
     public void setUpiActive(boolean value) { upiActive = value; }
+    public boolean isNetBankingActive() { return netBankingActive; }
+    public void setNetBankingActive(boolean value) { netBankingActive = value; }
+    public boolean isCreditCardActive() { return creditCardActive; }
+    public void setCreditCardActive(boolean value) { creditCardActive = value; }
+    public boolean isDebitCardActive() { return debitCardActive; }
+    public void setDebitCardActive(boolean value) { debitCardActive = value; }
+    public boolean isQrCodeActive() { return qrCodeActive; }
+    public void setQrCodeActive(boolean value) { qrCodeActive = value; }
     public String getUpiId() { return upiId; }
     public void setUpiId(String value) { upiId = value; }
     public BigDecimal getFreeShippingThreshold() { return freeShippingThreshold; }

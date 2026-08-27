@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 're
 import BottomTabBar from '../components/BottomTabBar';
 import { goBackOrNavigate } from '../navigation/safeBack';
 import theme from '../theme';
+import config from '../api/config';
 
 const initialSettings = [
   { key: 'orders', icon: '🛒', title: 'New Order Notifications', description: 'Get notified for new orders.', enabled: true },
@@ -14,6 +15,14 @@ const initialSettings = [
 
 export default function SettingsScreen({ navigation }) {
   const [settings, setSettings] = useState(initialSettings);
+  const [securitySettings, setSecuritySettings] = useState(null);
+
+  React.useEffect(() => {
+    fetch(`${config.API_URL}/security-settings`)
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error('Unable to load security settings')))
+      .then(setSecuritySettings)
+      .catch(() => {});
+  }, []);
 
   const toggleSetting = (key) => {
     setSettings((current) => current.map((setting) => (
@@ -54,6 +63,17 @@ export default function SettingsScreen({ navigation }) {
             </View>
           ))}
         </View>
+
+        {securitySettings && (
+          <View style={styles.securitySummary}>
+            <Text style={styles.sectionTitle}>Account Security</Text>
+            <Text style={styles.securityText}>Two-factor authentication: {securitySettings.twoFactorAuth ? 'Enabled' : 'Disabled'}</Text>
+            <Text style={styles.securityText}>Password policy: {securitySettings.passwordPolicy ? 'Enabled' : 'Disabled'}</Text>
+            <Text style={styles.securityText}>Minimum password length: {securitySettings.minimumPasswordLength}</Text>
+            <Text style={styles.securityText}>Session timeout: {securitySettings.sessionTimeout}</Text>
+            <Text style={styles.securityText}>Login attempts: {securitySettings.loginAttempts}</Text>
+          </View>
+        )}
       </ScrollView>
       <BottomTabBar activeTab="Account" />
     </View>
@@ -103,4 +123,6 @@ const styles = StyleSheet.create({
   settingCopy: { flex: 1, marginRight: 12 },
   settingTitle: { color: '#101828', fontSize: 16, fontWeight: '800', marginBottom: 6 },
   settingDescription: { color: '#34517a', fontSize: 15 },
+  securitySummary: { marginTop: 18, backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: '#dfe3ea', borderRadius: 18, padding: 16 },
+  securityText: { color: '#34517a', fontSize: 15, marginTop: 8 },
 });

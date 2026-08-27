@@ -4,6 +4,13 @@ import './Dashboard.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
+const rolePermissions = {
+  ADMIN: ['Manage users', 'Manage products', 'Manage orders', 'Manage settings'],
+  USER: ['Browse products', 'Place orders', 'Manage profile'],
+  MOBILE_ADMIN: ['View mobile dashboard', 'Manage users', 'Manage orders', 'Manage settings'],
+  MOBILE_USER: ['Browse mobile catalog', 'Place mobile orders', 'Manage mobile profile'],
+};
+
 export default function RolesAdmin() {
   const { token } = useAuth();
   const [roles, setRoles] = useState([]);
@@ -94,6 +101,24 @@ export default function RolesAdmin() {
 
         <div className="dashboard-card wide-card">
           <h2>Role List</h2>
+          <div className="role-card-grid">
+            {roles.map(role => (
+              <article className="role-card" key={`card-${role.id}`}>
+                <div className="role-card-header">
+                  <div>
+                    <h3>{role.name}</h3>
+                    <p>{role.description}</p>
+                  </div>
+                  <span className="role-card-badge">Role</span>
+                </div>
+                <div className="permission-list">
+                  {(rolePermissions[role.name] || ['Custom role access']).map(permission => (
+                    <span className="permission-badge" key={permission}>{permission}</span>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
           <div className="table-scroll">
             <table>
               <thead>

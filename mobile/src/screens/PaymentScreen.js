@@ -5,12 +5,13 @@ import { TextEncoder } from 'text-encoding';
 import BottomTabBar from '../components/BottomTabBar';
 import { goBackOrNavigate } from '../navigation/safeBack';
 import theme from '../theme';
+import config from '../api/config';
 
 if (typeof globalThis.TextEncoder === 'undefined') {
   globalThis.TextEncoder = TextEncoder;
 }
 
-function PaymentRow({ icon, title, subtitle, action, expanded, disabled, onPress, children }) {
+function PaymentRow({ icon, title, subtitle, action, expanded, disabled, active = true, onPress, children }) {
   return (
     <View style={[styles.paymentRow, disabled && styles.paymentRowDisabled]}>
       <TouchableOpacity style={styles.paymentRowHeader} onPress={onPress} disabled={disabled}>
@@ -19,7 +20,12 @@ function PaymentRow({ icon, title, subtitle, action, expanded, disabled, onPress
           <Text style={styles.paymentTitle}>{title}</Text>
           {subtitle && <Text style={styles.paymentSubtitle}>{subtitle}</Text>}
         </View>
-        {action ? <Text style={styles.paymentAction}>{action}</Text> : <Text style={styles.paymentChevron}>{expanded ? '⌃' : '⌄'}</Text>}
+        {action ? <Text style={styles.paymentAction}>{action}</Text> : (
+          <View style={styles.paymentRowControl}>
+            <Text style={[styles.paymentAvailability, !active && styles.paymentAvailabilityDisabled]}>{active ? 'Available' : 'Unavailable'}</Text>
+            <Text style={styles.paymentChevron}>{expanded ? '⌃' : '⌄'}</Text>
+          </View>
+        )}
       </TouchableOpacity>
       {children}
     </View>
@@ -30,8 +36,6 @@ const initialMethods = [
   { id: 'upi', name: 'UPI', description: 'Accept payments through UPI.', active: false },
   { id: 'cod', name: 'Cash on Delivery', description: 'Accept payment on delivery.', active: true },
 ];
-
-const hardcodedUpiId = 'sachinprakash893@ybl';
 
 const bankOptions = [
   { id: 'sbi', name: 'State Bank of India', logo: 'SBI', color: '#1f5aa6' },
@@ -97,6 +101,22 @@ export default function PaymentScreen({ navigation }) {
   const [upiId, setUpiId] = useState('');
   const [upiMode, setUpiMode] = useState('upiId');
   const [expandedSection, setExpandedSection] = useState(null);
+  const [paymentConfig, setPaymentConfig] = useState({
+    upiActive: true,
+    netBankingActive: true,
+    creditCardActive: true,
+    debitCardActive: true,
+    qrCodeActive: true,
+    cashOnDeliveryActive: true,
+    upiId: 'sachinprakash893@ybl',
+  });
+
+  React.useEffect(() => {
+    fetch(`${config.API_URL}/payment-settings`)
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error('Unable to load payment settings')))
+      .then(setPaymentConfig)
+      .catch(() => {});
+  }, []);
 
   const toggleSection = (section) => {
     setExpandedSection((current) => current === section ? null : section);
@@ -219,7 +239,7 @@ export default function PaymentScreen({ navigation }) {
           <Text style={styles.secureBadge}>🔒 100% Secure</Text>
         </View>
 
-        <PaymentRow icon="♧" title="Net Banking" expanded={expandedSection === 'netBanking'} onPress={() => toggleSection('netBanking')}>
+        <PaymentRow icon="♧" title="Net Banking" subtitle="Pay directly from your bank account" active={paymentConfig.netBankingActive} disabled={!paymentConfig.netBankingActive} expanded={expandedSection === 'netBanking'} onPress={() => toggleSection('netBanking')}>
           {expandedSection === 'netBanking' && (
             <View style={styles.cardOptions}>
               {methods.filter((method) => method.methodType === 'bank').map((method) => (
@@ -304,7 +324,7 @@ export default function PaymentScreen({ navigation }) {
             </View>
           )}
         </PaymentRow>
-        <PaymentRow icon="◴" title="Cards" expanded={expandedSection === 'cards'} onPress={() => toggleSection('cards')}>
+        <PaymentRow icon="◴" title="Credit Card" subtitle="Visa, Mastercard and other credit cards" active={paymentConfig.creditCardActive} disabled={!paymentConfig.creditCardActive} expanded={expandedSection === 'cards'} onPress={() => toggleSection('cards')}>
           {expandedSection === 'cards' && (
             <View style={styles.cardOptions}>
               {methods.filter((method) => method.id !== 'upi' && method.id !== 'cod').map((method) => (
@@ -374,7 +394,8 @@ export default function PaymentScreen({ navigation }) {
             </View>
           )}
         </PaymentRow>
-        <PaymentRow icon="▣" title="UPI" subtitle="Pay by any UPI app" expanded={expandedSection === 'upi'} onPress={() => toggleSection('upi')}>
+        <PaymentRow icon="◴" title="Debit Card" subtitle="Use your bank debit card" active={paymentConfig.debitCardActive} disabled={!paymentConfig.debitCardActive} expanded={false} onPress={() => toggleSection('cards')} />
+        <PaymentRow icon="▣" title="UPI" subtitle="Pay by any UPI app" active={paymentConfig.upiActive} disabled={!paymentConfig.upiActive} expanded={expandedSection === 'upi'} onPress={() => toggleSection('upi')}>
           {expandedSection === 'upi' && (
             <View style={styles.upiOptions}>
               <View style={styles.upiModeToggle}>
@@ -411,7 +432,7 @@ export default function PaymentScreen({ navigation }) {
               {upiMode === 'qr' && (
                 <View style={styles.qrContainer}>
                   <QRCode
-                    value={`upi://pay?pa=${encodeURIComponent(hardcodedUpiId)}&pn=${encodeURIComponent('PawMart')}&cu=INR`}
+                    value={`upi://pay?pa=${encodeURIComponent(paymentConfig.upiId)}&pn=${encodeURIComponent('PawMart')}&cu=INR`}
                     size={210}
                     backgroundColor="#ffffff"
                     color="#101828"
@@ -421,7 +442,10 @@ export default function PaymentScreen({ navigation }) {
             </View>
           )}
         </PaymentRow>
-        <PaymentRow icon="▤" title="Cash on Delivery" expanded={expandedSection === 'cod'} onPress={() => toggleSection('cod')}>
+        <PaymentRow icon="▤" title="QR Code" subtitle="Scan and pay securely" active={paymentConfig.qrCodeActive} disabled={!paymentConfig.qrCodeActive} expanded={expandedSection === 'qr'} onPress={() => toggleSection('qr')}>
+          {expandedSection === 'qr' && <View style={styles.qrContainer}><QRCode value={`upi://pay?pa=${encodeURIComponent(paymentConfig.upiId)}&pn=${encodeURIComponent('PawMart')}&cu=INR`} size={210} backgroundColor="#ffffff" color="#101828" /></View>}
+        </PaymentRow>
+        <PaymentRow icon="▤" title="Cash on Delivery" subtitle="Pay when your order arrives" active={paymentConfig.cashOnDeliveryActive} disabled={!paymentConfig.cashOnDeliveryActive} expanded={expandedSection === 'cod'} onPress={() => toggleSection('cod')}>
           {expandedSection === 'cod' && <Text style={styles.detailText}>Pay when your order is delivered.</Text>}
         </PaymentRow>
         <PaymentRow icon="▧" title="Have a Gift Card?" action="Add" onPress={() => Alert.alert('Gift Card', 'Gift card support is coming soon.')} />
@@ -456,6 +480,9 @@ const styles = StyleSheet.create({
   paymentSubtitle: { color: '#667085', fontSize: 15, marginTop: 5 },
   paymentChevron: { color: '#101828', fontSize: 25, paddingHorizontal: 8 },
   paymentAction: { color: '#315ecb', fontSize: 16, fontWeight: '800', paddingHorizontal: 8 },
+  paymentRowControl: { flexDirection: 'row', alignItems: 'center' },
+  paymentAvailability: { color: '#16803c', fontSize: 12, fontWeight: '700' },
+  paymentAvailabilityDisabled: { color: '#98a2b3' },
   cardOptions: { paddingHorizontal: 12, paddingBottom: 12 },
   savedCard: { backgroundColor: '#f8fafc', borderRadius: 10, padding: 12, marginBottom: 8 },
   savedCardTitle: { color: '#101828', fontWeight: '800' },

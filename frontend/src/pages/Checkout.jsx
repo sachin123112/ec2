@@ -64,7 +64,7 @@ export default function Checkout() {
   const [addressesLoading, setAddressesLoading] = useState(true);
   const [selectedAddressId, setSelectedAddressId] = useState('new');
   const [addressForm, setAddressForm] = useState(emptyAddress);
-  const [paymentMethod, setPaymentMethod] = useState('card');
+  const [paymentMethod, setPaymentMethod] = useState('credit_card');
   const [cardForm, setCardForm] = useState({ number: '', expiry: '', cvv: '', name: '' });
   const [cardError, setCardError] = useState('');
   const [transactionId, setTransactionId] = useState('');
@@ -74,6 +74,10 @@ export default function Checkout() {
   const [submitting, setSubmitting] = useState(false);
   const [paymentSettings, setPaymentSettings] = useState({
     upiActive: true,
+    netBankingActive: true,
+    creditCardActive: true,
+    debitCardActive: true,
+    qrCodeActive: true,
     cashOnDeliveryActive: true,
     upiId: 'sachinprakash893@ybl',
     freeShippingThreshold: 999,
@@ -114,8 +118,8 @@ export default function Checkout() {
       .then(response => response.ok ? response.json() : Promise.reject(new Error('Unable to load payment settings.')))
       .then(settings => {
         setPaymentSettings(settings);
-        if (paymentMethod === 'upi' && !settings.upiActive) setPaymentMethod('card');
-        if (paymentMethod === 'cod' && !settings.cashOnDeliveryActive) setPaymentMethod('card');
+        if (paymentMethod === 'upi' && !settings.upiActive) setPaymentMethod('credit_card');
+        if (paymentMethod === 'cod' && !settings.cashOnDeliveryActive) setPaymentMethod('credit_card');
       })
       .catch(error => setStatus(error.message));
   }, []);
@@ -221,7 +225,7 @@ export default function Checkout() {
   async function handleSubmit(event) {
     event.preventDefault();
     if (!cart.length) return;
-    if (paymentMethod === 'card') {
+    if (['card', 'credit_card', 'debit_card'].includes(paymentMethod)) {
       const validationError = validateCard(cardForm);
       if (validationError) {
         setCardError(validationError);
@@ -229,7 +233,7 @@ export default function Checkout() {
         return;
       }
     }
-    if (paymentMethod === 'upi') {
+    if (['upi', 'qr_code'].includes(paymentMethod)) {
       const validationError = validateTransactionId(transactionId);
       if (validationError) {
         setTransactionError(validationError);
@@ -364,8 +368,11 @@ export default function Checkout() {
             <h2>2. Payment method</h2>
             <div className="payment-methods">
               {[
-                { id: 'card', label: 'Credit / Debit Card', enabled: true },
+                { id: 'credit_card', label: 'Credit Card', enabled: paymentSettings.creditCardActive },
+                { id: 'debit_card', label: 'Debit Card', enabled: paymentSettings.debitCardActive },
                 { id: 'upi', label: 'UPI', enabled: paymentSettings.upiActive },
+                { id: 'net_banking', label: 'Net Banking', enabled: paymentSettings.netBankingActive },
+                { id: 'qr_code', label: 'QR Code', enabled: paymentSettings.qrCodeActive },
                 { id: 'cod', label: 'Cash on Delivery', enabled: paymentSettings.cashOnDeliveryActive },
               ].filter(method => method.enabled).map(method => (
                 <label className={`payment-option ${paymentMethod === method.id ? 'selected' : ''}`} key={method.id}>
@@ -374,7 +381,7 @@ export default function Checkout() {
                 </label>
               ))}
             </div>
-            {paymentMethod === 'card' && (
+            {['credit_card', 'debit_card', 'card'].includes(paymentMethod) && (
               <div className="card-form">
                 <input placeholder="Cardholder name" required value={cardForm.name} onChange={event => { setCardError(''); setCardForm({ ...cardForm, name: event.target.value }); }} />
                 <input placeholder="Card number" inputMode="numeric" required maxLength={23} value={cardForm.number} onChange={event => { setCardError(''); const digits = event.target.value.replace(/\D/g, '').slice(0, 19); setCardForm({ ...cardForm, number: digits.replace(/(.{4})/g, '$1 ').trim() }); }} />
@@ -383,7 +390,7 @@ export default function Checkout() {
                 {cardError && <p className="checkout-status card-status">{cardError}</p>}
               </div>
             )}
-            {paymentMethod === 'upi' && (
+            {['upi', 'qr_code'].includes(paymentMethod) && (
               <div className="upi-payment">
                 <div className="upi-section upi-qr-section">
                   <img
@@ -411,6 +418,7 @@ export default function Checkout() {
                 </div>
               </div>
             )}
+            {paymentMethod === 'net_banking' && <p className="payment-note">Select your bank during secure payment processing.</p>}
             {paymentMethod === 'cod' && <p className="payment-note">Pay when your order arrives.</p>}
           </section>
         </div>

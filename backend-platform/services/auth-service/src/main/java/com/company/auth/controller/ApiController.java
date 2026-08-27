@@ -393,12 +393,16 @@ public class ApiController {
         String paymentMethod = request.getPaymentMethod() == null
             ? "COD"
             : request.getPaymentMethod().trim().toUpperCase();
-        if (!List.of("CARD", "UPI", "COD").contains(paymentMethod)) {
+        if (!List.of("CARD", "UPI", "NET_BANKING", "CREDIT_CARD", "DEBIT_CARD", "QR_CODE", "COD").contains(paymentMethod)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported payment method");
         }
         PaymentSettings paymentSettings = paymentSettingsRepository.findById(1L).orElseGet(PaymentSettings::new);
-        boolean enabled = "CARD".equals(paymentMethod)
-                || "UPI".equals(paymentMethod) && paymentSettings.isUpiActive()
+        boolean enabled = "CARD".equals(paymentMethod) && (paymentSettings.isCreditCardActive() || paymentSettings.isDebitCardActive())
+            || "CREDIT_CARD".equals(paymentMethod) && paymentSettings.isCreditCardActive()
+            || "DEBIT_CARD".equals(paymentMethod) && paymentSettings.isDebitCardActive()
+            || "UPI".equals(paymentMethod) && paymentSettings.isUpiActive()
+            || "NET_BANKING".equals(paymentMethod) && paymentSettings.isNetBankingActive()
+            || "QR_CODE".equals(paymentMethod) && paymentSettings.isQrCodeActive()
                 || "COD".equals(paymentMethod) && paymentSettings.isCashOnDeliveryActive();
         if (!enabled) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This payment method is currently unavailable");
