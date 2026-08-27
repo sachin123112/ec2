@@ -565,10 +565,17 @@
 .role-card-badge { color: #1d4ed8; background: #dbeafe; padding: 5px 9px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
 .permission-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .permission-badge { color: #1d4ed8; background: #dbeafe; border: 1px solid #bfdbfe; border-radius: 8px; padding: 6px 9px; font-size: 0.82rem; font-weight: 600; }
+.permission-multi-select { position: relative; margin-top: 8px; }
+.permission-multi-trigger { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border: 1px solid #d1d5db; border-radius: 12px; background: #f9fafb; color: #0f172a; font-size: 0.95rem; cursor: pointer; }
+.permission-multi-menu { position: absolute; z-index: 5; left: 0; right: 0; top: calc(100% + 6px); max-height: 230px; overflow-y: auto; padding: 8px; border: 1px solid #bfdbfe; border-radius: 12px; background: #fff; box-shadow: 0 14px 30px rgba(15, 23, 42, 0.14); }
+.permission-option { display: flex !important; align-items: center; gap: 10px; padding: 9px 8px; margin: 0 !important; border-radius: 8px; color: #0f172a; cursor: pointer; }
+.permission-option:hover { background: #eff6ff; }
+.permission-option input { width: auto !important; min-height: auto !important; margin: 0 !important; }
+.permission-menu-done { width: 100%; margin-top: 6px; padding: 9px; border: 0; border-radius: 8px; background: #2563eb; color: #fff; font-weight: 700; cursor: pointer; }
+.selected-permissions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .permissions-multi-select { min-height: 150px; padding: 8px; }
 .permissions-multi-select option { padding: 8px; border-radius: 6px; }
 .permissions-multi-select option:checked { background: #2563eb linear-gradient(0deg, #2563eb, #2563eb); color: #fff; }
-.role-edit-select { width: 100%; margin-top: 14px; }
 .role-card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 
 @media (max-width: 620px) {

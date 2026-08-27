@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
 
@@ -20,13 +21,51 @@ const permissionOptions = [
   'View reports',
 ];
 
+function PermissionMultiSelect({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+
+  function togglePermission(permission) {
+    onChange(value.includes(permission)
+      ? value.filter(item => item !== permission)
+      : [...value, permission]);
+  }
+
+  return (
+    <div className="permission-multi-select">
+      <button type="button" className="permission-multi-trigger" onClick={() => setOpen(previous => !previous)}>
+        {value.length ? `${value.length} permission${value.length === 1 ? '' : 's'} selected` : 'Select permissions'}
+        <span>{open ? '⌃' : '⌄'}</span>
+      </button>
+      {open && (
+        <div className="permission-multi-menu">
+          {permissionOptions.map(permission => (
+            <label className="permission-option" key={permission}>
+              <input type="checkbox" checked={value.includes(permission)} onChange={() => togglePermission(permission)} />
+              <span>{permission}</span>
+            </label>
+          ))}
+          <button type="button" className="permission-menu-done" onClick={() => setOpen(false)}>Done</button>
+        </div>
+      )}
+      <div className="selected-permissions">
+        {value.map(permission => <span className="permission-badge" key={permission}>{permission}</span>)}
+      </div>
+    </div>
+  );
+}
+
 export default function RolesAdmin() {
-  const { token } = useAuth();
+  const { token, roles: userRoles } = useAuth();
+  const navigate = useNavigate();
   const [roles, setRoles] = useState([]);
   const [roleForm, setRoleForm] = useState({ name: '', description: '', permissions: [] });
   const [editingRoleId, setEditingRoleId] = useState(null);
   const [editingPermissions, setEditingPermissions] = useState([]);
   const [status, setStatus] = useState('');
+
+  useEffect(() => {
+    if (token && !userRoles.includes('ADMIN')) navigate('/login', { replace: true });
+  }, [navigate, token, userRoles]);
 
   const authHeaderBase = useMemo(() => {
     const headers = {};
@@ -104,7 +143,13 @@ export default function RolesAdmin() {
       await loadData();
       setStatus('Role permissions updated for web and mobile users.');
     } else {
-      setStatus('Unable to update role permissions.');
+      if (response.status === 401 || response.status === 403) {
+        setStatus('Admin login required to save permissions. Redirecting to login...');
+        window.setTimeout(() => navigate('/login'), 800);
+        return;
+      }
+      const errorText = await response.text();
+      setStatus(errorText || `Unable to update role permissions (${response.status}).`);
     }
   }
 
@@ -133,18 +178,10 @@ export default function RolesAdmin() {
             </label>
             <label>
               Permissions
-              <select
-                className="permissions-multi-select"
-                multiple
+              <PermissionMultiSelect
                 value={roleForm.permissions}
-                onChange={e => setRoleForm({
-                  ...roleForm,
-                  permissions: Array.from(e.target.selectedOptions, option => option.value),
-                })}
-                required
-              >
-                {permissionOptions.map(permission => <option key={permission} value={permission}>{permission}</option>)}
-              </select>
+                onChange={permissions => setRoleForm({ ...roleForm, permissions })}
+              />
             </label>
             <button type="submit" className="btn-primary">Save Role</button>
           </form>
@@ -162,20 +199,13 @@ export default function RolesAdmin() {
                   </div>
                   <span className="role-card-badge">Role</span>
                 </div>
-                <div className="permission-list">
+                {editingRoleId !== role.id && <div className="permission-list">
                   {(role.permissions?.length ? role.permissions : ['No permissions configured']).map(permission => (
                     <span className="permission-badge" key={permission}>{permission}</span>
                   ))}
-                </div>
+                </div>}
                 {editingRoleId === role.id && (
-                  <select
-                    className="permissions-multi-select role-edit-select"
-                    multiple
-                    value={editingPermissions}
-                    onChange={e => setEditingPermissions(Array.from(e.target.selectedOptions, option => option.value))}
-                  >
-                    {permissionOptions.map(permission => <option key={permission} value={permission}>{permission}</option>)}
-                  </select>
+                  <PermissionMultiSelect value={editingPermissions} onChange={setEditingPermissions} />
                 )}
                 <div className="role-card-actions">
                   {editingRoleId === role.id ? (

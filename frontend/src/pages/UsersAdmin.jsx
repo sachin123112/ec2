@@ -118,7 +118,7 @@ export default function UsersAdmin() {
               <input type="password" value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} required />
             </label>
             <label>
-              Role
+              Roles (multi-select)
               <select
                 className="permissions-multi-select"
                 multiple

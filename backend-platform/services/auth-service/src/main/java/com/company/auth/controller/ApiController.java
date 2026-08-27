@@ -54,6 +54,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.security.Principal;
@@ -307,6 +308,7 @@ public class ApiController {
     }
 
     @PutMapping("/roles/{id}")
+    @Transactional
     public ResponseEntity<RoleDto> updateRole(@PathVariable Long id, @RequestBody RoleDto request) {
         com.company.auth.model.Role role = roleRepository.findById(id).orElse(null);
         if (role == null) return ResponseEntity.notFound().build();
