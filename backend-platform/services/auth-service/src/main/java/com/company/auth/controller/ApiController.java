@@ -35,6 +35,8 @@ import com.company.auth.repository.UserRepository;
 import com.company.auth.service.SearchService;
 import com.company.auth.service.EmailNotificationService;
 import com.company.auth.service.ImageKitImageService;
+import com.company.auth.repository.PaymentSettingsRepository;
+import com.company.auth.model.PaymentSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.swagger.v3.oas.annotations.Operation;
@@ -79,6 +81,7 @@ public class ApiController {
     private final SearchService searchService;
     private final EmailNotificationService emailNotificationService;
     private final ImageKitImageService imageKitImageService;
+    private final PaymentSettingsRepository paymentSettingsRepository;
 
     public ApiController(
             UserRepository userRepository,
@@ -92,7 +95,8 @@ public class ApiController {
             PasswordEncoder passwordEncoder,
             SearchService searchService,
             EmailNotificationService emailNotificationService,
-            ImageKitImageService imageKitImageService) {
+            ImageKitImageService imageKitImageService,
+            PaymentSettingsRepository paymentSettingsRepository) {
         this.userRepository = userRepository;
         this.productRepository = productRepository;
         this.orderRepository = orderRepository;
@@ -105,6 +109,7 @@ public class ApiController {
         this.searchService = searchService;
         this.emailNotificationService = emailNotificationService;
         this.imageKitImageService = imageKitImageService;
+        this.paymentSettingsRepository = paymentSettingsRepository;
     }
 
     @GetMapping("/users")
@@ -390,6 +395,13 @@ public class ApiController {
             : request.getPaymentMethod().trim().toUpperCase();
         if (!List.of("CARD", "UPI", "COD").contains(paymentMethod)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported payment method");
+        }
+        PaymentSettings paymentSettings = paymentSettingsRepository.findById(1L).orElseGet(PaymentSettings::new);
+        boolean enabled = "CARD".equals(paymentMethod)
+                || "UPI".equals(paymentMethod) && paymentSettings.isUpiActive()
+                || "COD".equals(paymentMethod) && paymentSettings.isCashOnDeliveryActive();
+        if (!enabled) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This payment method is currently unavailable");
         }
 
         order = orderRepository.save(order);

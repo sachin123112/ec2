@@ -29,42 +29,8 @@ export default function NotificationsAdmin() {
         setError(null);
       } catch (err) {
         console.error('Error fetching notifications:', err);
-        // Set mock data for demo purposes when API fails
-        setNotifications([
-          {
-            id: 1,
-            title: 'New Order Received',
-            message: 'Order #ORD-12345 from John Doe for $250.00',
-            timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-            type: 'order',
-            read: true,
-          },
-          {
-            id: 2,
-            title: 'Low Stock Alert',
-            message: 'Premium Dog Food (SKU: PF-001) stock is below 10 units',
-            timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-            type: 'product',
-            read: true,
-          },
-          {
-            id: 3,
-            title: 'User Registration',
-            message: 'New user registered: sarah.johnson@email.com',
-            timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-            type: 'user',
-            read: true,
-          },
-          {
-            id: 4,
-            title: 'System Maintenance',
-            message: 'Database backup completed successfully',
-            timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-            type: 'system',
-            read: true,
-          },
-        ]);
-        setError(null);
+        setNotifications([]);
+        setError(err.message || 'Failed to fetch notifications');
       } finally {
         setLoading(false);
       }
@@ -76,17 +42,15 @@ export default function NotificationsAdmin() {
   }, [token]);
 
   const handleMarkAsRead = async (id) => {
-    setNotifications(prev =>
-      prev.map(notif =>
-        notif.id === id ? { ...notif, read: true } : notif
-      )
-    );
-
     try {
-      await fetch(`${API_URL}/notifications/${id}/read`, {
+      const response = await fetch(`${API_URL}/notifications/${id}/read`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!response.ok) throw new Error(`Unable to mark notification as read (${response.status})`);
+      setNotifications(prev => prev.map(notif =>
+        notif.id === id ? { ...notif, read: true } : notif
+      ));
       // Notify Dashboard to refresh notification count
       window.dispatchEvent(new CustomEvent('notification:updated'));
     } catch (err) {
@@ -95,13 +59,13 @@ export default function NotificationsAdmin() {
   };
 
   const handleDeleteNotification = async (id) => {
-    setNotifications(prev => prev.filter(notif => notif.id !== id));
-
     try {
-      await fetch(`${API_URL}/notifications/${id}`, {
+      const response = await fetch(`${API_URL}/notifications/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!response.ok) throw new Error(`Unable to delete notification (${response.status})`);
+      setNotifications(prev => prev.filter(notif => notif.id !== id));
       // Notify Dashboard to refresh notification count
       window.dispatchEvent(new CustomEvent('notification:updated'));
     } catch (err) {
@@ -110,13 +74,13 @@ export default function NotificationsAdmin() {
   };
 
   const handleClearAll = async () => {
-    setNotifications([]);
-
     try {
-      await fetch(`${API_URL}/notifications/clear-all`, {
+      const response = await fetch(`${API_URL}/notifications/clear-all`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!response.ok) throw new Error(`Unable to clear notifications (${response.status})`);
+      setNotifications([]);
       // Notify Dashboard to refresh notification count
       window.dispatchEvent(new CustomEvent('notification:updated'));
     } catch (err) {

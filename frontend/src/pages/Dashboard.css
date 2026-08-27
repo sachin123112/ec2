@@ -539,6 +539,56 @@
   gap: 20px;
 }
 
+.payment-settings > .form-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 20px;
+}
+
+.payment-settings > .form-grid label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.payment-settings > .form-grid input {
+  width: 100%;
+  min-width: 0;
+}
+
+.add-payment-method-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: 12px;
+  width: 100%;
+}
+
+.add-payment-method-form label {
+  display: grid;
+  gap: 8px;
+}
+
+.add-payment-method-form input {
+  width: 100%;
+}
+
+@media (max-width: 980px) {
+  .payment-settings > .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .payment-settings > .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .add-payment-method-form {
+    grid-template-columns: 1fr;
+  }
+}
+
 .payment-card {
   display: grid;
   gap: 18px;

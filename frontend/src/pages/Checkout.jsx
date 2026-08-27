@@ -5,7 +5,6 @@ import { useCart } from '../context/CartContext';
 import './Checkout.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
-const UPI_QR_CODE_URL = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=upi%3A%2F%2Fpay%3Fpa%3Dsachinprakash893%40ybl%26pn%3DPawMart';
 
 const emptyAddress = {
   label: 'Home',
@@ -73,12 +72,19 @@ export default function Checkout() {
   const [status, setStatus] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [paymentSettings, setPaymentSettings] = useState({
+    upiActive: true,
+    cashOnDeliveryActive: true,
+    upiId: 'sachinprakash893@ybl',
+    freeShippingThreshold: 999,
+    shippingFee: 99,
+  });
 
   const authHeaders = useMemo(() => ({
     Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
   }), [token]);
-  const shipping = totalPrice >= 999 ? 0 : 99;
+  const shipping = totalPrice >= Number(paymentSettings.freeShippingThreshold) ? 0 : Number(paymentSettings.shippingFee);
   const total = totalPrice + shipping;
   const selectedAddress = addresses.find(address => String(address.id) === String(selectedAddressId));
 
@@ -102,6 +108,17 @@ export default function Checkout() {
       .catch(error => setStatus(error.message || 'Unable to load saved addresses.'))
       .finally(() => setAddressesLoading(false));
   }, [authHeaders, token]);
+
+  useEffect(() => {
+    fetch(`${API_URL}/payment-settings`)
+      .then(response => response.ok ? response.json() : Promise.reject(new Error('Unable to load payment settings.')))
+      .then(settings => {
+        setPaymentSettings(settings);
+        if (paymentMethod === 'upi' && !settings.upiActive) setPaymentMethod('card');
+        if (paymentMethod === 'cod' && !settings.cashOnDeliveryActive) setPaymentMethod('card');
+      })
+      .catch(error => setStatus(error.message));
+  }, []);
 
   function updateAddress(field, value) {
     setAddressForm(previous => ({ ...previous, [field]: value }));
@@ -346,10 +363,14 @@ export default function Checkout() {
           <section className="checkout-section">
             <h2>2. Payment method</h2>
             <div className="payment-methods">
-              {['card', 'upi', 'cod'].map(method => (
-                <label className={`payment-option ${paymentMethod === method ? 'selected' : ''}`} key={method}>
-                  <input type="radio" name="payment" value={method} checked={paymentMethod === method} onChange={event => setPaymentMethod(event.target.value)} />
-                  {method === 'card' ? 'Credit / Debit Card' : method === 'upi' ? 'UPI' : 'Cash on Delivery'}
+              {[
+                { id: 'card', label: 'Credit / Debit Card', enabled: true },
+                { id: 'upi', label: 'UPI', enabled: paymentSettings.upiActive },
+                { id: 'cod', label: 'Cash on Delivery', enabled: paymentSettings.cashOnDeliveryActive },
+              ].filter(method => method.enabled).map(method => (
+                <label className={`payment-option ${paymentMethod === method.id ? 'selected' : ''}`} key={method.id}>
+                  <input type="radio" name="payment" value={method.id} checked={paymentMethod === method.id} onChange={event => setPaymentMethod(event.target.value)} />
+                  {method.label}
                 </label>
               ))}
             </div>
@@ -367,7 +388,7 @@ export default function Checkout() {
                 <div className="upi-section upi-qr-section">
                   <img
                     className="upi-qr-code"
-                    src={UPI_QR_CODE_URL}
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(`upi://pay?pa=${paymentSettings.upiId}&pn=PawMart`)}`}
                     alt="QR code for PawMart UPI payment"
                   />
                   <p className="payment-note">Scan this QR code to pay.</p>

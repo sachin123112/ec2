@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import SettingsPanel from '../components/SettingsPanel';
 import './Dashboard.css';
 
@@ -14,6 +15,8 @@ const backupFrequencyOptions = ['Daily', 'Weekly', 'Monthly'];
 const backupTimeOptions = ['12:00 AM', '02:00 AM', '04:00 AM', '06:00 AM'];
 const backupRetentionOptions = ['7 Days', '14 Days', '30 Days', '90 Days'];
 const tabs = ['General', 'Security', 'Email', 'Notifications', 'Payment', 'Storage', 'Backup', 'Logs'];
+const SETTINGS_STORAGE_KEY = 'pawmart_system_settings';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 const tabHeaders = {
   General: {
@@ -52,6 +55,7 @@ const tabHeaders = {
 
 export default function Settings() {
   const navigate = useNavigate();
+  const { token, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('General');
   const [siteName, setSiteName] = useState('PawMart');
   const [siteTagline, setSiteTagline] = useState('Your pet, our priority');
@@ -103,6 +107,13 @@ export default function Settings() {
   const [stripeActive, setStripeActive] = useState(false);
   const [paypalActive, setPaypalActive] = useState(false);
   const [cashOnDeliveryActive, setCashOnDeliveryActive] = useState(true);
+  const [upiActive, setUpiActive] = useState(true);
+  const [upiId, setUpiId] = useState('sachinprakash893@ybl');
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState('999');
+  const [shippingFee, setShippingFee] = useState('99');
+  const [showPaymentMethodForm, setShowPaymentMethodForm] = useState(false);
+  const [newPaymentMethodName, setNewPaymentMethodName] = useState('');
+  const [customPaymentMethods, setCustomPaymentMethods] = useState([]);
   const [mailDriver, setMailDriver] = useState('SMTP');
   const [smtpHost, setSmtpHost] = useState('smtp.gmail.com');
   const [smtpPort, setSmtpPort] = useState('587');
@@ -112,6 +123,8 @@ export default function Settings() {
   const [showSmtpPassword, setShowSmtpPassword] = useState(false);
   const [fromEmail, setFromEmail] = useState('gitsachin720@gmail.com');
   const [fromName, setFromName] = useState('PawMart');
+  const [logoPreview, setLogoPreview] = useState('');
+  const [faviconPreview, setFaviconPreview] = useState('');
   const [newOrderNotifications, setNewOrderNotifications] = useState(true);
   const [lowStockAlerts, setLowStockAlerts] = useState(true);
   const [customerReviews, setCustomerReviews] = useState(true);
@@ -120,10 +133,222 @@ export default function Settings() {
   const [marketingUpdates, setMarketingUpdates] = useState(false);
   const [status, setStatus] = useState('');
 
-  function handleSubmit(event) {
+  const filteredLogs = systemLogs.filter(log => {
+    const matchesType = selectedLogType === 'All Logs' || log.type === selectedLogType;
+    const matchesSearch = !logSearch.trim()
+      || `${log.message} ${log.source}`.toLowerCase().includes(logSearch.trim().toLowerCase());
+    const days = logDateRange === 'Last 7 Days' ? 7 : logDateRange === 'Last 30 Days' ? 30 : 90;
+    const matchesDate = !log.createdAt || (Date.now() - new Date(log.createdAt).getTime()) <= days * 86400000;
+    return matchesType && matchesSearch && matchesDate;
+  });
+
+  useEffect(() => {
+    const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (!savedSettings) return;
+    try {
+      const saved = JSON.parse(savedSettings);
+      if (saved.mailDriver) setMailDriver(saved.mailDriver);
+      if (saved.smtpHost) setSmtpHost(saved.smtpHost);
+      if (saved.smtpPort) setSmtpPort(saved.smtpPort);
+      if (saved.encryption) setEncryption(saved.encryption);
+      if (saved.smtpUsername) setSmtpUsername(saved.smtpUsername);
+      if (saved.fromEmail) setFromEmail(saved.fromEmail);
+      if (saved.fromName) setFromName(saved.fromName);
+      if (saved.logoPreview) setLogoPreview(saved.logoPreview);
+      if (saved.faviconPreview) setFaviconPreview(saved.faviconPreview);
+      if (Array.isArray(saved.customPaymentMethods)) setCustomPaymentMethods(saved.customPaymentMethods);
+    } catch (error) {
+      console.error('Unable to load saved settings', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    fetch(`${API_URL}/admin/notification-settings`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(response => {
+        if (response.status === 401 || response.status === 403) {
+          logout();
+          throw new Error('Your admin session has expired. Please log in again.');
+        }
+        if (!response.ok) throw new Error(`Unable to load notification settings (${response.status})`);
+        return response.json();
+      })
+      .then(settings => {
+        setNewOrderNotifications(settings.newOrderNotifications);
+        setLowStockAlerts(settings.lowStockAlerts);
+        setCustomerReviews(settings.customerReviews);
+        setOrderStatusUpdates(settings.orderStatusUpdates);
+        setDailySummary(settings.dailySummary);
+        setMarketingUpdates(settings.marketingUpdates);
+      })
+      .catch(error => setStatus(error.message));
+  }, [token, logout]);
+
+  useEffect(() => {
+    fetch(`${API_URL}/payment-settings`)
+      .then(response => response.ok ? response.json() : Promise.reject(new Error(`Unable to load payment settings (${response.status})`)))
+      .then(settings => {
+        setRazorpayKeyId(settings.razorpayKeyId || '');
+        setStripeActive(Boolean(settings.stripeActive));
+        setPaypalActive(Boolean(settings.paypalActive));
+        setCashOnDeliveryActive(Boolean(settings.cashOnDeliveryActive));
+        setUpiActive(Boolean(settings.upiActive));
+        setUpiId(settings.upiId || '');
+        setFreeShippingThreshold(String(settings.freeShippingThreshold ?? 999));
+        setShippingFee(String(settings.shippingFee ?? 99));
+      })
+      .catch(error => setStatus(error.message));
+  }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    fetch(`${API_URL}/admin/logs`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(response => {
+        if (response.status === 401 || response.status === 403) {
+          logout();
+          throw new Error('Your admin session has expired. Please log in again.');
+        }
+        if (!response.ok) throw new Error(`Unable to load activity logs (${response.status})`);
+        return response.json();
+      })
+      .then(logs => setSystemLogs(logs))
+      .catch(error => setStatus(error.message));
+  }, [token, logout]);
+
+  async function handleSubmit(event) {
     event.preventDefault();
-    setStatus('System settings saved successfully.');
+    const settings = {
+      mailDriver,
+      smtpHost,
+      smtpPort,
+      encryption,
+      smtpUsername,
+      fromEmail,
+      fromName,
+      newOrderNotifications,
+      lowStockAlerts,
+      customerReviews,
+      orderStatusUpdates,
+      dailySummary,
+      marketingUpdates,
+      logoPreview,
+      faviconPreview,
+      customPaymentMethods,
+    };
+    try {
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+      const response = await fetch(`${API_URL}/admin/notification-settings`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          newOrderNotifications,
+          lowStockAlerts,
+          customerReviews,
+          orderStatusUpdates,
+          dailySummary,
+          marketingUpdates,
+        }),
+      });
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('Your admin session has expired. Please log in again.');
+      }
+      if (!response.ok) throw new Error(`Unable to save notification settings (${response.status})`);
+      const paymentResponse = await fetch(`${API_URL}/payment-settings`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          razorpayKeyId,
+          razorpayKeySecret: razorpayKeySecret === '***************' ? '' : razorpayKeySecret,
+          stripeActive,
+          paypalActive,
+          cashOnDeliveryActive,
+          upiActive,
+          upiId,
+          freeShippingThreshold: Number(freeShippingThreshold),
+          shippingFee: Number(shippingFee),
+        }),
+      });
+      if (!paymentResponse.ok) throw new Error(`Unable to save payment settings (${paymentResponse.status})`);
+      setStatus('Settings saved for all users.');
+    } catch (error) {
+      setStatus(error.message);
+    }
     window.setTimeout(() => setStatus(''), 3000);
+  }
+
+  async function handleBackupNow() {
+    if (!includeDatabase) {
+      setStatus('Select Database before creating a backup.');
+      return;
+    }
+    setStatus('Creating database backup...');
+    try {
+      const response = await fetch(`${API_URL}/admin/backups/database`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const result = await response.json().catch(() => ({}));
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('Your admin session has expired. Please log in again.');
+      }
+      if (!response.ok) throw new Error(result.message || 'Unable to create database backup.');
+      setRecentBackups(previous => [{
+        date: new Date().toLocaleString(),
+        size: `${Math.max(1, Math.round(result.size / 1024))} KB`,
+        fileName: result.fileName,
+      }, ...previous]);
+      await downloadBackup(result.fileName);
+      setStatus(`Full database backup downloaded: ${result.fileName}`);
+    } catch (error) {
+      setStatus(error.message);
+    }
+    window.setTimeout(() => setStatus(''), 5000);
+  }
+
+  async function clearLogs() {
+    try {
+      const response = await fetch(`${API_URL}/admin/logs`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error(`Unable to clear activity logs (${response.status})`);
+      setSystemLogs([]);
+      setStatus('Activity logs cleared successfully.');
+    } catch (error) {
+      setStatus(error.message);
+    }
+    window.setTimeout(() => setStatus(''), 3000);
+  }
+
+  function addPaymentMethod() {
+    const methodName = newPaymentMethodName.trim();
+    if (!methodName) {
+      setStatus('Enter a payment method name.');
+      return;
+    }
+    setCustomPaymentMethods(previous => [...previous, methodName]);
+    setStatus(`${methodName} added. Click Save Changes to keep it.`);
+    setNewPaymentMethodName('');
+    setShowPaymentMethodForm(false);
+  }
+
+  async function downloadBackup(fileName) {
+    if (!fileName) return;
+    const response = await fetch(`${API_URL}/admin/backups/${encodeURIComponent(fileName)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error('Unable to download database backup.');
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   function handleSendTestEmail(event) {
@@ -132,17 +357,46 @@ export default function Settings() {
     window.setTimeout(() => setStatus(''), 3000);
   }
 
-  function handleLogoChange(event) {
+  function readImageAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Unable to read the image file.'));
+      reader.onload = () => {
+        const image = new Image();
+        image.onerror = () => reject(new Error('Unable to process the image file.'));
+        image.onload = () => {
+          const scale = Math.min(1, 1200 / image.width, 1200 / image.height);
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(image.width * scale));
+          canvas.height = Math.max(1, Math.round(image.height * scale));
+          canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', 0.85));
+        };
+        image.src = String(reader.result);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleLogoChange(event) {
     const file = event.target.files?.[0];
-    if (file) {
-      setStatus(`Logo selected: ${file.name}`);
+    if (!file) return;
+    try {
+      setLogoPreview(await readImageAsDataUrl(file));
+      setStatus(`Logo selected: ${file.name}. Click Save Changes to keep it.`);
+    } catch (error) {
+      setStatus(error.message);
     }
   }
 
-  function handleFaviconChange(event) {
+  async function handleFaviconChange(event) {
     const file = event.target.files?.[0];
-    if (file) {
-      setStatus(`Favicon selected: ${file.name}`);
+    if (!file) return;
+    try {
+      setFaviconPreview(await readImageAsDataUrl(file));
+      setStatus(`Favicon selected: ${file.name}. Click Save Changes to keep it.`);
+    } catch (error) {
+      setStatus(error.message);
     }
   }
 
@@ -515,6 +769,33 @@ export default function Settings() {
                     <div className="payment-methods">
                       <div className="payment-method">
                         <div>
+                          <strong>UPI</strong>
+                          <span>Accept UPI payments with a configurable QR code.</span>
+                        </div>
+                        <div className="payment-status-row">
+                          <span className={`status-badge ${upiActive ? 'active' : 'inactive'}`}>{upiActive ? 'Active' : 'Inactive'}</span>
+                          <label className="toggle-switch"><input type="checkbox" checked={upiActive} onChange={e => setUpiActive(e.target.checked)} /><span className="slider" /></label>
+                        </div>
+                      </div>
+
+                      {customPaymentMethods.map(methodName => (
+                        <div className="payment-method" key={methodName}>
+                          <div>
+                            <strong>{methodName}</strong>
+                            <span>Custom payment method configuration.</span>
+                          </div>
+                          <span className="status-badge inactive">Not connected</span>
+                        </div>
+                      ))}
+
+                      <div className="form-grid">
+                        <label>UPI ID<input value={upiId} onChange={e => setUpiId(e.target.value)} /></label>
+                        <label>Free Shipping Above (INR)<input type="number" min="0" value={freeShippingThreshold} onChange={e => setFreeShippingThreshold(e.target.value)} /></label>
+                        <label>Shipping Fee (INR)<input type="number" min="0" value={shippingFee} onChange={e => setShippingFee(e.target.value)} /></label>
+                      </div>
+
+                      <div className="payment-method">
+                        <div>
                           <strong>Stripe</strong>
                           <span>Payment gateway integration.</span>
                         </div>
@@ -563,7 +844,24 @@ export default function Settings() {
                     </div>
 
                     <div className="payment-actions">
-                      <button type="button" className="btn-secondary">+ Add Payment Method</button>
+                      {showPaymentMethodForm && (
+                        <div className="add-payment-method-form">
+                          <label>
+                            Payment Method Name
+                            <input
+                              value={newPaymentMethodName}
+                              onChange={e => setNewPaymentMethodName(e.target.value)}
+                              placeholder="e.g. Bank Transfer"
+                              autoFocus
+                            />
+                          </label>
+                          <button type="button" className="btn-primary" onClick={addPaymentMethod}>Add Method</button>
+                          <button type="button" className="btn-secondary" onClick={() => setShowPaymentMethodForm(false)}>Cancel</button>
+                        </div>
+                      )}
+                      {!showPaymentMethodForm && (
+                        <button type="button" className="btn-secondary" onClick={() => setShowPaymentMethodForm(true)}>+ Add Payment Method</button>
+                      )}
                     </div>
                   </div>
                 </>
@@ -574,7 +872,7 @@ export default function Settings() {
                   <SettingsPanel
                     title="Backup Settings"
                     description="Configure automatic backups and manage data."
-                    actions={<button type="button" className="btn-secondary">Backup Now</button>}
+                    actions={<button type="button" className="btn-secondary" onClick={handleBackupNow}>Backup Now</button>}
                   >
                     <div className="settings-toggle-row">
                       <label className="checkbox-label">
@@ -632,7 +930,7 @@ export default function Settings() {
                             <strong>{backup.date}</strong>
                             <span>Size: {backup.size}</span>
                           </div>
-                          <button type="button" className="btn-secondary">Download</button>
+                          <button type="button" className="btn-secondary" disabled={!backup.fileName} onClick={() => downloadBackup(backup.fileName)}>Download</button>
                         </div>
                       ))}
                     </div>
@@ -737,18 +1035,21 @@ export default function Settings() {
                           </tr>
                         </thead>
                         <tbody>
-                          {systemLogs.map((log, index) => (
-                            <tr key={index}>
-                              <td>{log.date}</td>
+                          {filteredLogs.map(log => (
+                            <tr key={log.id}>
+                              <td>{new Date(log.createdAt).toLocaleString()}</td>
                               <td><span className={`log-tag ${log.type}`}>{log.type}</span></td>
                               <td>{log.message}</td>
                               <td>{log.source}</td>
                             </tr>
                           ))}
+                          {filteredLogs.length === 0 && (
+                            <tr><td colSpan="4">No activity logs found.</td></tr>
+                          )}
                         </tbody>
                       </table>
 
-                      <button type="button" className="clear-logs">Clear Logs</button>
+                      <button type="button" className="clear-logs" onClick={clearLogs}>Clear Logs</button>
                     </div>
                   </SettingsPanel>
                 </>
@@ -769,12 +1070,16 @@ export default function Settings() {
             </div>
             <div className="upload-grid">
               <div className="upload-box">
-                <div className="upload-preview">Logo</div>
+                <div className="upload-preview">
+                  {logoPreview ? <img src={logoPreview} alt="Selected logo" /> : 'Logo'}
+                </div>
                 <input type="file" accept="image/*" onChange={handleLogoChange} />
                 <p className="upload-note">Recommended size: 200 x 60px</p>
               </div>
               <div className="upload-box">
-                <div className="upload-preview">Favicon</div>
+                <div className="upload-preview">
+                  {faviconPreview ? <img src={faviconPreview} alt="Selected favicon" /> : 'Favicon'}
+                </div>
                 <input type="file" accept="image/*" onChange={handleFaviconChange} />
                 <p className="upload-note">Recommended size: 32 x 32px</p>
               </div>
