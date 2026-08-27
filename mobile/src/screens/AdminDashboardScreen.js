@@ -8,6 +8,7 @@ import { goBackOrNavigate } from '../navigation/safeBack';
 export default function AdminDashboardScreen({ navigation }) {
   const { token, roles } = useAuth();
   const [stats, setStats] = useState(null);
+  const [roleDetails, setRoleDetails] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,6 +29,14 @@ export default function AdminDashboardScreen({ navigation }) {
     if (token) fetchStats();
   }, [token]);
 
+  useEffect(() => {
+    if (!token) return;
+    fetch(`${config.API_URL}/roles`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error('Unable to load roles')))
+      .then(setRoleDetails)
+      .catch(() => {});
+  }, [token]);
+
   return (
     <View style={styles.page}>
       <View style={styles.header}>
@@ -40,14 +49,11 @@ export default function AdminDashboardScreen({ navigation }) {
         <View style={styles.roleSection}>
           <Text style={styles.roleSectionTitle}>Roles & permissions</Text>
           <View style={styles.roleGrid}>
-            {(roles.length ? roles : ['MOBILE_USER']).map((role) => (
-              <View style={styles.roleCard} key={role}>
-                <Text style={styles.roleTitle}>{role}</Text>
+            {(roleDetails.length ? roleDetails.filter(role => roles.includes(role.name)) : roles.map(name => ({ name, permissions: [] }))).map((role) => (
+              <View style={styles.roleCard} key={role.name}>
+                <Text style={styles.roleTitle}>{role.name}</Text>
                 <View style={styles.permissionBox}>
-                  {(role === 'ADMIN' || role === 'MOBILE_ADMIN'
-                    ? ['Dashboard access', 'Manage users', 'Manage orders']
-                    : ['Browse catalog', 'Place orders', 'Manage profile']
-                  ).map((permission) => <Text style={styles.permissionText} key={permission}>✓ {permission}</Text>)}
+                  {(role.permissions?.length ? role.permissions : ['No permissions configured']).map((permission) => <Text style={styles.permissionText} key={permission}>✓ {permission}</Text>)}
                 </View>
               </View>
             ))}

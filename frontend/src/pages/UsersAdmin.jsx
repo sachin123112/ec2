@@ -9,7 +9,7 @@ export default function UsersAdmin() {
   const { token } = useAuth();
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
-  const [userForm, setUserForm] = useState({ username: '', email: '', password: '', firstName: '', lastName: '', roleId: '' });
+  const [userForm, setUserForm] = useState({ username: '', email: '', password: '', firstName: '', lastName: '', roleIds: [] });
   const [status, setStatus] = useState('');
 
   const authHeaderBase = useMemo(() => {
@@ -53,7 +53,7 @@ export default function UsersAdmin() {
       password: userForm.password,
       firstName: userForm.firstName,
       lastName: userForm.lastName,
-      roleIds: userForm.roleId ? [parseInt(userForm.roleId, 10)] : [],
+      roleIds: userForm.roleIds.map(roleId => parseInt(roleId, 10)),
     };
     const response = await fetch(`${API_URL}/users`, {
       method: 'POST',
@@ -61,7 +61,7 @@ export default function UsersAdmin() {
       body: JSON.stringify(payload),
     });
     if (response.ok) {
-      setUserForm({ username: '', email: '', password: '', firstName: '', lastName: '', roleId: '' });
+      setUserForm({ username: '', email: '', password: '', firstName: '', lastName: '', roleIds: [] });
       await loadData();
       setStatus('User created successfully.');
     } else {
@@ -119,8 +119,16 @@ export default function UsersAdmin() {
             </label>
             <label>
               Role
-              <select value={userForm.roleId} onChange={e => setUserForm({...userForm, roleId: e.target.value})} required>
-                <option value="">Select role</option>
+              <select
+                className="permissions-multi-select"
+                multiple
+                value={userForm.roleIds}
+                onChange={e => setUserForm({
+                  ...userForm,
+                  roleIds: Array.from(e.target.selectedOptions, option => option.value),
+                })}
+                required
+              >
                 {roles.map(role => (
                   <option key={role.id} value={role.id}>{role.name}</option>
                 ))}

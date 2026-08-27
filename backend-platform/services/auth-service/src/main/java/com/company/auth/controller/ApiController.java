@@ -283,7 +283,7 @@ public class ApiController {
     @GetMapping("/roles")
     public List<RoleDto> listRoles() {
         return roleRepository.findAll().stream().map(r -> {
-            RoleDto d = new RoleDto(); d.setId(r.getId()); d.setName(r.getName()); d.setDescription(r.getDescription()); d.setCreatedAt(r.getCreatedAt()); return d;
+            RoleDto d = new RoleDto(); d.setId(r.getId()); d.setName(r.getName()); d.setDescription(r.getDescription()); d.setCreatedAt(r.getCreatedAt()); d.setPermissions(r.getPermissions().stream().sorted().toList()); return d;
         }).collect(Collectors.toList());
     }
 
@@ -291,8 +291,9 @@ public class ApiController {
     public ResponseEntity<RoleDto> createRole(@RequestBody RoleDto request) {
         com.company.auth.model.Role r = new com.company.auth.model.Role();
         r.setName(request.getName()); r.setDescription(request.getDescription());
+        if (request.getPermissions() != null) r.getPermissions().addAll(request.getPermissions());
         r = roleRepository.save(r);
-        RoleDto d = new RoleDto(); d.setId(r.getId()); d.setName(r.getName()); d.setDescription(r.getDescription()); d.setCreatedAt(r.getCreatedAt());
+        RoleDto d = new RoleDto(); d.setId(r.getId()); d.setName(r.getName()); d.setDescription(r.getDescription()); d.setCreatedAt(r.getCreatedAt()); d.setPermissions(r.getPermissions().stream().sorted().toList());
         return ResponseEntity.status(HttpStatus.CREATED).body(d);
     }
 
@@ -303,6 +304,24 @@ public class ApiController {
         }
         roleRepository.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/roles/{id}")
+    public ResponseEntity<RoleDto> updateRole(@PathVariable Long id, @RequestBody RoleDto request) {
+        com.company.auth.model.Role role = roleRepository.findById(id).orElse(null);
+        if (role == null) return ResponseEntity.notFound().build();
+        role.setName(request.getName());
+        role.setDescription(request.getDescription());
+        role.getPermissions().clear();
+        if (request.getPermissions() != null) role.getPermissions().addAll(request.getPermissions());
+        role = roleRepository.save(role);
+        RoleDto dto = new RoleDto();
+        dto.setId(role.getId());
+        dto.setName(role.getName());
+        dto.setDescription(role.getDescription());
+        dto.setCreatedAt(role.getCreatedAt());
+        dto.setPermissions(role.getPermissions().stream().sorted().toList());
+        return ResponseEntity.ok(dto);
     }
 
     @GetMapping("/links")

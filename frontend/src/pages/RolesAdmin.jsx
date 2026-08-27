@@ -4,17 +4,28 @@ import './Dashboard.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
-const rolePermissions = {
-  ADMIN: ['Manage users', 'Manage products', 'Manage orders', 'Manage settings'],
-  USER: ['Browse products', 'Place orders', 'Manage profile'],
-  MOBILE_ADMIN: ['View mobile dashboard', 'Manage users', 'Manage orders', 'Manage settings'],
-  MOBILE_USER: ['Browse mobile catalog', 'Place mobile orders', 'Manage mobile profile'],
-};
+const permissionOptions = [
+  'View dashboard',
+  'View mobile dashboard',
+  'Browse products',
+  'Browse mobile catalog',
+  'Manage users',
+  'Manage products',
+  'Manage orders',
+  'Place orders',
+  'Place mobile orders',
+  'Manage profile',
+  'Manage mobile profile',
+  'Manage settings',
+  'View reports',
+];
 
 export default function RolesAdmin() {
   const { token } = useAuth();
   const [roles, setRoles] = useState([]);
-  const [roleForm, setRoleForm] = useState({ name: '', description: '' });
+  const [roleForm, setRoleForm] = useState({ name: '', description: '', permissions: [] });
+  const [editingRoleId, setEditingRoleId] = useState(null);
+  const [editingPermissions, setEditingPermissions] = useState([]);
   const [status, setStatus] = useState('');
 
   const authHeaderBase = useMemo(() => {
@@ -47,10 +58,14 @@ export default function RolesAdmin() {
     const response = await fetch(`${API_URL}/roles`, {
       method: 'POST',
       headers: authHeaders,
-      body: JSON.stringify({ name: roleForm.name, description: roleForm.description }),
+      body: JSON.stringify({
+        name: roleForm.name,
+        description: roleForm.description,
+        permissions: roleForm.permissions,
+      }),
     });
     if (response.ok) {
-      setRoleForm({ name: '', description: '' });
+      setRoleForm({ name: '', description: '', permissions: [] });
       await loadData();
       setStatus('Role created successfully.');
     } else {
@@ -69,6 +84,27 @@ export default function RolesAdmin() {
       setStatus('Role deleted successfully.');
     } else {
       setStatus('Unable to delete role.');
+    }
+  }
+
+  function startEditingRole(role) {
+    setEditingRoleId(role.id);
+    setEditingPermissions(role.permissions || []);
+  }
+
+  async function saveRolePermissions(role) {
+    setStatus('Saving role permissions...');
+    const response = await fetch(`${API_URL}/roles/${role.id}`, {
+      method: 'PUT',
+      headers: authHeaders,
+      body: JSON.stringify({ name: role.name, description: role.description, permissions: editingPermissions }),
+    });
+    if (response.ok) {
+      setEditingRoleId(null);
+      await loadData();
+      setStatus('Role permissions updated for web and mobile users.');
+    } else {
+      setStatus('Unable to update role permissions.');
     }
   }
 
@@ -95,6 +131,21 @@ export default function RolesAdmin() {
               Description
               <textarea value={roleForm.description} onChange={e => setRoleForm({...roleForm, description: e.target.value})} rows={4} />
             </label>
+            <label>
+              Permissions
+              <select
+                className="permissions-multi-select"
+                multiple
+                value={roleForm.permissions}
+                onChange={e => setRoleForm({
+                  ...roleForm,
+                  permissions: Array.from(e.target.selectedOptions, option => option.value),
+                })}
+                required
+              >
+                {permissionOptions.map(permission => <option key={permission} value={permission}>{permission}</option>)}
+              </select>
+            </label>
             <button type="submit" className="btn-primary">Save Role</button>
           </form>
         </div>
@@ -112,9 +163,29 @@ export default function RolesAdmin() {
                   <span className="role-card-badge">Role</span>
                 </div>
                 <div className="permission-list">
-                  {(rolePermissions[role.name] || ['Custom role access']).map(permission => (
+                  {(role.permissions?.length ? role.permissions : ['No permissions configured']).map(permission => (
                     <span className="permission-badge" key={permission}>{permission}</span>
                   ))}
+                </div>
+                {editingRoleId === role.id && (
+                  <select
+                    className="permissions-multi-select role-edit-select"
+                    multiple
+                    value={editingPermissions}
+                    onChange={e => setEditingPermissions(Array.from(e.target.selectedOptions, option => option.value))}
+                  >
+                    {permissionOptions.map(permission => <option key={permission} value={permission}>{permission}</option>)}
+                  </select>
+                )}
+                <div className="role-card-actions">
+                  {editingRoleId === role.id ? (
+                    <>
+                      <button type="button" className="btn-primary btn-sm" onClick={() => saveRolePermissions(role)}>Save Permissions</button>
+                      <button type="button" className="btn-secondary btn-sm" onClick={() => setEditingRoleId(null)}>Cancel</button>
+                    </>
+                  ) : (
+                    <button type="button" className="btn-secondary btn-sm" onClick={() => startEditingRole(role)}>Edit Permissions</button>
+                  )}
                 </div>
               </article>
             ))}

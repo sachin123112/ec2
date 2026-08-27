@@ -565,6 +565,11 @@
 .role-card-badge { color: #1d4ed8; background: #dbeafe; padding: 5px 9px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
 .permission-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .permission-badge { color: #1d4ed8; background: #dbeafe; border: 1px solid #bfdbfe; border-radius: 8px; padding: 6px 9px; font-size: 0.82rem; font-weight: 600; }
+.permissions-multi-select { min-height: 150px; padding: 8px; }
+.permissions-multi-select option { padding: 8px; border-radius: 6px; }
+.permissions-multi-select option:checked { background: #2563eb linear-gradient(0deg, #2563eb, #2563eb); color: #fff; }
+.role-edit-select { width: 100%; margin-top: 14px; }
+.role-card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 
 @media (max-width: 620px) {
   .role-card-grid { grid-template-columns: 1fr; }
