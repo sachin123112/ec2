@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/v1/admin")
 public class AdminController {
@@ -39,10 +38,7 @@ public class AdminController {
         public Map<String, Object> dashboard() {
         long totalUsers = userRepository.count();
         long totalOrders = orderRepository.count();
-        BigDecimal revenue = orderRepository.findAll().stream()
-                .map(order -> order.getTotalAmount())
-                .filter(a -> a != null)
-                .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
+        BigDecimal revenue = orderRepository.sumTotalAmount();
 
         Map<String, Object> resp = new HashMap<>();
         resp.put("totalUsers", totalUsers);
@@ -55,9 +51,9 @@ public class AdminController {
     @Operation(summary = "Orders analytics", description = "Order counts grouped by status")
     public Map<String, Object> ordersAnalytics() {
         long totalOrders = orderRepository.count();
-        Map<String, Long> byStatus = orderRepository.findAll().stream()
-                .map(order -> order.getStatus())
-                .collect(Collectors.groupingBy(s -> s == null ? "UNKNOWN" : s, Collectors.counting()));
+        Map<String, Long> byStatus = orderRepository.countByStatus().stream()
+            .collect(Collectors.toMap(row -> row[0] == null ? "UNKNOWN" : (String) row[0],
+                row -> ((Number) row[1]).longValue()));
 
         Map<String, Object> resp = new HashMap<>();
         resp.put("totalOrders", totalOrders);
@@ -68,10 +64,7 @@ public class AdminController {
     @GetMapping("/analytics/revenue")
     @Operation(summary = "Revenue analytics", description = "Total revenue")
     public Map<String, Object> revenueAnalytics() {
-        BigDecimal revenue = orderRepository.findAll().stream()
-                .map(order -> order.getTotalAmount())
-                .filter(a -> a != null)
-                .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
+        BigDecimal revenue = orderRepository.sumTotalAmount();
 
         Map<String, Object> resp = new HashMap<>();
         resp.put("totalRevenue", revenue);

@@ -55,6 +55,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.math.BigDecimal;
 import java.security.Principal;
@@ -63,7 +65,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/v1")
 public class ApiController {
@@ -149,6 +150,8 @@ public class ApiController {
     }
 
     @GetMapping("/products")
+    @Cacheable(cacheNames = "products", key = "'all'")
+    @Transactional(readOnly = true)
         @Operation(summary = "List products", description = "Return all products")
         @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Array of products",
@@ -183,6 +186,7 @@ public class ApiController {
     }
 
     @PostMapping(value = "/products", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @CacheEvict(cacheNames = "products", allEntries = true)
         @Operation(summary = "Create product (JSON)", description = "Create a product from JSON payload")
         @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Created product",
@@ -209,6 +213,7 @@ public class ApiController {
             content = @Content(schema = @Schema(implementation = ProductDto.class)))
     })
     @PostMapping(value = "/products", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @CacheEvict(cacheNames = "products", allEntries = true)
     public ResponseEntity<ProductDto> createProduct(
             @RequestParam String name,
             @RequestParam(required = false) String description,
@@ -246,6 +251,7 @@ public class ApiController {
     }
 
     @DeleteMapping("/products/{id}")
+    @CacheEvict(cacheNames = "products", allEntries = true)
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
         if (!productRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
@@ -256,6 +262,7 @@ public class ApiController {
     }
 
     @GetMapping("/categories")
+    @Cacheable(cacheNames = "categories", key = "'all'")
     public List<CategoryDto> listCategories() {
         return categoryRepository.findAll().stream().map(c -> {
             CategoryDto d = new CategoryDto();
@@ -264,6 +271,7 @@ public class ApiController {
     }
 
     @PostMapping("/categories")
+    @CacheEvict(cacheNames = "categories", allEntries = true)
     public ResponseEntity<CategoryDto> createCategory(@RequestBody CategoryDto request) {
         com.company.auth.model.Category c = new com.company.auth.model.Category();
         c.setName(request.getName());
@@ -273,6 +281,7 @@ public class ApiController {
     }
 
     @DeleteMapping("/categories/{id}")
+    @CacheEvict(cacheNames = "categories", allEntries = true)
     public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
         if (!categoryRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
