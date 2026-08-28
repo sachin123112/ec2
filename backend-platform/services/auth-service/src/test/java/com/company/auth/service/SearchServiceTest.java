@@ -15,6 +15,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -71,7 +73,7 @@ class SearchServiceTest {
         phone.setSku("PM-200");
         phone.setCategoryName("mobile");
 
-        when(productSearchRepository.findAll()).thenReturn(List.of(laptop, phone));
+        when(productSearchRepository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(laptop, phone)));
 
         List<ProductDocument> result = service.searchProducts("laptop", "electronics");
 
@@ -100,7 +102,7 @@ class SearchServiceTest {
         product.setCategory(category);
         product.setCreatedAt(LocalDateTime.of(2024, 1, 15, 8, 30));
 
-        when(productRepository.findAll()).thenReturn(List.of(product));
+        when(productRepository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(product)));
 
         List<ProductDocument> result = fallbackService.searchProducts("smart", "electronics");
 
@@ -130,7 +132,7 @@ class SearchServiceTest {
         tooOld.setStatus("PENDING");
         tooOld.setCreatedAt(LocalDateTime.of(2023, 12, 15, 9, 0));
 
-        when(orderRepository.findAll()).thenReturn(List.of(inRange, tooOld));
+        when(orderRepository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(inRange, tooOld)));
 
         List<OrderDocument> result = fallbackService.searchOrders("ORD", "2024-01-01", "2024-01-31");
 

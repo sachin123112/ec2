@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useCart } from '../context/CartContext';
 import BottomTabBar from '../components/BottomTabBar';
 import theme from '../theme';
 
-export default function CartScreen() {
-  const { cart, totalItems, totalPrice, removeFromCart, updateQty, clearCart } = useCart();
+export default function CartScreen({ navigation }) {
+  const { cart, totalItems, totalPrice, removeFromCart, updateQty } = useCart();
 
   return (
     <View style={styles.container}>
@@ -15,10 +15,8 @@ export default function CartScreen() {
           <Text style={styles.empty}>No items yet — start shopping!</Text>
         ) : (
           <>
-            <FlatList
-              data={cart}
-              keyExtractor={(item) => String(item.id)}
-              renderItem={({ item }) => (
+            <View style={styles.itemsList}>
+              {cart.map((item) => (
                 <View style={styles.card}>
                   <View style={styles.cardHeader}>
                     <Text style={styles.cardTitle}>{item.name}</Text>
@@ -26,7 +24,7 @@ export default function CartScreen() {
                   </View>
                   <Text style={styles.cardSubtitle}>Qty: {item.qty}</Text>
                   <View style={styles.actions}>
-                    <TouchableOpacity style={styles.qtyButton} onPress={() => updateQty(item.id, Math.max(1, item.qty - 1))}>
+                    <TouchableOpacity style={styles.qtyButton} onPress={() => updateQty(item.id, item.qty - 1)}>
                       <Text style={styles.qtyButtonText}>−</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.qtyButton} onPress={() => updateQty(item.id, item.qty + 1)}>
@@ -37,15 +35,15 @@ export default function CartScreen() {
                     </TouchableOpacity>
                   </View>
                 </View>
-              )}
-            />
+              ))}
+            </View>
             <View style={styles.summary}>
               <Text style={styles.summaryText}>Items</Text>
               <Text style={styles.summaryValue}>{totalItems}</Text>
               <Text style={styles.summaryText}>Total</Text>
               <Text style={styles.summaryValue}>₹{totalPrice.toLocaleString()}</Text>
-              <TouchableOpacity style={styles.clearButton} onPress={clearCart}>
-                <Text style={styles.clearButtonText}>Clear Cart</Text>
+              <TouchableOpacity style={styles.clearButton} onPress={() => navigation.navigate('Checkout')}>
+                <Text style={styles.clearButtonText}>Proceed to Checkout</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -61,6 +59,7 @@ const styles = StyleSheet.create({
   content: { flex: 1, padding: theme.spacing.lg },
   heading: { fontSize: 28, fontWeight: '800', color: theme.colors.primaryDark, marginBottom: 16 },
   empty: { textAlign: 'center', marginTop: 32, color: theme.colors.textSecondary, fontSize: 16 },
+  itemsList: { flexGrow: 0 },
   card: { padding: 18, borderRadius: theme.radius.xl, backgroundColor: theme.colors.surface, marginBottom: 14, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 12, shadowOffset: { width: 0, height: 8 }, elevation: 4 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
   cardTitle: { fontSize: 18, fontWeight: '700', color: theme.colors.text },

@@ -14,4 +14,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Override
     @EntityGraph(attributePaths = "roles")
     List<User> findAll();
+
+    @EntityGraph(attributePaths = "roles")
+    List<User> findTop500ByOrderByCreatedAtDescIdDesc();
 }

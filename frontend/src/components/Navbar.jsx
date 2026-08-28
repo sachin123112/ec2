@@ -90,19 +90,16 @@ export default function Navbar() {
               ))}
             </div>
           </div>
-          {isAuthenticated ? (
-            <>
-              <Link
-                to="/cart"
-                className="navbar-cart-link"
-                aria-label={`Cart${totalItems > 0 ? `, ${totalItems} item${totalItems === 1 ? '' : 's'}` : ''}`}
-                onClick={() => setMenuOpen(false)}
-              >
-                <span>🛒 Cart</span>
-                {totalItems > 0 && <span className="cart-badge">{totalItems}</span>}
-              </Link>
-            </>
-          ) : (
+          <Link
+            to="/cart"
+            className="navbar-cart-link"
+            aria-label={`Cart${totalItems > 0 ? `, ${totalItems} item${totalItems === 1 ? '' : 's'}` : ''}`}
+            onClick={() => setMenuOpen(false)}
+          >
+            <span>🛒 Cart</span>
+            {totalItems > 0 && <span className="cart-badge">{totalItems}</span>}
+          </Link>
+          {!isAuthenticated && (
             <Link to="/login" onClick={() => setMenuOpen(false)}>Login</Link>
           )}
           {isAuthenticated && (

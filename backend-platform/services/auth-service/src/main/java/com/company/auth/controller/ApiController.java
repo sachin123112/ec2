@@ -116,7 +116,7 @@ public class ApiController {
 
     @GetMapping("/users")
     public List<UserDto> listUsers() {
-        return userRepository.findAll().stream()
+        return userRepository.findTop500ByOrderByCreatedAtDescIdDesc().stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
@@ -158,7 +158,7 @@ public class ApiController {
                 content = @Content(array = @ArraySchema(schema = @Schema(implementation = ProductDto.class))))
         })
         public List<ProductDto> listProducts() {
-        return productRepository.findAll().stream()
+            return productRepository.findTop500ByOrderByCreatedAtDescIdDesc().stream()
             .map(this::toDto)
             .collect(Collectors.toList());
         }
@@ -375,11 +375,11 @@ public class ApiController {
         boolean isAdmin = authentication.getAuthorities().stream()
             .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
         if (isAdmin) {
-            orders = orderRepository.findAll();
+            orders = orderRepository.findTop500ByOrderByCreatedAtDescIdDesc();
         } else {
             User user = userRepository.findByEmail(authentication.getName())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
-            orders = orderRepository.findByUserId(user.getId());
+            orders = orderRepository.findTop100ByUserIdOrderByCreatedAtDescIdDesc(user.getId());
         }
         return orders.stream()
                 .map(this::toDto)

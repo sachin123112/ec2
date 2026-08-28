@@ -20,6 +20,8 @@ COPY --from=build \
 /app/services/auth-service/target/*.jar \
 app.jar
 
+COPY --from=build /app/config/application.yml config/application.yml
+
 EXPOSE 8080
 
 ENTRYPOINT ["java","-jar","app.jar"]

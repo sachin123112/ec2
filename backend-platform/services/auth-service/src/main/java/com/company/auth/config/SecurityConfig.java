@@ -23,7 +23,7 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     @Value("${app.cors.allowed-origins:http://localhost:5173}")
-    private String allowedOrigins;
+    private String allowedOrigins = "http://localhost:5173";
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter(JwtService jwtService) {
@@ -38,8 +38,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        String configuredOrigins = allowedOrigins == null ? "http://localhost:5173" : allowedOrigins;
-        configuration.setAllowedOrigins(Arrays.stream(configuredOrigins.split(","))
+        configuration.setAllowedOrigins(Arrays.stream(allowedOrigins.split(","))
             .map(String::trim)
             .filter(origin -> !origin.isEmpty())
             .toList());

@@ -14,6 +14,8 @@ COPY --from=build \
 /app/services/user-service/target/*.jar \
 app.jar
 
+COPY --from=build /app/config/application.yml config/application.yml
+
 EXPOSE 8082
 
 ENTRYPOINT ["java","-jar","app.jar"]

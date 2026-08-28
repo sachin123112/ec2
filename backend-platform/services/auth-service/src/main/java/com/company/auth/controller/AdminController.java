@@ -73,7 +73,8 @@ public class AdminController {
 
     @GetMapping("/users")
     public List<UserDto> listUsers() {
-        return userRepository.findAll().stream().map(user -> toDto(user)).collect(Collectors.toList());
+        return userRepository.findTop500ByOrderByCreatedAtDescIdDesc().stream()
+            .map(user -> toDto(user)).collect(Collectors.toList());
     }
 
     private UserDto toDto(User user) {

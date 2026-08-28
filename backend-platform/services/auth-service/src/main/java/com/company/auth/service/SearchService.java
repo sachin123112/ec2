@@ -11,18 +11,19 @@ import com.company.auth.repository.ProductSearchRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 @Service
 public class SearchService {
 
     private static final Logger logger = LoggerFactory.getLogger(SearchService.class);
+    private static final int MAX_SEARCH_RESULTS = 500;
 
     private final ProductSearchRepository productSearchRepository;
     private final OrderSearchRepository orderSearchRepository;
@@ -53,8 +54,8 @@ public class SearchService {
 
     public List<ProductDocument> searchProducts(String search, String category) {
         if (elasticsearchAvailable) {
-            List<ProductDocument> allProducts = StreamSupport.stream(productSearchRepository.findAll().spliterator(), false)
-                    .collect(Collectors.toList());
+            List<ProductDocument> allProducts = productSearchRepository
+                .findAll(PageRequest.of(0, MAX_SEARCH_RESULTS)).getContent();
 
             if (!StringUtils.hasText(search) && !StringUtils.hasText(category)) {
                 return allProducts;
@@ -68,7 +69,7 @@ public class SearchService {
                     .collect(Collectors.toList());
         }
 
-        List<Product> allProducts = productRepository.findAll();
+        List<Product> allProducts = productRepository.findAll(PageRequest.of(0, MAX_SEARCH_RESULTS)).getContent();
         if (!StringUtils.hasText(search) && !StringUtils.hasText(category)) {
             return allProducts.stream().map(this::toProductDocument).collect(Collectors.toList());
         }
@@ -84,8 +85,8 @@ public class SearchService {
 
     public List<OrderDocument> searchOrders(String search, String startDate, String endDate) {
         if (elasticsearchAvailable) {
-            List<OrderDocument> allOrders = StreamSupport.stream(orderSearchRepository.findAll().spliterator(), false)
-                    .collect(Collectors.toList());
+            List<OrderDocument> allOrders = orderSearchRepository
+                .findAll(PageRequest.of(0, MAX_SEARCH_RESULTS)).getContent();
 
             if (!StringUtils.hasText(search) && !StringUtils.hasText(startDate) && !StringUtils.hasText(endDate)) {
                 return allOrders;
@@ -98,7 +99,7 @@ public class SearchService {
                     .collect(Collectors.toList());
         }
 
-        List<OrderEntity> allOrders = orderRepository.findAll();
+        List<OrderEntity> allOrders = orderRepository.findAll(PageRequest.of(0, MAX_SEARCH_RESULTS)).getContent();
         if (!StringUtils.hasText(search) && !StringUtils.hasText(startDate) && !StringUtils.hasText(endDate)) {
             return allOrders.stream().map(this::toOrderDocument).collect(Collectors.toList());
         }

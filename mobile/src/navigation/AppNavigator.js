@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, TouchableOpacity } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
@@ -7,6 +7,7 @@ import LandingScreen from '../screens/LandingScreen';
 import HomeScreen from '../screens/HomeScreen';
 import ShopScreen from '../screens/ShopScreen';
 import CartScreen from '../screens/CartScreen';
+import CheckoutScreen from '../screens/CheckoutScreen';
 import AccountScreen from '../screens/AccountScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import WishlistScreen from '../screens/WishlistScreen';
@@ -19,8 +20,25 @@ import HelpSupportScreen from '../screens/HelpSupportScreen';
 import SavedAddressesScreen from '../screens/SavedAddressesScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 import NotificationScreen from '../screens/NotificationScreen';
+import { useCart } from '../context/CartContext';
+import theme from '../theme';
 
 const Stack = createNativeStackNavigator();
+
+function CartHeaderButton({ navigation }) {
+  const { totalItems } = useCart();
+
+  return (
+    <TouchableOpacity style={{ padding: 6 }} onPress={() => navigation.navigate('Cart')} accessibilityLabel={`Cart${totalItems ? `, ${totalItems} items` : ''}`}>
+      <Text style={{ fontSize: 22 }}>🛒</Text>
+      {totalItems > 0 && (
+        <View style={{ position: 'absolute', top: 0, right: 0, minWidth: 18, height: 18, paddingHorizontal: 4, borderRadius: 9, backgroundColor: theme.colors.danger, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ color: theme.colors.surface, fontSize: 11, fontWeight: '800' }}>{totalItems > 99 ? '99+' : totalItems}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+}
 
 export default function AppNavigator() {
   return (
@@ -34,9 +52,7 @@ export default function AppNavigator() {
         options={({ navigation }) => ({
           title: 'PawMart',
           headerRight: () => (
-            <TouchableOpacity onPress={() => navigation.navigate('Cart')} accessibilityLabel="Cart">
-              <Text style={{ fontSize: 22 }}>🛒</Text>
-            </TouchableOpacity>
+            <CartHeaderButton navigation={navigation} />
           ),
         })}
       />
@@ -46,13 +62,12 @@ export default function AppNavigator() {
         options={({ navigation }) => ({
           title: 'Products',
           headerRight: () => (
-            <TouchableOpacity onPress={() => navigation.navigate('Cart')} accessibilityLabel="Cart">
-              <Text style={{ fontSize: 22 }}>🛒</Text>
-            </TouchableOpacity>
+            <CartHeaderButton navigation={navigation} />
           ),
         })}
       />
       <Stack.Screen name="Cart" component={CartScreen} options={{ title: 'Cart', headerStyle: { height: 84 } }} />
+      <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Account" component={AccountScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Wishlist" component={WishlistScreen} options={{ headerShown: false }} />

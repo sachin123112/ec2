@@ -186,19 +186,19 @@ mvn spring-boot:run
 - API endpoint: `http://localhost:8080/api/v1/auth/login`
 - Database: `ec2_db` on PostgreSQL
 
-#### Option B: Run User Service
+#### Option B: Internal Services
 ```cmd
-cd services/user-service
-mvn spring-boot:run
+docker compose up --build
 ```
-- Runs on: `http://localhost:8081`
+- User and order services run internally; clients use the backend gateway port `8080`.
 
-#### Option C: Run Order Service
+#### Option C: Run Mobile App
 ```cmd
-cd services/order-service
-mvn spring-boot:run
+cd mobile
+npm install
+npm run start
 ```
-- Runs on: `http://localhost:8082`
+- Expo/Metro runs on: `http://localhost:8081`
 
 ### Step 6: Run All Services (Docker - Optional)
 ```cmd
@@ -777,13 +777,15 @@ npm run dev -- --port 3000
 │  │  (React+Vite)   │◄────────┤  (Spring Boot Java)  │  │
 │  │                 │         │                      │  │
 │  │ Port: 5173      │         │ Auth: 8080          │  │
-│  │ npm run dev     │         │ User: 8081          │  │
-│  └────────┬────────┘         │ Order: 8082         │  │
+│  │ npm run dev     │         │ Backend: 8080       │  │
+│  └────────┬────────┘         │ Internal services   │  │
 │           │                  │                      │  │
 │           │ HTTP             │ mvn spring-boot:run │  │
 │           │                  └──────────┬───────────┘  │
 │           │                             │              │
 │           └─────────────────────────────┘              │
+│                                                         │
+│  Mobile Expo/Metro: 8081                               │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐  │
 │  │  Database (SQL Server / Docker)                  │  │

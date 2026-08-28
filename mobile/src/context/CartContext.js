@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useReducer } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CartContext = createContext(null);
+const CART_STORAGE_KEY = 'pawmart_cart';
 
 function cartReducer(state, action) {
   switch (action.type) {
@@ -23,6 +25,8 @@ function cartReducer(state, action) {
           ? { ...item, qty: action.payload.qty }
           : item
       ).filter(item => item.qty > 0);
+    case 'RESTORE':
+      return action.payload;
     case 'CLEAR':
       return [];
     default:
@@ -32,6 +36,23 @@ function cartReducer(state, action) {
 
 export function CartProvider({ children }) {
   const [cart, dispatch] = useReducer(cartReducer, []);
+  const [hydrated, setHydrated] = React.useState(false);
+
+  React.useEffect(() => {
+    AsyncStorage.getItem(CART_STORAGE_KEY)
+      .then((saved) => {
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) dispatch({ type: 'RESTORE', payload: parsed });
+        }
+        setHydrated(true);
+      })
+      .catch(() => setHydrated(true));
+  }, []);
+
+  React.useEffect(() => {
+    if (hydrated) AsyncStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart)).catch(() => {});
+  }, [cart, hydrated]);
 
   const addToCart = (product) => dispatch({ type: 'ADD', payload: product });
   const removeFromCart = (id) => dispatch({ type: 'REMOVE', payload: id });

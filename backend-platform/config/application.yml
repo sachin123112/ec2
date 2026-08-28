@@ -1,0 +1,98 @@
+# Shared runtime configuration. Keep secrets in environment variables or a secret manager.
+server:
+  port: ${SERVER_PORT:${USER_SERVICE_PORT:${ORDER_SERVICE_PORT:8080}}}
+  shutdown: graceful
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/backend_platform}
+    username: ${DB_USERNAME:}
+    password: ${DB_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:10}
+      minimum-idle: ${DB_POOL_MIN_IDLE:2}
+      connection-timeout: ${DB_POOL_CONNECTION_TIMEOUT_MS:3000}
+      validation-timeout: ${DB_POOL_VALIDATION_TIMEOUT_MS:1000}
+      idle-timeout: ${DB_POOL_IDLE_TIMEOUT_MS:600000}
+      max-lifetime: ${DB_POOL_MAX_LIFETIME_MS:1800000}
+      leak-detection-threshold: ${DB_POOL_LEAK_DETECTION_MS:0}
+
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:validate}
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: ${JPA_BATCH_SIZE:50}
+    open-in-view: false
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+    elasticsearch:
+      repositories:
+        enabled: ${ELASTICSEARCH_ENABLED:false}
+
+  cache:
+    type: ${CACHE_TYPE:none}
+    redis:
+      time-to-live: ${CACHE_DEFAULT_TTL:PT60S}
+      cache-null-values: false
+
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+    baseline-on-migrate: true
+    validate-on-migrate: true
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+  web:
+    resources:
+      static-locations: classpath:/static/,file:${UPLOAD_DIRECTORY:uploads}/
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174}
+
+jwt:
+  secret: ${JWT_SECRET:}
+  expiration: ${JWT_EXPIRATION_MS:900000}
+
+google:
+  client-id: ${GOOGLE_CLIENT_ID:}
+  client-secret: ${GOOGLE_CLIENT_SECRET:}
+  redirect-uri: ${GOOGLE_REDIRECT_URI:http://localhost:8080/api/v1/auth/google/callback}
+  drive:
+    credentials-file: ${GOOGLE_DRIVE_CREDENTIALS_FILE:}
+    folder-id: ${GOOGLE_DRIVE_FOLDER_ID:}
+
+imagekit:
+  private-key: ${IMAGEKIT_PRIVATE_KEY:}
+  public-key: ${IMAGEKIT_PUBLIC_KEY:}
+  url-endpoint: ${IMAGEKIT_URL_ENDPOINT:}
+
+elasticsearch:
+  enabled: ${ELASTICSEARCH_ENABLED:false}
+  uris: ${ELASTICSEARCH_URI:http://localhost:9200}
+  username: ${ELASTICSEARCH_USERNAME:}
+  password: ${ELASTICSEARCH_PASSWORD:}
+
+backup:
+  directory: ${BACKUP_DIRECTORY:backups}
+  pg-dump-path: ${PG_DUMP_PATH:pg_dump}
+  cron: ${BACKUP_CRON:0 0 2 * * *}
