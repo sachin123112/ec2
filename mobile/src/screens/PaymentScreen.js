@@ -82,7 +82,8 @@ const bankOptions = [
   { id: 'citibank', name: 'Citi India', logo: 'CITI', color: '#056dae' },
 ];
 
-export default function PaymentScreen({ navigation }) {
+export default function PaymentScreen({ navigation, route }) {
+  const topUpAmount = Number(route?.params?.amount) || 0;
   const [methods, setMethods] = useState(initialMethods);
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
@@ -231,11 +232,12 @@ export default function PaymentScreen({ navigation }) {
         <TouchableOpacity style={styles.backButton} onPress={() => goBackOrNavigate(navigation, 'Account')} accessibilityLabel="Go back">
           <Text style={styles.backIcon}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.topBarTitle}>Payment Settings</Text>
+        <Text style={styles.topBarTitle}>{topUpAmount ? 'Payment Options' : 'Payment Settings'}</Text>
       </View>
       <ScrollView contentContainerStyle={styles.content}>
+        {topUpAmount > 0 && <View style={styles.toPayCard}><Text style={styles.toPayLabel}>To Pay:</Text><Text style={styles.toPayValue}>₹{topUpAmount.toLocaleString()}</Text></View>}
         <View style={styles.paymentHeader}>
-          <Text style={styles.heading}>Payments</Text>
+          <Text style={styles.heading}>{topUpAmount ? 'Choose a payment method' : 'Payments'}</Text>
           <Text style={styles.secureBadge}>🔒 100% Secure</Text>
         </View>
 
@@ -450,6 +452,7 @@ export default function PaymentScreen({ navigation }) {
         </PaymentRow>
         <PaymentRow icon="▧" title="Have a Gift Card?" action="Add" onPress={() => Alert.alert('Gift Card', 'Gift card support is coming soon.')} />
         <PaymentRow icon="▥" title="EMI" action="Unavailable" disabled />
+        {topUpAmount > 0 && <TouchableOpacity style={styles.confirmPaymentButton} onPress={() => Alert.alert('Payment started', `Continue with ₹${topUpAmount.toLocaleString()} using your selected payment method.`)}><Text style={styles.confirmPaymentText}>Pay ₹{topUpAmount.toLocaleString()}</Text></TouchableOpacity>}
       </ScrollView>
       <BottomTabBar activeTab="Account" />
     </View>
@@ -463,6 +466,9 @@ const styles = StyleSheet.create({
   backIcon: { color: theme.colors.text, fontSize: 30, lineHeight: 30 },
   topBarTitle: { marginLeft: 8, color: theme.colors.text, fontSize: 20, fontWeight: '800' },
   content: { padding: 18, paddingBottom: 110 },
+  toPayCard: { marginHorizontal: -18, marginTop: -18, marginBottom: 18, paddingHorizontal: 28, paddingVertical: 18, flexDirection: 'row', alignItems: 'center', backgroundColor: '#fbf9ff', borderBottomLeftRadius: 22, borderBottomRightRadius: 22 },
+  toPayLabel: { color: '#202532', fontSize: 24, fontWeight: '700' },
+  toPayValue: { color: '#0d9964', fontSize: 25, fontWeight: '900', marginLeft: 8 },
   paymentHeader: { paddingHorizontal: 8, paddingBottom: 12 },
   stepText: { color: '#344054', fontSize: 16, marginBottom: 2 },
   heading: { color: '#101828', fontSize: 28, fontWeight: '800', marginBottom: 8 },
@@ -539,6 +545,8 @@ const styles = StyleSheet.create({
   addButtonText: { color: theme.colors.surface, fontWeight: '700' },
   addMethodButton: { alignItems: 'center', borderWidth: 1, borderColor: '#b8c7dc', borderRadius: 8, padding: 12, marginTop: 6 },
   addMethodText: { color: '#1d4f91', fontWeight: '700', fontSize: 13 },
+  confirmPaymentButton: { backgroundColor: '#f30d67', borderRadius: 16, padding: 17, alignItems: 'center', marginTop: 18 },
+  confirmPaymentText: { color: '#ffffff', fontSize: 19, fontWeight: '900' },
 });
 
 function luhnCheck(value) {

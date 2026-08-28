@@ -20,6 +20,8 @@ import HelpSupportScreen from '../screens/HelpSupportScreen';
 import SavedAddressesScreen from '../screens/SavedAddressesScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 import NotificationScreen from '../screens/NotificationScreen';
+import WalletScreen from '../screens/WalletScreen';
+import AddGiftCardScreen from '../screens/AddGiftCardScreen';
 import { useCart } from '../context/CartContext';
 import theme from '../theme';
 
@@ -40,9 +42,26 @@ function CartHeaderButton({ navigation }) {
   );
 }
 
+function WalletHeaderButton({ navigation }) {
+  return (
+    <TouchableOpacity style={{ padding: 6, marginRight: 4 }} onPress={() => navigation.navigate('Wallet')} accessibilityLabel="Wallet">
+      <Text style={{ fontSize: 22 }}>👛</Text>
+    </TouchableOpacity>
+  );
+}
+
+function HeaderActions({ navigation }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <WalletHeaderButton navigation={navigation} />
+      <CartHeaderButton navigation={navigation} />
+    </View>
+  );
+}
+
 export default function AppNavigator() {
   return (
-    <Stack.Navigator initialRouteName="Landing">
+    <Stack.Navigator initialRouteName="Landing" screenOptions={({ navigation }) => ({ headerRight: () => <WalletHeaderButton navigation={navigation} /> })}>
       <Stack.Screen name="Landing" component={LandingScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Signup" component={SignupScreen} options={{ title: 'Sign Up' }} />
@@ -51,8 +70,9 @@ export default function AppNavigator() {
         component={HomeScreen}
         options={({ navigation }) => ({
           title: 'PawMart',
+          headerBackVisible: false,
           headerRight: () => (
-            <CartHeaderButton navigation={navigation} />
+            <HeaderActions navigation={navigation} />
           ),
         })}
       />
@@ -62,12 +82,14 @@ export default function AppNavigator() {
         options={({ navigation }) => ({
           title: 'Products',
           headerRight: () => (
-            <CartHeaderButton navigation={navigation} />
+            <HeaderActions navigation={navigation} />
           ),
         })}
       />
       <Stack.Screen name="Cart" component={CartScreen} options={{ title: 'Cart', headerStyle: { height: 84 } }} />
       <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Wallet" component={WalletScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="AddGiftCard" component={AddGiftCardScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Account" component={AccountScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Wishlist" component={WishlistScreen} options={{ headerShown: false }} />
