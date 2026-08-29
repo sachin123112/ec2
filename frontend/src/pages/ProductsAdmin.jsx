@@ -328,15 +328,15 @@ export default function ProductsAdmin() {
                 />
               </label>
 
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 4, alignItems: 'stretch' }}>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 4, alignItems: 'center', height: 48 }}>
                 <button
                   type="button"
                   className="btn-outline"
                   onClick={cancelEditProduct}
                   style={{
-                    width: 120,
-                    minHeight: 54,
-                    padding: '8px 16px',
+                    width: 100,
+                    height: 48,
+                    padding: '8px 14px',
                     borderRadius: 12,
                     border: '1px solid #1f6feb',
                     background: '#fff',
@@ -347,7 +347,8 @@ export default function ProductsAdmin() {
                     boxShadow: 'none',
                     display: 'inline-flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    flexShrink: 0
                   }}
                 >
                   Cancel
@@ -356,11 +357,11 @@ export default function ProductsAdmin() {
                   type="submit"
                   className="btn-primary"
                   style={{
-                    width: 400,
-                    minHeight: 66,
-                    padding: '10px 18px',
-                    borderRadius: 14,
-                    fontSize: '1.1rem',
+                    width: 330,
+                    height: 48,
+                    padding: '8px 18px',
+                    borderRadius: 12,
+                    fontSize: '1.05rem',
                     fontWeight: 700,
                     lineHeight: 1.2,
                     display: 'inline-flex',
@@ -368,7 +369,8 @@ export default function ProductsAdmin() {
                     justifyContent: 'center',
                     background: '#ff6b35',
                     border: 'none',
-                    boxShadow: '0 10px 20px rgba(255, 107, 53, 0.18)'
+                    boxShadow: '0 10px 20px rgba(255, 107, 53, 0.18)',
+                    flexShrink: 0
                   }}
                 >
                   Update Product

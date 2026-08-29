@@ -184,9 +184,11 @@
 }
 .modal-actions .btn-primary { padding: 8px 14px; min-width: 128px; }
 
-/* Nudge outline (Cancel) button down slightly for visual alignment */
+/* Cancel button aligned with primary button */
 .modal-actions .btn-outline {
-  transform: translateY(2px);
+  min-width: 92px;
+  height: 48px;
+  transform: translateY(4px);
 }
 
 /* If viewport is very narrow, allow buttons to shrink but keep them on one line */
