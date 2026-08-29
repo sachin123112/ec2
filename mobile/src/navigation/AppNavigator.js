@@ -22,6 +22,7 @@ import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 import NotificationScreen from '../screens/NotificationScreen';
 import WalletScreen from '../screens/WalletScreen';
 import AddGiftCardScreen from '../screens/AddGiftCardScreen';
+import ProductDetailsScreen from '../screens/ProductDetailsScreen';
 import { useCart } from '../context/CartContext';
 import theme from '../theme';
 
@@ -90,6 +91,7 @@ export default function AppNavigator() {
       <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Wallet" component={WalletScreen} options={{ headerShown: false }} />
       <Stack.Screen name="AddGiftCard" component={AddGiftCardScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Account" component={AccountScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Wishlist" component={WishlistScreen} options={{ headerShown: false }} />

@@ -9,7 +9,8 @@ export default function ProductsAdmin() {
   const { token } = useAuth();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [productForm, setProductForm] = useState({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0', categoryId: '' });
+  const [productForm, setProductForm] = useState({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0', netQuantity: '1 pack', categoryId: '' });
+  const [editingProductId, setEditingProductId] = useState(null);
   const [productImages, setProductImages] = useState([]);
   const [productImagePreviews, setProductImagePreviews] = useState([]);
   const [status, setStatus] = useState('');
@@ -95,6 +96,7 @@ export default function ProductsAdmin() {
       sku: productForm.sku,
       price: parseFloat(productForm.price) || 0,
       stockQuantity: parseInt(productForm.stockQuantity, 10) || 0,
+      netQuantity: productForm.netQuantity.trim() || '1 pack',
       categoryId: productForm.categoryId ? parseInt(productForm.categoryId, 10) : null,
     };
 
@@ -123,7 +125,8 @@ export default function ProductsAdmin() {
     }
 
     if (response.ok) {
-      setProductForm({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0', categoryId: '' });
+      setProductForm({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0', netQuantity: '1 pack', categoryId: '' });
+      setEditingProductId(null);
       setProductImages([]);
       setProductImagePreviews(prev => { prev.forEach(URL.revokeObjectURL); return []; });
       await loadData();
@@ -131,6 +134,28 @@ export default function ProductsAdmin() {
     } else {
       const errorText = await response.text();
       setStatus(errorText || `Unable to create product (${response.status}).`);
+    }
+  }
+
+  function editProduct(product) {
+    setEditingProductId(product.id);
+    setProductForm({ name: product.name || '', description: product.description || '', sku: product.sku || '', price: String(product.price ?? '0.00'), stockQuantity: String(product.stockQuantity ?? 0), netQuantity: product.netQuantity || '1 pack', categoryId: String(product.categoryId || '') });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function handleSubmitProduct(event) {
+    if (!editingProductId) return handleCreateProduct(event);
+    event.preventDefault();
+    setStatus('Updating product...');
+    try {
+      const response = await fetch(`${API_URL}/products/${editingProductId}`, { method: 'PUT', headers: authHeaders, body: JSON.stringify({ name: productForm.name, description: productForm.description, price: parseFloat(productForm.price) || 0, stockQuantity: parseInt(productForm.stockQuantity, 10) || 0, netQuantity: productForm.netQuantity.trim() || '1 pack', categoryId: productForm.categoryId ? parseInt(productForm.categoryId, 10) : null }) });
+      if (!response.ok) throw new Error((await response.text()) || `Unable to update product (${response.status}).`);
+      await loadData();
+      setEditingProductId(null);
+      setProductForm({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0', netQuantity: '1 pack', categoryId: '' });
+      setStatus('Product updated successfully.');
+    } catch (err) {
+      setStatus(err.message || 'Unable to update product.');
     }
   }
 
@@ -185,7 +210,7 @@ export default function ProductsAdmin() {
       <div className="dashboard-grid">
         <div className="dashboard-card">
           <h2>Add Product</h2>
-          <form onSubmit={handleCreateProduct} className="panel-form">
+          <form onSubmit={handleSubmitProduct} className="panel-form">
             <label>
               Name
               <input value={productForm.name} onChange={e => setProductForm({...productForm, name: e.target.value})} required />
@@ -218,6 +243,10 @@ export default function ProductsAdmin() {
               <input type="number" value={productForm.stockQuantity} onChange={e => setProductForm({...productForm, stockQuantity: e.target.value})} required />
             </label>
             <label>
+              Net Quantity
+              <input value={productForm.netQuantity} placeholder="1 pack (3 x 30 ml)" onChange={e => setProductForm({...productForm, netQuantity: e.target.value})} required />
+            </label>
+            <label>
               Description
               <textarea value={productForm.description} onChange={e => setProductForm({...productForm, description: e.target.value})} rows={4} />
             </label>
@@ -235,7 +264,7 @@ export default function ProductsAdmin() {
                 ))}
               </div>
             )}
-            <button type="submit" className="btn-primary">Save Product</button>
+            <button type="submit" className="btn-primary">{editingProductId ? 'Update Product' : 'Save Product'}</button>
           </form>
         </div>
 
@@ -295,6 +324,7 @@ export default function ProductsAdmin() {
                   <th>SKU</th>
                   <th>Price</th>
                   <th>Stock</th>
+                  <th>Net Qty</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -306,7 +336,9 @@ export default function ProductsAdmin() {
                     <td>{product.sku}</td>
                     <td>{product.price}</td>
                     <td>{product.stockQuantity}</td>
+                    <td>{product.netQuantity || '1 pack'}</td>
                     <td>
+                      <button type="button" className="btn-outline btn-sm" onClick={() => editProduct(product)}>Edit</button>{' '}
                       <button
                         type="button"
                         className="btn-danger btn-sm"

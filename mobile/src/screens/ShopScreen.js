@@ -34,7 +34,7 @@ function CategoryTile({ category, onPress }) {
   );
 }
 
-export default function ShopScreen() {
+export default function ShopScreen({ navigation }) {
   const { addToCart } = useCart();
   const [products, setProducts] = useState(staticProducts.map(normalizeProduct));
   const [search, setSearch] = useState('');
@@ -82,7 +82,7 @@ export default function ShopScreen() {
 
         {(selectedCategory || search) && <View style={styles.results}>
           <View style={styles.resultsHeader}><Text style={styles.resultsTitle}>{selectedCategory || 'Search results'}</Text><TouchableOpacity onPress={() => { setSelectedCategory(''); setSearch(''); }}><Text style={styles.clear}>Clear</Text></TouchableOpacity></View>
-          {filtered.map((item) => <View style={styles.productRow} key={String(item.id)}><Image source={{ uri: item.image }} style={styles.productImage} /><View style={styles.productInfo}><Text style={styles.productName}>{item.name}</Text><Text style={styles.productMeta}>{item.category} · {item.subCategory}</Text><Text style={styles.productPrice}>₹{Number(item.price || 0).toLocaleString()}</Text></View><TouchableOpacity style={styles.addButton} onPress={() => addToCart(item)}><Text style={styles.addText}>Add</Text></TouchableOpacity></View>)}
+          {filtered.map((item) => <TouchableOpacity style={styles.productRow} key={String(item.id)} onPress={() => navigation.navigate('ProductDetails', { product: item })} activeOpacity={0.82}><Image source={{ uri: item.image }} style={styles.productImage} /><View style={styles.productInfo}><Text style={styles.productName}>{item.name}</Text><Text style={styles.productMeta}>{item.category} · {item.subCategory}</Text><Text style={styles.productPrice}>₹{Number(item.price || 0).toLocaleString()}</Text></View><TouchableOpacity style={styles.addButton} onPress={(event) => { event.stopPropagation(); addToCart(item); }}><Text style={styles.addText}>Add</Text></TouchableOpacity></TouchableOpacity>)}
           {!filtered.length && <Text style={styles.empty}>No products found.</Text>}
         </View>}
       </ScrollView>

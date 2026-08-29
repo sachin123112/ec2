@@ -200,11 +200,29 @@ public class ApiController {
             product.setSku(generateSku(category));
         product.setPrice(request.getPrice());
         product.setStockQuantity(request.getStockQuantity());
+        product.setNetQuantity(request.getNetQuantity() == null || request.getNetQuantity().isBlank() ? "1 pack" : request.getNetQuantity().trim());
             product.setCategory(category);
 
         product = productRepository.save(product);
         searchService.indexProduct(product);
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(product));
+    }
+
+    @PutMapping(value = "/products/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @CacheEvict(cacheNames = "products", allEntries = true)
+    public ResponseEntity<ProductDto> updateProduct(@PathVariable Long id, @RequestBody CreateProductRequest request) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + id));
+        Category category = getRequiredCategory(request.getCategoryId());
+        product.setName(request.getName());
+        product.setDescription(request.getDescription());
+        product.setPrice(request.getPrice());
+        product.setStockQuantity(request.getStockQuantity());
+        product.setNetQuantity(request.getNetQuantity() == null || request.getNetQuantity().isBlank() ? "1 pack" : request.getNetQuantity().trim());
+        product.setCategory(category);
+        Product saved = productRepository.save(product);
+        searchService.indexProduct(saved);
+        return ResponseEntity.ok(toDto(saved));
     }
 
     @Operation(summary = "Create product (multipart)", description = "Create a product with optional images (multipart/form-data)")
@@ -220,6 +238,7 @@ public class ApiController {
             @RequestParam(required = false) String sku,
             @RequestParam BigDecimal price,
             @RequestParam(required = false) Integer stockQuantity,
+            @RequestParam(required = false) String netQuantity,
             @RequestParam(required = false) Long categoryId,
             @RequestPart(value = "images", required = false) MultipartFile[] images) {
         Category category = getRequiredCategory(categoryId);
@@ -229,6 +248,7 @@ public class ApiController {
         product.setSku(generateSku(category));
         product.setPrice(price);
         product.setStockQuantity(stockQuantity != null ? stockQuantity : 0);
+        product.setNetQuantity(netQuantity == null || netQuantity.isBlank() ? "1 pack" : netQuantity.trim());
         product.setCategory(category);
 
         product = productRepository.save(product);
@@ -658,6 +678,7 @@ public class ApiController {
         dto.setSku(product.getSku());
         dto.setPrice(product.getPrice());
         dto.setStockQuantity(product.getStockQuantity());
+        dto.setNetQuantity(product.getNetQuantity());
         if (product.getCategory() != null) {
             dto.setCategoryId(product.getCategory().getId());
             dto.setCategoryName(product.getCategory().getName());

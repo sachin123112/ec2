@@ -1,0 +1,2 @@
+ALTER TABLE products
+    ADD COLUMN IF NOT EXISTS net_quantity VARCHAR(100) NOT NULL DEFAULT '1 pack';

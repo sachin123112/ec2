@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { fetchProducts } from '../api/products';
 import { products as staticProducts } from '../data/products';
-import { useCart } from '../context/CartContext';
 import BottomTabBar from '../components/BottomTabBar';
 
 const heroImage = 'https://images.unsplash.com/photo-1606800052052-a08af7148866?w=900&q=85';
@@ -30,8 +29,7 @@ function PromoTile({ title, image, wide }) {
   );
 }
 
-export default function HomeScreen() {
-  const { addToCart } = useCart();
+export default function HomeScreen({ navigation }) {
   const [products, setProducts] = useState(staticProducts.map(normalizeProduct));
   const [search, setSearch] = useState('');
 
@@ -81,7 +79,7 @@ export default function HomeScreen() {
         <View style={styles.sectionHeading}><Text style={styles.sectionTitle}>Top Picks</Text><View style={styles.headingLine} /></View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.productsRow}>
           {topPicks.map((item) => (
-            <TouchableOpacity key={String(item.id)} style={styles.product} onPress={() => addToCart(item)} activeOpacity={0.8}>
+            <TouchableOpacity key={String(item.id)} style={styles.product} onPress={() => navigation.navigate('ProductDetails', { product: item })} activeOpacity={0.8}>
               <View style={styles.productImageWrap}><Image source={{ uri: item.image }} style={styles.productImage} /></View>
               <Text style={styles.productPrice}>₹{Number(item.price || 0).toLocaleString()}</Text>
               <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>

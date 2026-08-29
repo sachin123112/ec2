@@ -32,7 +32,7 @@ export default function ProductDetailsScreen({ navigation, route }) {
           <View style={styles.badges}><Text style={styles.badge}>Open box verification</Text><Text style={styles.badgeBlue}>Best for pets</Text></View>
           <Text style={styles.name}>{product.name || 'Product'}</Text>
           <Text style={styles.description}>{product.description || `${product.category || 'Pet'} essential for everyday care, comfort and play.`}</Text>
-          <View style={styles.metaRow}><Text style={styles.meta}>Net Qty: 1 pack</Text><Text style={styles.stock}>{stock > 0 ? `⚡ ${stock} in stock` : 'Out of stock'}</Text></View>
+          <View style={styles.metaRow}><Text style={styles.meta}>Net Qty: {product.netQuantity || '1 pack'}</Text><Text style={styles.stock}>{stock > 0 ? `⚡ ${stock} in stock` : 'Out of stock'}</Text></View>
           <View style={styles.priceRow}><Text style={styles.price}>₹{price.toLocaleString()}</Text><Text style={styles.discount}>Premium quality</Text></View>
           <Text style={styles.mrp}>Inclusive of all taxes</Text>
         </View>
@@ -75,9 +75,7 @@ const styles = StyleSheet.create({
   mrp: { color: '#8a929d', marginTop: 4, fontSize: 13 },
   detailsCard: { backgroundColor: '#fff', marginTop: 10, padding: 22 },
   detailsTitle: { color: '#171522', fontSize: 20, fontWeight: '900', marginBottom: 18 },
-  detailGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 18 },
-  detailGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 18 },
-  detailGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 18 },
+  detailGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 18, columnGap: 20 },
   detailLabel: { color: '#171522', fontWeight: '800', marginBottom: 4 },
   detailValue: { color: '#69727e', fontSize: 14 },
   descriptionCard: { backgroundColor: '#fff', marginTop: 10, padding: 22 },
@@ -92,6 +90,6 @@ const styles = StyleSheet.create({
   quantityControl: { width: 105, height: 54, borderRadius: 14, backgroundColor: '#ee3d78', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
   quantityButton: { color: '#fff', fontSize: 24, fontWeight: '700' },
   quantity: { color: '#fff', fontSize: 17, fontWeight: '900' },
-  addButton: { position: 'absolute', opacity: 0, width: 1, height: 1 },
-  addButtonText: { color: '#fff' },
+  addButton: { flex: 1.05, height: 54, borderRadius: 14, backgroundColor: '#ee3d78', alignItems: 'center', justifyContent: 'center' },
+  addButtonText: { color: '#fff', fontSize: 15, fontWeight: '900' },
 });
