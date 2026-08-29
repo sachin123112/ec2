@@ -7,9 +7,8 @@ const fallbackImage = 'https://images.unsplash.com/photo-1601758228041-f3b279525
 
 export default function ProductDetailsScreen({ navigation, route }) {
   const product = route?.params?.product || {};
-  const { addToCart, cart } = useCart();
+  const { addToCart, cart, wishlist, toggleWishlist } = useCart();
   const [quantity, setQuantity] = useState(1);
-  const [favorite, setFavorite] = useState(false);
   const [packOptions] = useState(['1 pack', '2 packs', '3 packs', '4 packs', '5 packs']);
   const [selectedPack, setSelectedPack] = useState('1 pack');
   const [showPackMenu, setShowPackMenu] = useState(false);
@@ -17,6 +16,7 @@ export default function ProductDetailsScreen({ navigation, route }) {
   const related = useMemo(() => cart.length ? cart.filter((item) => item.id !== product.id).slice(0, 4) : [], [cart, product.id]);
   const price = Number(product.price || 0);
   const stock = product.stockQuantity ?? (product.inStock === false ? 0 : 8);
+  const isFavorite = wishlist.some((item) => item.id === product.id);
 
   const addProduct = () => {
     for (let index = 0; index < quantity; index += 1) addToCart(product);
@@ -27,7 +27,7 @@ export default function ProductDetailsScreen({ navigation, route }) {
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.backButton} onPress={() => goBackOrNavigate(navigation, 'Shop')} accessibilityLabel="Go back"><Text style={styles.backIcon}>‹</Text></TouchableOpacity>
         <Text style={styles.topBarTitle} numberOfLines={1}>{product.name || 'Product Details'}</Text>
-        <TouchableOpacity style={styles.favoriteButton} onPress={() => setFavorite((value) => !value)} accessibilityLabel="Favorite"><Text style={[styles.favoriteIcon, favorite && styles.favoriteActive]}>{favorite ? '♥' : '♡'}</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.favoriteButton} onPress={() => toggleWishlist(product)} accessibilityLabel="Favorite"><Text style={[styles.favoriteIcon, isFavorite && styles.favoriteActive]}>{isFavorite ? '♥' : '♡'}</Text></TouchableOpacity>
       </View>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.heroImageWrap}><Image source={{ uri: image }} style={styles.heroImage} /><View style={styles.imageDots}><View style={styles.dotActive} /><View style={styles.dot} /><View style={styles.dot} /></View></View>
@@ -71,14 +71,14 @@ export default function ProductDetailsScreen({ navigation, route }) {
         <View style={styles.descriptionCard}><Text style={styles.detailsTitle}>Product Description</Text><Text style={styles.longDescription}>{product.description || 'Thoughtfully selected for happy, healthy pets. Check the package for care instructions and feeding guidance.'}</Text></View>
         {!!related.length && <View style={styles.relatedCard}><Text style={styles.detailsTitle}>Pair it with</Text><ScrollView horizontal showsHorizontalScrollIndicator={false}>{related.map((item) => <View style={styles.relatedItem} key={String(item.id)}><Image source={{ uri: item.image || fallbackImage }} style={styles.relatedImage} /><Text style={styles.relatedName} numberOfLines={1}>{item.name}</Text></View>)}</ScrollView></View>}
       </ScrollView>
-      <View style={styles.bottomBar}><TouchableOpacity style={styles.viewCartButton} onPress={() => navigation.navigate('Cart')}><Text style={styles.viewCartText}>🛒 View Cart</Text></TouchableOpacity><View style={styles.quantityControl}><TouchableOpacity onPress={() => setQuantity((value) => Math.max(1, value - 1))}><Text style={styles.quantityButton}>−</Text></TouchableOpacity><Text style={styles.quantity}>{quantity}</Text><TouchableOpacity onPress={() => setQuantity((value) => value + 1)}><Text style={styles.quantityButton}>+</Text></TouchableOpacity></View><TouchableOpacity style={styles.addButton} onPress={addProduct} disabled={stock <= 0}><Text style={styles.addButtonText}>{stock > 0 ? 'Add to Cart' : 'Unavailable'}</Text></TouchableOpacity></View>
+      <View style={styles.bottomBar}><TouchableOpacity style={styles.viewCartButton} onPress={() => navigation.navigate('Cart')}><Text style={styles.viewCartText}>View Cart</Text></TouchableOpacity><View style={styles.quantityControl}><TouchableOpacity onPress={() => setQuantity((value) => Math.max(1, value - 1))}><Text style={styles.quantityButton}>−</Text></TouchableOpacity><Text style={styles.quantity}>{quantity}</Text><TouchableOpacity onPress={() => setQuantity((value) => value + 1)}><Text style={styles.quantityButton}>+</Text></TouchableOpacity></View><TouchableOpacity style={styles.addButton} onPress={addProduct} disabled={stock <= 0}><Text style={styles.addButtonText}>{stock > 0 ? 'Add to Cart' : 'Unavailable'}</Text></TouchableOpacity></View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f2f6fa' },
-  topBar: { height: 84, paddingHorizontal: 18, backgroundColor: '#fff', flexDirection: 'row', alignItems: 'flex-end', borderBottomWidth: 2, borderBottomColor: '#2d7ef7', paddingBottom: 9, paddingTop: 0 },
+  topBar: { height: 84, paddingHorizontal: 18, backgroundColor: '#fff', flexDirection: 'row', alignItems: 'flex-end', paddingBottom: 9, paddingTop: 0 },
   backButton: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#f4f5f7', alignItems: 'center', justifyContent: 'center', marginBottom: -6 },
   backIcon: { color: '#111820', fontSize: 28, lineHeight: 28, marginTop: 0, marginBottom: 2 },
   topBarTitle: { flex: 1, color: '#151b24', fontSize: 17, fontWeight: '800', marginLeft: 12, marginBottom: 2 },
