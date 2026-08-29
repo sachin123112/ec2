@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { products as dummyProducts, categories as defaultCategories } from '../data/products';
 import './Dashboard.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
@@ -18,8 +19,8 @@ export default function ProductsAdmin() {
   const [deletingProductId, setDeletingProductId] = useState(null);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [nameFilter, setNameFilter] = useState('');
-  const [nameMenuOpen, setNameMenuOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeCategory, setActiveCategory] = useState('All');
 
   const authHeaderBase = useMemo(() => {
     const headers = {};
@@ -54,12 +55,20 @@ export default function ProductsAdmin() {
         const errorText = await productsRes.text();
         throw new Error(errorText || `Unable to load products (${productsRes.status}).`);
       }
-      setProducts(await productsRes.json());
-      if (categoriesRes.ok) setCategories(await categoriesRes.json());
+      const loadedProducts = await productsRes.json();
+      setProducts(Array.isArray(loadedProducts) && loadedProducts.length > 0 ? loadedProducts : dummyProducts);
+      if (categoriesRes.ok) {
+        const loadedCategories = await categoriesRes.json();
+        setCategories(Array.isArray(loadedCategories) && loadedCategories.length > 0 ? loadedCategories : defaultCategories);
+      } else {
+        setCategories(defaultCategories);
+      }
       setStatus('Data loaded successfully.');
     } catch (err) {
       console.error(err);
-      setStatus(err.message || 'Unable to load products data.');
+      setProducts(dummyProducts);
+      setCategories(defaultCategories);
+      setStatus(err.message || 'Unable to load products data. Using local demo products.');
     }
   }, [authHeaders]);
 
@@ -189,8 +198,23 @@ export default function ProductsAdmin() {
     }
   }
 
+  const catalogCategories = useMemo(() => {
+    return categories.length > 0 ? categories : defaultCategories;
+  }, [categories]);
+
   const filteredProducts = products.filter(product => {
-    if (nameFilter && !product.name?.toLowerCase().includes(nameFilter.toLowerCase())) return false;
+    const categoryName = product.categoryName || product.category?.name || product.category || 'Uncategorized';
+    if (activeCategory !== 'All' && categoryName !== activeCategory) return false;
+
+    const query = searchTerm.trim().toLowerCase();
+    if (query && !(
+      product.name?.toLowerCase().includes(query) ||
+      categoryName.toLowerCase().includes(query) ||
+      String(product.sku || '').toLowerCase().includes(query)
+    )) {
+      return false;
+    }
+
     if (!product.createdAt) return !dateFrom && !dateTo;
     const createdAt = new Date(product.createdAt);
     if (dateFrom && createdAt < new Date(`${dateFrom}T00:00:00`)) return false;
@@ -215,24 +239,16 @@ export default function ProductsAdmin() {
       <div className="dashboard-status">{status}</div>
 
       {isEditModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.58)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 1000 }}>
-          <div style={{ width: 'min(760px, 100%)', background: '#fff', borderRadius: 18, padding: 24, boxShadow: '0 20px 60px rgba(15, 23, 42, 0.25)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-              <h2 style={{ margin: 0 }}>Edit Product</h2>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.58)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 1000, overflowY: 'auto' }}>
+          <div style={{ width: 'min(620px, 100%)', maxHeight: '90vh', overflowY: 'auto', background: '#fff', borderRadius: 18, padding: '18px 22px 22px', boxShadow: '0 20px 60px rgba(15, 23, 42, 0.25)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 700, color: '#1f2937' }}>Edit Product</h2>
               <button type="button" className="btn-outline btn-sm" onClick={cancelEditProduct}>Close</button>
             </div>
 
-            <form onSubmit={handleCreateProduct} className="panel-form">
-              <label>
-                Name
-                <input value={productForm.name} onChange={e => setProductForm({...productForm, name: e.target.value})} required />
-              </label>
-              <label>
-                SKU
-                <input value={productForm.sku} onChange={e => setProductForm({...productForm, sku: e.target.value})} required />
-              </label>
-              <label>
-                Category
+            <form onSubmit={handleCreateProduct} className="panel-form" style={{ display: 'grid', gap: 18 }}>
+              <label style={{ display: 'grid', gap: 8, color: '#1f2937', fontSize: '1.1rem', fontWeight: 600, textAlign: 'left' }}>
+                <span>Category</span>
                 <select
                   value={productForm.categoryId}
                   onChange={e => setProductForm({
@@ -241,31 +257,122 @@ export default function ProductsAdmin() {
                     sku: e.target.value ? getNextSku(e.target.value) : productForm.sku,
                   })}
                   required
+                  style={{ minHeight: 56, padding: '14px 46px 14px 16px', border: '1px solid #d1d5db', borderRadius: 12, background: '#f8fafc url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 20 20\' fill=\'none\'%3E%3Cpath d=\'M5 7.5L10 12.5L15 7.5\' stroke=\'%2364748b\' stroke-width=\'1.8\' stroke-linecap=\'round\' stroke-linejoin=\'round\'/%3E%3C/svg%3E") no-repeat right 16px center/12px 12px', fontSize: '1.1rem', appearance: 'none' }}
                 >
                   <option value="">Select category</option>
                   {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                 </select>
               </label>
-              <label>
-                Price
-                <input type="number" step="0.01" value={productForm.price} onChange={e => setProductForm({...productForm, price: e.target.value})} required />
-              </label>
-              <label>
-                Stock
-                <input type="number" value={productForm.stockQuantity} onChange={e => setProductForm({...productForm, stockQuantity: e.target.value})} required />
-              </label>
-              <label>
-                Net Quantity
-                <input type="number" value={productForm.netQuantity} onChange={e => setProductForm({...productForm, netQuantity: e.target.value})} required />
-              </label>
-              <label>
-                Description
-                <textarea value={productForm.description} onChange={e => setProductForm({...productForm, description: e.target.value})} rows={4} />
+
+              <label style={{ display: 'grid', gap: 8, color: '#1f2937', fontSize: '1.1rem', fontWeight: 600, textAlign: 'left' }}>
+                <span>Name</span>
+                <input
+                  value={productForm.name}
+                  onChange={e => setProductForm({...productForm, name: e.target.value})}
+                  required
+                  style={{ minHeight: 56, padding: '14px 16px', border: '1px solid #d1d5db', borderRadius: 12, background: '#f8fafc', fontSize: '1.1rem' }}
+                />
               </label>
 
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
-                <button type="button" className="btn-outline" onClick={cancelEditProduct}>Cancel</button>
-                <button type="submit" className="btn-primary">Update Product</button>
+              <label style={{ display: 'grid', gap: 8, color: '#1f2937', fontSize: '1.1rem', fontWeight: 600, textAlign: 'left' }}>
+                <span>SKU</span>
+                <input
+                  value={productForm.sku}
+                  onChange={e => setProductForm({...productForm, sku: e.target.value})}
+                  required
+                  style={{ minHeight: 56, padding: '14px 16px', border: '1px solid #d1d5db', borderRadius: 12, background: '#f8fafc', fontSize: '1.1rem' }}
+                />
+              </label>
+
+              <label style={{ display: 'grid', gap: 8, color: '#1f2937', fontSize: '1.1rem', fontWeight: 600, textAlign: 'left' }}>
+                <span>Price</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={productForm.price}
+                  onChange={e => setProductForm({...productForm, price: e.target.value})}
+                  required
+                  style={{ minHeight: 56, padding: '14px 16px', border: '1px solid #d1d5db', borderRadius: 12, background: '#f8fafc', fontSize: '1.1rem' }}
+                />
+              </label>
+
+              <label style={{ display: 'grid', gap: 8, color: '#1f2937', fontSize: '1.1rem', fontWeight: 600, textAlign: 'left' }}>
+                <span>Stock</span>
+                <input
+                  type="number"
+                  value={productForm.stockQuantity}
+                  onChange={e => setProductForm({...productForm, stockQuantity: e.target.value})}
+                  required
+                  style={{ minHeight: 56, padding: '14px 16px', border: '1px solid #d1d5db', borderRadius: 12, background: '#f8fafc', fontSize: '1.1rem' }}
+                />
+              </label>
+
+              <label style={{ display: 'grid', gap: 8, color: '#1f2937', fontSize: '1.1rem', fontWeight: 600, textAlign: 'left' }}>
+                <span>Net Quantity</span>
+                <input
+                  type="number"
+                  value={productForm.netQuantity}
+                  onChange={e => setProductForm({...productForm, netQuantity: e.target.value})}
+                  required
+                  style={{ minHeight: 56, padding: '14px 16px', border: '1px solid #d1d5db', borderRadius: 12, background: '#f8fafc', fontSize: '1.1rem' }}
+                />
+              </label>
+
+              <label style={{ display: 'grid', gap: 8, color: '#1f2937', fontSize: '1.1rem', fontWeight: 600, textAlign: 'left' }}>
+                <span>Description</span>
+                <textarea
+                  value={productForm.description}
+                  onChange={e => setProductForm({...productForm, description: e.target.value})}
+                  rows={4}
+                  style={{ minHeight: 96, padding: '14px 16px', border: '1px solid #d1d5db', borderRadius: 12, background: '#f8fafc', fontSize: '1.05rem', resize: 'vertical' }}
+                />
+              </label>
+
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 4, alignItems: 'stretch' }}>
+                <button
+                  type="button"
+                  className="btn-outline"
+                  onClick={cancelEditProduct}
+                  style={{
+                    width: 120,
+                    minHeight: 54,
+                    padding: '8px 16px',
+                    borderRadius: 12,
+                    border: '1px solid #1f6feb',
+                    background: '#fff',
+                    color: '#1f6feb',
+                    fontSize: '1rem',
+                    fontWeight: 700,
+                    lineHeight: 1.2,
+                    boxShadow: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  style={{
+                    width: 400,
+                    minHeight: 66,
+                    padding: '10px 18px',
+                    borderRadius: 14,
+                    fontSize: '1.1rem',
+                    fontWeight: 700,
+                    lineHeight: 1.2,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: '#ff6b35',
+                    border: 'none',
+                    boxShadow: '0 10px 20px rgba(255, 107, 53, 0.18)'
+                  }}
+                >
+                  Update Product
+                </button>
               </div>
             </form>
           </div>
@@ -334,7 +441,7 @@ export default function ProductsAdmin() {
         </div>
 
         <div className="dashboard-card wide-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
             <h2>Product Catalog</h2>
             <div className="date-range-filter">
               <label>
@@ -352,79 +459,95 @@ export default function ProductsAdmin() {
               )}
             </div>
           </div>
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>
-                    <div className="table-header-filter">
-                      <span>Name</span>
+
+          <div className="catalog-toolbar storefront-toolbar">
+            <div className="catalog-search-wrap">
+              <span className="catalog-search-icon">🔎</span>
+              <input
+                type="search"
+                value={searchTerm}
+                onChange={event => setSearchTerm(event.target.value)}
+                placeholder="Search products, categories or SKU..."
+                aria-label="Search products"
+              />
+            </div>
+
+            <div className="catalog-dropdown-wrap">
+              <label htmlFor="admin-product-category-filter" className="sr-only">Category filter</label>
+              <select
+                id="admin-product-category-filter"
+                className="catalog-category-select"
+                value={activeCategory}
+                onChange={event => setActiveCategory(event.target.value)}
+              >
+                <option value="All">All ({products.length})</option>
+                {catalogCategories.map(category => (
+                  <option key={category.id || category.name} value={category.name}>
+                    {category.icon || '🐾'} {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {(searchTerm || activeCategory !== 'All' || dateFrom || dateTo) && (
+              <button
+                type="button"
+                className="btn-outline btn-sm"
+                onClick={() => {
+                  setSearchTerm('');
+                  setActiveCategory('All');
+                  setDateFrom('');
+                  setDateTo('');
+                }}
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+
+          <div className="product-card-grid">
+            {filteredProducts.map(product => {
+              const productImage = product.imageUrls?.[0] || product.images?.[0] || product.image || 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=400&q=80';
+              const categoryName = product.categoryName || product.category?.name || product.category || 'Uncategorized';
+
+              return (
+                <article key={product.id} className="admin-product-card">
+                  <div className="admin-product-image-wrap">
+                    <img src={productImage} alt={product.name} className="admin-product-image" />
+                    {product.badge && <span className="admin-product-badge">{product.badge}</span>}
+                  </div>
+
+                  <div className="admin-product-body">
+                    <div className="admin-product-topline">
+                      <span className="admin-product-category">{categoryName}</span>
+                      <span className="admin-product-id">#{product.id}</span>
+                    </div>
+
+                    <h3 className="admin-product-name">{product.name}</h3>
+                    <p className="admin-product-sku">{product.sku || 'SKU unavailable'}</p>
+
+                    <div className="admin-product-meta">
+                      <span><strong>₹{Number(product.price ?? 0).toLocaleString()}</strong></span>
+                      <span>{product.stockQuantity ?? 0} in stock</span>
+                    </div>
+
+                    <div className="admin-product-actions">
+                      <button type="button" className="btn-outline btn-sm" onClick={() => startEditProduct(product)}>
+                        Edit
+                      </button>
                       <button
                         type="button"
-                        className="table-filter-trigger"
-                        aria-label="Filter products by name"
-                        aria-expanded={nameMenuOpen}
-                        onClick={() => setNameMenuOpen(previous => !previous)}
+                        className="btn-danger btn-sm"
+                        onClick={() => handleDeleteProduct(product.id)}
+                        disabled={deletingProductId === product.id}
                       >
-                        ⋮
+                        {deletingProductId === product.id ? 'Deleting...' : 'Delete'}
                       </button>
-                      {nameMenuOpen && (
-                        <div className="table-filter-menu">
-                          <label htmlFor="product-name-filter">Filter name</label>
-                          <input
-                            id="product-name-filter"
-                            type="search"
-                            value={nameFilter}
-                            onChange={event => setNameFilter(event.target.value)}
-                            placeholder="Search product name"
-                          />
-                          <button type="button" className="btn-outline btn-sm" onClick={() => { setNameFilter(''); setNameMenuOpen(false); }}>
-                            Clear
-                          </button>
-                        </div>
-                      )}
                     </div>
-                  </th>
-                  <th>SKU</th>
-                  <th>Price</th>
-                  <th>Stock</th>
-                  <th>Net Qty</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredProducts.map(product => (
-                  <tr key={product.id}>
-                    <td>{product.id}</td>
-                    <td>{product.name}</td>
-                    <td>{product.sku}</td>
-                    <td>{product.price}</td>
-                    <td>{product.stockQuantity}</td>
-                    <td>{product.netQuantity ?? 0}</td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button
-                          type="button"
-                          className="btn-outline btn-sm"
-                          onClick={() => startEditProduct(product)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-danger btn-sm"
-                          onClick={() => handleDeleteProduct(product.id)}
-                          disabled={deletingProductId === product.id}
-                        >
-                          {deletingProductId === product.id ? 'Deleting...' : 'Delete'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </div>
       </div>
