@@ -120,15 +120,19 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e8defb',
   },
   headerButton: {
-    width: 34,
-    height: 34,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: 1,
+    borderColor: '#dfe3e7',
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerIcon: {
     color: theme.colors.text,
-    fontSize: 30,
-    lineHeight: 30,
+    fontSize: 29,
+    lineHeight: 29,
+    marginTop: 2,
   },
   headerTitle: {
     flex: 1,

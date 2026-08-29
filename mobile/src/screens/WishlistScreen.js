@@ -28,8 +28,8 @@ export default function WishlistScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   topBar: { height: 108, paddingHorizontal: 18, paddingTop: 40, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#e8defb' },
-  backButton: { width: 34, height: 34, justifyContent: 'center', alignItems: 'center' },
-  backIcon: { color: theme.colors.text, fontSize: 30, lineHeight: 30 },
+  backButton: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: '#dfe3e7', justifyContent: 'center', alignItems: 'center' },
+  backIcon: { color: theme.colors.text, fontSize: 29, lineHeight: 29, marginTop: 2 },
   topBarTitle: { flex: 1, marginLeft: 8, color: theme.colors.text, fontSize: 20, fontWeight: '800' },
   cartButton: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
   cartIcon: { fontSize: 22 },

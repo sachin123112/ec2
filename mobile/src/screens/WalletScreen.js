@@ -75,8 +75,8 @@ export default function WalletScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f4f7f8' },
   topBar: { height: 84, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e1e6e9' },
-  backButton: { width: 34, height: 34, justifyContent: 'center', alignItems: 'center' },
-  backIcon: { color: '#111820', fontSize: 30, lineHeight: 30, marginTop: 2 },
+  backButton: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: '#dfe3e7', justifyContent: 'center', alignItems: 'center' },
+  backIcon: { color: '#111820', fontSize: 29, lineHeight: 29, marginTop: 2 },
   topBarTitle: { marginLeft: 8, marginTop: 2, color: '#111820', fontSize: 20, fontWeight: '800' },
   headerContentOffset: { transform: [{ translateY: 16 }] },
   content: { padding: 18, paddingBottom: 36 },
