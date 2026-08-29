@@ -32,6 +32,9 @@ public class ProductDocument {
     @Field(type = FieldType.Integer)
     private Integer stockQuantity;
 
+    @Field(type = FieldType.Integer)
+    private Integer netQuantity;
+
     @Field(type = FieldType.Keyword)
     private String categoryName;
 
@@ -87,6 +90,14 @@ public class ProductDocument {
 
     public void setStockQuantity(Integer stockQuantity) {
         this.stockQuantity = stockQuantity;
+    }
+
+    public Integer getNetQuantity() {
+        return netQuantity;
+    }
+
+    public void setNetQuantity(Integer netQuantity) {
+        this.netQuantity = netQuantity;
     }
 
     public String getCategoryName() {

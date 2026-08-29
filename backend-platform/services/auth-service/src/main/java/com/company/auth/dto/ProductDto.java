@@ -12,7 +12,7 @@ public class ProductDto {
     private String sku;
     private BigDecimal price;
     private Integer stockQuantity;
-    private String netQuantity;
+    private Integer netQuantity;
     private LocalDateTime createdAt;
     private Long categoryId;
     private String categoryName;
@@ -66,8 +66,13 @@ public class ProductDto {
         this.stockQuantity = stockQuantity;
     }
 
-    public String getNetQuantity() { return netQuantity; }
-    public void setNetQuantity(String netQuantity) { this.netQuantity = netQuantity; }
+    public Integer getNetQuantity() {
+        return netQuantity;
+    }
+
+    public void setNetQuantity(Integer netQuantity) {
+        this.netQuantity = netQuantity;
+    }
 
     public Long getCategoryId() { return categoryId; }
     public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }

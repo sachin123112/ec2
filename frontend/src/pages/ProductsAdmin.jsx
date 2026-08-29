@@ -9,8 +9,9 @@ export default function ProductsAdmin() {
   const { token } = useAuth();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [productForm, setProductForm] = useState({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0', netQuantity: '1 pack', categoryId: '' });
+  const [productForm, setProductForm] = useState({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0', netQuantity: '0', categoryId: '' });
   const [editingProductId, setEditingProductId] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [productImages, setProductImages] = useState([]);
   const [productImagePreviews, setProductImagePreviews] = useState([]);
   const [status, setStatus] = useState('');
@@ -96,7 +97,7 @@ export default function ProductsAdmin() {
       sku: productForm.sku,
       price: parseFloat(productForm.price) || 0,
       stockQuantity: parseInt(productForm.stockQuantity, 10) || 0,
-      netQuantity: productForm.netQuantity.trim() || '1 pack',
+      netQuantity: parseInt(productForm.netQuantity, 10) || 0,
       categoryId: productForm.categoryId ? parseInt(productForm.categoryId, 10) : null,
     };
 
@@ -108,55 +109,61 @@ export default function ProductsAdmin() {
       if (payload.sku) formData.append('sku', payload.sku);
       formData.append('price', payload.price.toString());
       formData.append('stockQuantity', payload.stockQuantity.toString());
+      formData.append('netQuantity', payload.netQuantity.toString());
       if (payload.categoryId !== null) formData.append('categoryId', payload.categoryId.toString());
       productImages.forEach(file => formData.append('images', file));
 
       response = await fetch(`${API_URL}/products`, {
-        method: 'POST',
+        method: editingProductId ? 'PUT' : 'POST',
         headers: authHeaderBase,
         body: formData,
       });
     } else {
-      response = await fetch(`${API_URL}/products`, {
-        method: 'POST',
+      response = await fetch(`${editingProductId ? `${API_URL}/products/${editingProductId}` : `${API_URL}/products`}`, {
+        method: editingProductId ? 'PUT' : 'POST',
         headers: authHeaders,
         body: JSON.stringify(payload),
       });
     }
 
     if (response.ok) {
-      setProductForm({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0', netQuantity: '1 pack', categoryId: '' });
+      const nextForm = { name: '', description: '', sku: '', price: '0.00', stockQuantity: '0', netQuantity: '0', categoryId: '' };
+      setProductForm(nextForm);
       setEditingProductId(null);
+      setIsEditModalOpen(false);
       setProductImages([]);
       setProductImagePreviews(prev => { prev.forEach(URL.revokeObjectURL); return []; });
       await loadData();
-      setStatus('Product added successfully.');
+      setStatus(editingProductId ? 'Product updated successfully.' : 'Product added successfully.');
     } else {
       const errorText = await response.text();
-      setStatus(errorText || `Unable to create product (${response.status}).`);
+      setStatus(errorText || `Unable to ${editingProductId ? 'update' : 'create'} product (${response.status}).`);
     }
   }
 
-  function editProduct(product) {
+  function startEditProduct(product) {
     setEditingProductId(product.id);
-    setProductForm({ name: product.name || '', description: product.description || '', sku: product.sku || '', price: String(product.price ?? '0.00'), stockQuantity: String(product.stockQuantity ?? 0), netQuantity: product.netQuantity || '1 pack', categoryId: String(product.categoryId || '') });
+    setIsEditModalOpen(true);
+    setProductForm({
+      name: product.name || '',
+      description: product.description || '',
+      sku: product.sku || '',
+      price: String(product.price ?? '0.00'),
+      stockQuantity: String(product.stockQuantity ?? 0),
+      netQuantity: String(product.netQuantity ?? 0),
+      categoryId: product.categoryId ? String(product.categoryId) : '',
+    });
+    setStatus(`Editing product #${product.id}. Update the fields and save.`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  async function handleSubmitProduct(event) {
-    if (!editingProductId) return handleCreateProduct(event);
-    event.preventDefault();
-    setStatus('Updating product...');
-    try {
-      const response = await fetch(`${API_URL}/products/${editingProductId}`, { method: 'PUT', headers: authHeaders, body: JSON.stringify({ name: productForm.name, description: productForm.description, price: parseFloat(productForm.price) || 0, stockQuantity: parseInt(productForm.stockQuantity, 10) || 0, netQuantity: productForm.netQuantity.trim() || '1 pack', categoryId: productForm.categoryId ? parseInt(productForm.categoryId, 10) : null }) });
-      if (!response.ok) throw new Error((await response.text()) || `Unable to update product (${response.status}).`);
-      await loadData();
-      setEditingProductId(null);
-      setProductForm({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0', netQuantity: '1 pack', categoryId: '' });
-      setStatus('Product updated successfully.');
-    } catch (err) {
-      setStatus(err.message || 'Unable to update product.');
-    }
+  function cancelEditProduct() {
+    setEditingProductId(null);
+    setIsEditModalOpen(false);
+    setProductForm({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0', netQuantity: '0', categoryId: '' });
+    setProductImages([]);
+    setProductImagePreviews(prev => { prev.forEach(URL.revokeObjectURL); return []; });
+    setStatus('');
   }
 
   async function handleDeleteProduct(id) {
@@ -207,10 +214,68 @@ export default function ProductsAdmin() {
 
       <div className="dashboard-status">{status}</div>
 
+      {isEditModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.58)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 1000 }}>
+          <div style={{ width: 'min(760px, 100%)', background: '#fff', borderRadius: 18, padding: 24, boxShadow: '0 20px 60px rgba(15, 23, 42, 0.25)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+              <h2 style={{ margin: 0 }}>Edit Product</h2>
+              <button type="button" className="btn-outline btn-sm" onClick={cancelEditProduct}>Close</button>
+            </div>
+
+            <form onSubmit={handleCreateProduct} className="panel-form">
+              <label>
+                Name
+                <input value={productForm.name} onChange={e => setProductForm({...productForm, name: e.target.value})} required />
+              </label>
+              <label>
+                SKU
+                <input value={productForm.sku} onChange={e => setProductForm({...productForm, sku: e.target.value})} required />
+              </label>
+              <label>
+                Category
+                <select
+                  value={productForm.categoryId}
+                  onChange={e => setProductForm({
+                    ...productForm,
+                    categoryId: e.target.value,
+                    sku: e.target.value ? getNextSku(e.target.value) : productForm.sku,
+                  })}
+                  required
+                >
+                  <option value="">Select category</option>
+                  {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                </select>
+              </label>
+              <label>
+                Price
+                <input type="number" step="0.01" value={productForm.price} onChange={e => setProductForm({...productForm, price: e.target.value})} required />
+              </label>
+              <label>
+                Stock
+                <input type="number" value={productForm.stockQuantity} onChange={e => setProductForm({...productForm, stockQuantity: e.target.value})} required />
+              </label>
+              <label>
+                Net Quantity
+                <input type="number" value={productForm.netQuantity} onChange={e => setProductForm({...productForm, netQuantity: e.target.value})} required />
+              </label>
+              <label>
+                Description
+                <textarea value={productForm.description} onChange={e => setProductForm({...productForm, description: e.target.value})} rows={4} />
+              </label>
+
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
+                <button type="button" className="btn-outline" onClick={cancelEditProduct}>Cancel</button>
+                <button type="submit" className="btn-primary">Update Product</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <div className="dashboard-grid">
         <div className="dashboard-card">
-          <h2>Add Product</h2>
-          <form onSubmit={handleSubmitProduct} className="panel-form">
+          <h2>{editingProductId ? 'Edit Product' : 'Add Product'}</h2>
+          <form onSubmit={handleCreateProduct} className="panel-form">
             <label>
               Name
               <input value={productForm.name} onChange={e => setProductForm({...productForm, name: e.target.value})} required />
@@ -244,7 +309,7 @@ export default function ProductsAdmin() {
             </label>
             <label>
               Net Quantity
-              <input value={productForm.netQuantity} placeholder="1 pack (3 x 30 ml)" onChange={e => setProductForm({...productForm, netQuantity: e.target.value})} required />
+              <input type="number" value={productForm.netQuantity} onChange={e => setProductForm({...productForm, netQuantity: e.target.value})} required />
             </label>
             <label>
               Description
@@ -264,7 +329,7 @@ export default function ProductsAdmin() {
                 ))}
               </div>
             )}
-            <button type="submit" className="btn-primary">{editingProductId ? 'Update Product' : 'Save Product'}</button>
+            <button type="submit" className="btn-primary">Save Product</button>
           </form>
         </div>
 
@@ -336,17 +401,25 @@ export default function ProductsAdmin() {
                     <td>{product.sku}</td>
                     <td>{product.price}</td>
                     <td>{product.stockQuantity}</td>
-                    <td>{product.netQuantity || '1 pack'}</td>
+                    <td>{product.netQuantity ?? 0}</td>
                     <td>
-                      <button type="button" className="btn-outline btn-sm" onClick={() => editProduct(product)}>Edit</button>{' '}
-                      <button
-                        type="button"
-                        className="btn-danger btn-sm"
-                        onClick={() => handleDeleteProduct(product.id)}
-                        disabled={deletingProductId === product.id}
-                      >
-                        {deletingProductId === product.id ? 'Deleting...' : 'Delete'}
-                      </button>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                          type="button"
+                          className="btn-outline btn-sm"
+                          onClick={() => startEditProduct(product)}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-danger btn-sm"
+                          onClick={() => handleDeleteProduct(product.id)}
+                          disabled={deletingProductId === product.id}
+                        >
+                          {deletingProductId === product.id ? 'Deleting...' : 'Delete'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

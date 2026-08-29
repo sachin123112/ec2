@@ -184,6 +184,7 @@ public class SearchService {
         document.setSku(product.getSku());
         document.setPrice(product.getPrice());
         document.setStockQuantity(product.getStockQuantity());
+        document.setNetQuantity(product.getNetQuantity());
         document.setCategoryName(product.getCategory() != null ? product.getCategory().getName() : null);
         document.setCreatedAt(product.getCreatedAt());
         if (product.getImages() != null) {

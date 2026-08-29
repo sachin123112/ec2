@@ -29,8 +29,8 @@ public class Product {
     @Column(name = "stock_quantity")
     private Integer stockQuantity = 0;
 
-    @Column(name = "net_quantity", nullable = false, length = 100)
-    private String netQuantity = "1 pack";
+    @Column(name = "net_quantity")
+    private Integer netQuantity = 0;
 
     @ManyToOne
     @JoinColumn(name = "category_id")
@@ -100,11 +100,11 @@ public class Product {
         this.stockQuantity = stockQuantity;
     }
 
-    public String getNetQuantity() {
+    public Integer getNetQuantity() {
         return netQuantity;
     }
 
-    public void setNetQuantity(String netQuantity) {
+    public void setNetQuantity(Integer netQuantity) {
         this.netQuantity = netQuantity;
     }
 

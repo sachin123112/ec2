@@ -197,32 +197,15 @@ public class ApiController {
         Product product = new Product();
         product.setName(request.getName());
         product.setDescription(request.getDescription());
-            product.setSku(generateSku(category));
+            product.setSku(request.getSku() != null && !request.getSku().isBlank() ? request.getSku() : generateSku(category));
         product.setPrice(request.getPrice());
-        product.setStockQuantity(request.getStockQuantity());
-        product.setNetQuantity(request.getNetQuantity() == null || request.getNetQuantity().isBlank() ? "1 pack" : request.getNetQuantity().trim());
+        product.setStockQuantity(request.getStockQuantity() != null ? request.getStockQuantity() : 0);
+        product.setNetQuantity(request.getNetQuantity() != null ? request.getNetQuantity() : 0);
             product.setCategory(category);
 
         product = productRepository.save(product);
         searchService.indexProduct(product);
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(product));
-    }
-
-    @PutMapping(value = "/products/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @CacheEvict(cacheNames = "products", allEntries = true)
-    public ResponseEntity<ProductDto> updateProduct(@PathVariable Long id, @RequestBody CreateProductRequest request) {
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + id));
-        Category category = getRequiredCategory(request.getCategoryId());
-        product.setName(request.getName());
-        product.setDescription(request.getDescription());
-        product.setPrice(request.getPrice());
-        product.setStockQuantity(request.getStockQuantity());
-        product.setNetQuantity(request.getNetQuantity() == null || request.getNetQuantity().isBlank() ? "1 pack" : request.getNetQuantity().trim());
-        product.setCategory(category);
-        Product saved = productRepository.save(product);
-        searchService.indexProduct(saved);
-        return ResponseEntity.ok(toDto(saved));
     }
 
     @Operation(summary = "Create product (multipart)", description = "Create a product with optional images (multipart/form-data)")
@@ -238,17 +221,16 @@ public class ApiController {
             @RequestParam(required = false) String sku,
             @RequestParam BigDecimal price,
             @RequestParam(required = false) Integer stockQuantity,
-            @RequestParam(required = false) String netQuantity,
             @RequestParam(required = false) Long categoryId,
             @RequestPart(value = "images", required = false) MultipartFile[] images) {
         Category category = getRequiredCategory(categoryId);
         Product product = new Product();
         product.setName(name);
         product.setDescription(description);
-        product.setSku(generateSku(category));
+        product.setSku(sku != null && !sku.isBlank() ? sku : generateSku(category));
         product.setPrice(price);
         product.setStockQuantity(stockQuantity != null ? stockQuantity : 0);
-        product.setNetQuantity(netQuantity == null || netQuantity.isBlank() ? "1 pack" : netQuantity.trim());
+        product.setNetQuantity(0);
         product.setCategory(category);
 
         product = productRepository.save(product);
@@ -268,6 +250,72 @@ public class ApiController {
 
         searchService.indexProduct(product);
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(product));
+    }
+
+    @PutMapping("/products/{id}")
+    @CacheEvict(cacheNames = "products", allEntries = true)
+    @Transactional
+    public ResponseEntity<ProductDto> updateProduct(@PathVariable Long id, @RequestBody CreateProductRequest request) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+
+        if (request.getName() != null) product.setName(request.getName());
+        if (request.getDescription() != null) product.setDescription(request.getDescription());
+        if (request.getSku() != null && !request.getSku().isBlank()) product.setSku(request.getSku());
+        if (request.getPrice() != null) product.setPrice(request.getPrice());
+        if (request.getStockQuantity() != null) product.setStockQuantity(request.getStockQuantity());
+        if (request.getNetQuantity() != null) product.setNetQuantity(request.getNetQuantity());
+        if (request.getCategoryId() != null) {
+            Category category = getRequiredCategory(request.getCategoryId());
+            product.setCategory(category);
+        }
+
+        product = productRepository.save(product);
+        searchService.indexProduct(product);
+        return ResponseEntity.ok(toDto(product));
+    }
+
+    @PutMapping(value = "/products/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @CacheEvict(cacheNames = "products", allEntries = true)
+    @Transactional
+    public ResponseEntity<ProductDto> updateProduct(
+            @PathVariable Long id,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) String sku,
+            @RequestParam(required = false) BigDecimal price,
+            @RequestParam(required = false) Integer stockQuantity,
+            @RequestParam(required = false) Integer netQuantity,
+            @RequestParam(required = false) Long categoryId,
+            @RequestPart(value = "images", required = false) MultipartFile[] images) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+
+        if (name != null) product.setName(name);
+        if (description != null) product.setDescription(description);
+        if (sku != null && !sku.isBlank()) product.setSku(sku);
+        if (price != null) product.setPrice(price);
+        if (stockQuantity != null) product.setStockQuantity(stockQuantity);
+        if (netQuantity != null) product.setNetQuantity(netQuantity);
+        if (categoryId != null) {
+            product.setCategory(getRequiredCategory(categoryId));
+        }
+
+        if (images != null && images.length > 0) {
+            for (MultipartFile image : images) {
+                if (image != null && !image.isEmpty()) {
+                    String imageUrl = imageKitImageService.uploadProductImage(image, product.getId());
+                    ProductImage productImage = new ProductImage();
+                    productImage.setProduct(product);
+                    productImage.setImageUrl(imageUrl);
+                    product.addImage(productImage);
+                }
+            }
+        }
+
+        product = productRepository.save(product);
+        searchService.indexProduct(product);
+        return ResponseEntity.ok(toDto(product));
     }
 
     @DeleteMapping("/products/{id}")
@@ -698,6 +746,7 @@ public class ApiController {
         dto.setSku(document.getSku());
         dto.setPrice(document.getPrice());
         dto.setStockQuantity(document.getStockQuantity());
+        dto.setNetQuantity(document.getNetQuantity());
         dto.setCategoryName(document.getCategoryName());
         dto.setImageUrls(document.getImageUrls());
         dto.setCreatedAt(document.getCreatedAt());

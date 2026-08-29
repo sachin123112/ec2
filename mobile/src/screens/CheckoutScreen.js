@@ -262,10 +262,10 @@ export default function CheckoutScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
-  topBar: { height: 84, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#e8defb', backgroundColor: theme.colors.surface },
-  backButton: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: '#dfe3e7', justifyContent: 'center', alignItems: 'center' },
+  topBar: { height: 84, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'flex-end', borderBottomWidth: 1, borderBottomColor: '#e8defb', backgroundColor: theme.colors.surface, paddingBottom: 8 },
+  backButton: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: '#dfe3e7', justifyContent: 'center', alignItems: 'center', marginBottom: -6 },
   backIcon: { color: theme.colors.text, fontSize: 29, lineHeight: 29, marginTop: 2 },
-  topBarTitle: { marginLeft: 8, color: theme.colors.text, fontSize: 20, fontWeight: '800' },
+  topBarTitle: { marginLeft: 8, color: theme.colors.text, fontSize: 20, fontWeight: '800', marginBottom: 2 },
   content: { padding: 18, paddingBottom: 36 },
   heading: { color: theme.colors.primaryDark, fontSize: 24, fontWeight: '800', marginTop: 8, marginBottom: 12 },
   addressCard: { backgroundColor: theme.colors.surface, borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: theme.colors.border },
