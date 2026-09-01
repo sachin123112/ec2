@@ -17,8 +17,43 @@ function getCategoryIcon(categoryName) {
   return defaultCategory?.icon || '🐾';
 }
 
+function getFallbackImage(category, productName, icon = '🐾') {
+  const safeTitle = String(productName || 'Pet Product').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const safeCategory = String(category || 'Pet Shop').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const colors = {
+    Dogs: ['#FF6B35', '#FFF0EA'],
+    Cats: ['#9B59B6', '#F5EEF8'],
+    Birds: ['#2980B9', '#EBF5FB'],
+    Fish: ['#16A085', '#E8F8F5'],
+    'Small Pets': ['#F39C12', '#FEF5E7'],
+    Reptiles: ['#27AE60', '#EAFAF1'],
+    'Aquarium Plants': ['#2ECC71', '#EAFBF1'],
+    Food: ['#F39C12', '#FFF4E6'],
+  };
+
+  const [color, bg] = colors[category] || ['#FF6B35', '#FFF0EA'];
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+      <defs>
+        <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stop-color="${bg}"/>
+          <stop offset="100%" stop-color="#ffffff"/>
+        </linearGradient>
+      </defs>
+      <rect width="800" height="600" fill="url(#bg)"/>
+      <circle cx="660" cy="130" r="110" fill="rgba(255,255,255,0.28)"/>
+      <text x="52" y="250" font-size="150">${icon}</text>
+      <text x="52" y="390" font-family="Arial, Helvetica, sans-serif" font-size="52" font-weight="700" fill="${color}">${safeTitle}</text>
+      <text x="52" y="460" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#4b5563">${safeCategory}</text>
+    </svg>
+  `;
+
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
 function normalizeProduct(product) {
   const category = typeof product.category === 'string' ? product.category : product.category?.name;
+  const fallbackImage = getFallbackImage(product.categoryName || category || 'Uncategorized', product.name, '🐾');
   return {
     id: product.id,
     name: product.name,
@@ -27,7 +62,7 @@ function normalizeProduct(product) {
     price: product.price || 0,
     rating: product.rating || 0,
     reviews: product.reviews || 0,
-    image: product.imageUrls?.[0] || product.images?.[0] || product.image || 'https://via.placeholder.com/400',
+    image: product.imageUrls?.[0] || product.images?.[0] || product.image || fallbackImage,
     badge: product.badge || '',
     description: product.description || '',
     inStock: product.stockQuantity ? product.stockQuantity > 0 : (product.inStock !== undefined ? product.inStock : true),
@@ -175,7 +210,14 @@ export default function Shop() {
                 <div key={product.id} className="product-card">
                   {product.badge && <span className="product-badge">{product.badge}</span>}
                   <div className="product-img-wrap" onClick={() => setSelected(product)}>
-                    <img src={product.image} alt={product.name} />
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      onError={(e) => {
+                        const fallback = getFallbackImage(product.category, product.name, '🐾');
+                        if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
+                      }}
+                    />
                     <div className="product-overlay">
                       <span>Quick View</span>
                     </div>
@@ -204,7 +246,14 @@ export default function Shop() {
         <div className="modal-overlay" onClick={() => setSelected(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <button className="modal-close" onClick={() => setSelected(null)}>✕</button>
-            <img src={selected.image} alt={selected.name} />
+            <img
+              src={selected.image}
+              alt={selected.name}
+              onError={(e) => {
+                const fallback = getFallbackImage(selected.category, selected.name, '🐾');
+                if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
+              }}
+            />
             <div className="modal-info">
               <span className="product-category">{selected.category} · {selected.subCategory}</span>
               {selected.badge && <span className="product-badge inline-badge">{selected.badge}</span>}

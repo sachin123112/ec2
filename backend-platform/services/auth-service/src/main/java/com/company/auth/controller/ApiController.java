@@ -35,6 +35,7 @@ import com.company.auth.repository.UserRepository;
 import com.company.auth.service.SearchService;
 import com.company.auth.service.EmailNotificationService;
 import com.company.auth.service.ImageKitImageService;
+import com.company.auth.service.NotificationService;
 import com.company.auth.repository.PaymentSettingsRepository;
 import com.company.auth.model.PaymentSettings;
 import org.slf4j.Logger;
@@ -83,6 +84,7 @@ public class ApiController {
     private final SearchService searchService;
     private final EmailNotificationService emailNotificationService;
     private final ImageKitImageService imageKitImageService;
+    private final NotificationService notificationService;
     private final PaymentSettingsRepository paymentSettingsRepository;
 
     public ApiController(
@@ -98,6 +100,7 @@ public class ApiController {
             SearchService searchService,
             EmailNotificationService emailNotificationService,
             ImageKitImageService imageKitImageService,
+            NotificationService notificationService,
             PaymentSettingsRepository paymentSettingsRepository) {
         this.userRepository = userRepository;
         this.productRepository = productRepository;
@@ -111,6 +114,7 @@ public class ApiController {
         this.searchService = searchService;
         this.emailNotificationService = emailNotificationService;
         this.imageKitImageService = imageKitImageService;
+        this.notificationService = notificationService;
         this.paymentSettingsRepository = paymentSettingsRepository;
     }
 
@@ -205,6 +209,11 @@ public class ApiController {
 
         product = productRepository.save(product);
         searchService.indexProduct(product);
+        notificationService.notifyAllUsers(
+                "New product added",
+                "New product '" + product.getName() + "' has been added to the shop.",
+                "product"
+        );
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(product));
     }
 
@@ -249,6 +258,11 @@ public class ApiController {
         }
 
         searchService.indexProduct(product);
+        notificationService.notifyAllUsers(
+                "New product added",
+                "New product '" + product.getName() + "' has been added to the shop.",
+                "product"
+        );
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(product));
     }
 
@@ -287,6 +301,7 @@ public class ApiController {
             @RequestParam(required = false) Integer stockQuantity,
             @RequestParam(required = false) Integer netQuantity,
             @RequestParam(required = false) Long categoryId,
+            @RequestParam(defaultValue = "true") boolean replaceExistingImages,
             @RequestPart(value = "images", required = false) MultipartFile[] images) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
@@ -302,6 +317,10 @@ public class ApiController {
         }
 
         if (images != null && images.length > 0) {
+            if (replaceExistingImages) {
+                product.getImages().clear();
+            }
+
             for (MultipartFile image : images) {
                 if (image != null && !image.isEmpty()) {
                     String imageUrl = imageKitImageService.uploadProductImage(image, product.getId());
@@ -344,16 +363,32 @@ public class ApiController {
         com.company.auth.model.Category c = new com.company.auth.model.Category();
         c.setName(request.getName());
         c = categoryRepository.save(c);
+        notificationService.notifyAllUsers(
+                "New category added",
+                "Category '" + c.getName() + "' is now available in PawMart.",
+                "system"
+        );
         CategoryDto d = new CategoryDto(); d.setId(c.getId()); d.setName(c.getName()); d.setCreatedAt(c.getCreatedAt());
         return ResponseEntity.status(HttpStatus.CREATED).body(d);
     }
 
     @DeleteMapping("/categories/{id}")
+    @Transactional
     @CacheEvict(cacheNames = "categories", allEntries = true)
     public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
         if (!categoryRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
+
+        List<Product> productsInCategory = productRepository.findAll().stream()
+                .filter(product -> product.getCategory() != null && id.equals(product.getCategory().getId()))
+                .collect(Collectors.toList());
+
+        for (Product product : productsInCategory) {
+            product.setCategory(null);
+            productRepository.save(product);
+        }
+
         categoryRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
@@ -532,7 +567,15 @@ public class ApiController {
         searchService.indexOrder(saved);
         if (statusChanged) {
             userRepository.findById(saved.getUserId())
-                    .ifPresent(user -> emailNotificationService.sendOrderStatusChanged(saved, user));
+                    .ifPresent(user -> {
+                        emailNotificationService.sendOrderStatusChanged(saved, user);
+                        notificationService.notifyUserAndAdmins(
+                                user,
+                                "Order status updated",
+                                "Your order " + saved.getOrderNumber() + " is now " + saved.getStatus() + ".",
+                                "order"
+                        );
+                    });
         }
         return toDto(saved);
     }

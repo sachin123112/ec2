@@ -1,6 +1,7 @@
 -- Seed initial product categories
 INSERT INTO categories (name) VALUES
 ('Dogs'),
+('Cats'),
 ('Fish'),
 ('Plants'),
 ('Birds'),

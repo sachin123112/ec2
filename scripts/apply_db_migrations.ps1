@@ -1,17 +1,17 @@
 param(
-    [string]$Host = 'localhost',
-    [int]$Port = 5432,
-    [string]$User = 'postgres',
-    [string]$Password = 'postgres',
+    [string]$PostgresHost = 'localhost',
+    [int]$PostgresPort = 5432,
+    [string]$PostgresUser = 'postgres',
+    [string]$PostgresPassword = 'postgres',
     [string]$Database = 'ec2_db'
 )
 
-$env:PGHOST = $Host
-$env:PGPORT = $Port.ToString()
-$env:PGUSER = $User
-$env:PGPASSWORD = $Password
+$env:PGHOST = $PostgresHost
+$env:PGPORT = $PostgresPort.ToString()
+$env:PGUSER = $PostgresUser
+$env:PGPASSWORD = $PostgresPassword
 
-Write-Host "Applying migrations to $User@$Host:$Port/$Database"
+Write-Host "Applying migrations to $PostgresUser@$PostgresHost`:$PostgresPort/$Database"
 
 $base = Join-Path $PSScriptRoot '..\database\migrations'
 Get-ChildItem -Path $base -Filter '*.sql' | Sort-Object Name | ForEach-Object {

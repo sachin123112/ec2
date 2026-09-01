@@ -44,6 +44,8 @@ export default function Navbar() {
     { name: 'Cats', path: '/shop?category=Cats' },
     { name: 'Birds', path: '/shop?category=Birds' },
     { name: 'Fish', path: '/shop?category=Fish' },
+    { name: 'Aquarium Plants', path: '/shop?category=Aquarium%20Plants' },
+    { name: 'Food', path: '/shop?category=Food' },
   ];
 
   return (

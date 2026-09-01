@@ -15,6 +15,7 @@ export default function ProductsAdmin() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [productImages, setProductImages] = useState([]);
   const [productImagePreviews, setProductImagePreviews] = useState([]);
+  const [replaceExistingImages, setReplaceExistingImages] = useState(true);
   const [status, setStatus] = useState('');
   const [deletingProductId, setDeletingProductId] = useState(null);
   const [dateFrom, setDateFrom] = useState('');
@@ -162,6 +163,7 @@ export default function ProductsAdmin() {
       netQuantity: String(product.netQuantity ?? 0),
       categoryId: product.categoryId ? String(product.categoryId) : '',
     });
+    setReplaceExistingImages(true);
     setStatus(`Editing product #${product.id}. Update the fields and save.`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -172,6 +174,7 @@ export default function ProductsAdmin() {
     setProductForm({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0', netQuantity: '0', categoryId: '' });
     setProductImages([]);
     setProductImagePreviews(prev => { prev.forEach(URL.revokeObjectURL); return []; });
+    setReplaceExistingImages(true);
     setStatus('');
   }
 
@@ -201,6 +204,26 @@ export default function ProductsAdmin() {
   const catalogCategories = useMemo(() => {
     return categories.length > 0 ? categories : defaultCategories;
   }, [categories]);
+
+  const editingProduct = useMemo(() => {
+    return products.find(product => product.id === editingProductId) || null;
+  }, [products, editingProductId]);
+
+  const existingProductImages = useMemo(() => {
+    if (!editingProduct) return [];
+    const imageList = [];
+    const rawUrls = Array.isArray(editingProduct.imageUrls)
+      ? editingProduct.imageUrls
+      : Array.isArray(editingProduct.images)
+        ? editingProduct.images
+        : editingProduct.image ? [editingProduct.image] : [];
+
+    rawUrls.forEach(url => {
+      if (typeof url === 'string' && url.trim()) imageList.push(url.trim());
+    });
+
+    return imageList;
+  }, [editingProduct]);
 
   const filteredProducts = products.filter(product => {
     const categoryName = product.categoryName || product.category?.name || product.category || 'Uncategorized';
@@ -328,6 +351,69 @@ export default function ProductsAdmin() {
                 />
               </label>
 
+              {editingProduct && existingProductImages.length > 0 && (
+                <div style={{ display: 'grid', gap: 8 }}>
+                  <span style={{ color: '#1f2937', fontSize: '1.1rem', fontWeight: 600, textAlign: 'left' }}>Current image(s)</span>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: 10 }}>
+                    {existingProductImages.map((src, index) => (
+                      <div key={`${src}-${index}`} style={{ border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden', background: '#f8fafc' }}>
+                        <img src={src} alt={`Current product ${index + 1}`} style={{ width: '100%', height: 88, objectFit: 'cover', display: 'block' }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {editingProductId && (
+                <div style={{ display: 'grid', gap: 8 }}>
+                  <span style={{ color: '#1f2937', fontSize: '1.1rem', fontWeight: 600, textAlign: 'left' }}>Image update mode</span>
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 600, color: '#1f2937' }}>
+                      <input
+                        type="radio"
+                        name="imageReplaceMode"
+                        checked={replaceExistingImages}
+                        onChange={() => setReplaceExistingImages(true)}
+                      />
+                      Replace all
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 600, color: '#1f2937' }}>
+                      <input
+                        type="radio"
+                        name="imageReplaceMode"
+                        checked={!replaceExistingImages}
+                        onChange={() => setReplaceExistingImages(false)}
+                      />
+                      Keep existing
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              <label style={{ display: 'grid', gap: 8, color: '#1f2937', fontSize: '1.1rem', fontWeight: 600, textAlign: 'left' }}>
+                <span>Upload replacement image(s)</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleProductImageSelection}
+                  style={{ minHeight: 56, padding: '14px 16px', border: '1px solid #d1d5db', borderRadius: 12, background: '#f8fafc', fontSize: '1rem' }}
+                />
+              </label>
+
+              {productImagePreviews.length > 0 && (
+                <div className="image-preview-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>
+                  {productImagePreviews.map((src, index) => (
+                    <div key={index} className="image-preview-card" style={{ border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden', background: '#f8fafc' }}>
+                      <img src={src} alt={`Preview ${index + 1}`} style={{ width: '100%', height: 110, objectFit: 'cover', display: 'block' }} />
+                      <button type="button" className="btn-outline btn-sm" onClick={() => removeProductImage(index)} style={{ width: '100%', borderRadius: 0, border: 'none', borderTop: '1px solid #e5e7eb' }}>
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 4, alignItems: 'center', height: 48 }}>
                 <button
                   type="button"
@@ -429,11 +515,13 @@ export default function ProductsAdmin() {
               <input type="file" accept="image/*" multiple onChange={handleProductImageSelection} />
             </label>
             {productImagePreviews.length > 0 && (
-              <div className="image-preview-grid">
+              <div className="image-preview-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>
                 {productImagePreviews.map((src, index) => (
-                  <div key={index} className="image-preview-card">
-                    <img src={src} alt={`Preview ${index + 1}`} />
-                    <button type="button" className="btn-outline btn-sm" onClick={() => removeProductImage(index)}>Remove</button>
+                  <div key={index} className="image-preview-card" style={{ border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden', background: '#f8fafc' }}>
+                    <img src={src} alt={`Preview ${index + 1}`} style={{ width: '100%', height: 110, objectFit: 'cover', display: 'block' }} />
+                    <button type="button" className="btn-outline btn-sm" onClick={() => removeProductImage(index)} style={{ width: '100%', borderRadius: 0, border: 'none', borderTop: '1px solid #e5e7eb' }}>
+                      Remove
+                    </button>
                   </div>
                 ))}
               </div>

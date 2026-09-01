@@ -28,6 +28,8 @@ export default function Footer() {
           <Link to="/shop?category=Cats">Cat Products</Link>
           <Link to="/shop?category=Birds">Bird Products</Link>
           <Link to="/shop?category=Fish">Fish Products</Link>
+          <Link to="/shop?category=Aquarium%20Plants">Aquarium Plants</Link>
+          <Link to="/shop?category=Food">Food</Link>
         </div>
 
         <div className="footer-col">
