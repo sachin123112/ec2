@@ -106,7 +106,7 @@ export default function RolesAdmin() {
     if (response.ok) {
       setRoleForm({ name: '', description: '', permissions: [] });
       await loadData();
-      setStatus('Role created successfully.');
+      setStatus('Role added successfully.');
     } else {
       setStatus('Unable to create role.');
     }
@@ -120,7 +120,7 @@ export default function RolesAdmin() {
     });
     if (response.ok) {
       await loadData();
-      setStatus('Role deleted successfully.');
+      setStatus('Role removed successfully.');
     } else {
       setStatus('Unable to delete role.');
     }
@@ -141,7 +141,7 @@ export default function RolesAdmin() {
     if (response.ok) {
       setEditingRoleId(null);
       await loadData();
-      setStatus('Role permissions updated for web and mobile users.');
+      setStatus('Role permissions updated successfully.');
     } else {
       if (response.status === 401 || response.status === 403) {
         setStatus('Admin login required to save permissions. Redirecting to login...');

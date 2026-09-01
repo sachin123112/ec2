@@ -153,6 +153,40 @@ public class ApiController {
         return ResponseEntity.noContent().build();
     }
 
+    private static final int MAX_PRODUCT_IMAGES = 6;
+    private static final int MAX_GIF_IMAGES = 2;
+
+    private void validateProductImages(MultipartFile[] images) {
+        if (images == null || images.length == 0) {
+            return;
+        }
+
+        int totalImageCount = 0;
+        int gifCount = 0;
+
+        for (MultipartFile image : images) {
+            if (image == null || image.isEmpty()) {
+                continue;
+            }
+
+            totalImageCount++;
+            String contentType = image.getContentType();
+            String fileName = image.getOriginalFilename() == null ? "" : image.getOriginalFilename().toLowerCase();
+            boolean isGif = "image/gif".equalsIgnoreCase(contentType) || fileName.endsWith(".gif");
+            if (isGif) {
+                gifCount++;
+            }
+        }
+
+        if (totalImageCount > MAX_PRODUCT_IMAGES) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You can upload up to 6 images per product.");
+        }
+
+        if (gifCount > MAX_GIF_IMAGES) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You can upload up to 2 GIF images per product.");
+        }
+    }
+
     @GetMapping("/products")
     @Cacheable(cacheNames = "products", key = "'all'")
     @Transactional(readOnly = true)
@@ -232,6 +266,7 @@ public class ApiController {
             @RequestParam(required = false) Integer stockQuantity,
             @RequestParam(required = false) Long categoryId,
             @RequestPart(value = "images", required = false) MultipartFile[] images) {
+        validateProductImages(images);
         Category category = getRequiredCategory(categoryId);
         Product product = new Product();
         product.setName(name);
@@ -303,6 +338,7 @@ public class ApiController {
             @RequestParam(required = false) Long categoryId,
             @RequestParam(defaultValue = "true") boolean replaceExistingImages,
             @RequestPart(value = "images", required = false) MultipartFile[] images) {
+        validateProductImages(images);
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
 

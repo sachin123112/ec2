@@ -32,6 +32,7 @@ class NotificationServiceTest {
     @InjectMocks
     private NotificationService notificationService;
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     void shouldCreateNotificationsForAllUsers() {
         User admin = new User();

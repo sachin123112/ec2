@@ -22,8 +22,11 @@ import java.util.Arrays;
 @Configuration
 public class SecurityConfig {
 
-    @Value("${app.cors.allowed-origins:http://localhost:5173}")
-    private String allowedOrigins = "http://localhost:5173";
+    private final String allowedOrigins;
+
+    public SecurityConfig(@Value("${app.cors.allowed-origins:http://localhost:5173}") String allowedOrigins) {
+        this.allowedOrigins = allowedOrigins == null ? "http://localhost:5173" : allowedOrigins;
+    }
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter(JwtService jwtService) {

@@ -46,7 +46,7 @@ export default function CategoriesAdmin() {
     if (response.ok) {
       setCategoryForm({ name: '' });
       await loadData();
-      setStatus('Category created successfully.');
+      setStatus('Category added successfully.');
     } else {
       setStatus('Unable to create category.');
     }
@@ -60,7 +60,7 @@ export default function CategoriesAdmin() {
     });
     if (response.ok) {
       await loadData();
-      setStatus('Category deleted successfully.');
+      setStatus('Category removed successfully.');
     } else {
       setStatus('Unable to delete category.');
     }

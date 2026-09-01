@@ -45,7 +45,7 @@ export default function LinksAdmin() {
     if (response.ok) {
       setLinkForm({ label: '', url: '', description: '', isActive: true });
       await loadData();
-      setStatus('Link created successfully.');
+      setStatus('Link added successfully.');
     } else {
       setStatus('Unable to create link.');
     }
@@ -59,7 +59,7 @@ export default function LinksAdmin() {
     });
     if (response.ok) {
       await loadData();
-      setStatus('Link deleted successfully.');
+      setStatus('Link removed successfully.');
     } else {
       setStatus('Unable to delete link.');
     }

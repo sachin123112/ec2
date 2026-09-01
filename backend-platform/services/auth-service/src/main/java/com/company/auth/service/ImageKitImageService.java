@@ -22,6 +22,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 
@@ -43,6 +46,12 @@ public class ImageKitImageService {
         this.privateKey = privateKey;
         this.urlEndpoint = urlEndpoint;
         this.objectMapper = objectMapper;
+
+        if (StringUtils.hasText(privateKey) && StringUtils.hasText(urlEndpoint)) {
+            logger.info("ImageKit active: cloud uploads enabled for product and profile images.");
+        } else {
+            logger.warn("ImageKit not configured: using local fallback uploads in the uploads/ directory.");
+        }
     }
 
     public String uploadProductImage(MultipartFile image, Long productId) {
@@ -55,8 +64,7 @@ public class ImageKitImageService {
 
     private String uploadImage(MultipartFile image, String folder) {
         if (!StringUtils.hasText(privateKey) || !StringUtils.hasText(urlEndpoint)) {
-            throw new ResponseStatusException(INTERNAL_SERVER_ERROR,
-                    "ImageKit is not configured. Set IMAGEKIT_PRIVATE_KEY and IMAGEKIT_URL_ENDPOINT.");
+            return saveLocalUploadFallback(image, folder);
         }
 
         try {
@@ -90,9 +98,28 @@ public class ImageKitImageService {
             }
             return imageUrl;
         } catch (IOException | RestClientException exception) {
-            logger.error("Unable to upload image to ImageKit", exception);
+            logger.warn("ImageKit upload failed, falling back to local storage", exception);
+            return saveLocalUploadFallback(image, folder);
+        }
+    }
+
+    private String saveLocalUploadFallback(MultipartFile image, String folder) {
+        try {
+            String fileName = safeFileName(image.getOriginalFilename());
+            String normalizedFolder = folder == null ? "uploads" : folder.replace("\\", "/").replace("//", "/");
+            Path uploadRoot = Paths.get(System.getProperty("user.dir"), "uploads");
+            Path targetDirectory = uploadRoot.resolve(normalizedFolder.replaceFirst("^/", "")).normalize();
+            Files.createDirectories(targetDirectory);
+
+            Path targetFile = targetDirectory.resolve(fileName).normalize();
+            Files.write(targetFile, image.getBytes());
+
+            String relativeUrl = "/uploads/" + uploadRoot.relativize(targetFile).toString().replace('\\', '/');
+            return relativeUrl;
+        } catch (IOException exception) {
+            logger.error("Unable to save uploaded image locally", exception);
             throw new ResponseStatusException(INTERNAL_SERVER_ERROR,
-                    "Unable to upload image to ImageKit", exception);
+                    "Unable to upload image. Please configure ImageKit or check the local upload directory.", exception);
         }
     }
 

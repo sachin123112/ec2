@@ -50,7 +50,7 @@ export default function OrdersAdmin() {
     });
     if (response.ok) {
       await loadData();
-      setStatus('Order deleted successfully.');
+      setStatus('Order removed successfully.');
     } else {
       setStatus('Unable to delete order.');
     }

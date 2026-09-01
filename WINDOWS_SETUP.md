@@ -177,6 +177,34 @@ mvn clean package -DskipTests
 
 ### Step 5: Run Individual Services
 
+#### JWT secret for local Windows runs
+Before starting the backend, set a local JWT secret in your shell or `.env` file. Do not use the default fallback in a real environment.
+
+```powershell
+cd backend-platform
+Copy-Item .env.example .env
+$env:JWT_SECRET = "replace-with-a-long-random-secret-32-plus-chars"
+$env:JWT_EXPIRATION_MS = "900000"
+```
+
+You can also define these values in `backend-platform/.env` so the app picks them up when using the local scripts.
+
+```env
+JWT_SECRET=replace-with-a-long-random-secret-32-plus-chars
+JWT_EXPIRATION_MS=900000
+```
+
+#### ImageKit cloud uploads for product images
+The backend is already wired to use ImageKit if the environment variables are populated. Set the real keys in `backend-platform/.env` before starting the service:
+
+```env
+IMAGEKIT_PRIVATE_KEY=your_imagekit_private_key
+IMAGEKIT_PUBLIC_KEY=your_imagekit_public_key
+IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/your_imagekit_id
+```
+
+When these are present, uploads go to ImageKit and the local fallback path is skipped. If they are empty, the app falls back to a local `uploads/` directory for development.
+
 #### Option A: Run Auth Service
 ```cmd
 cd services/auth-service

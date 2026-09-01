@@ -6,6 +6,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -42,5 +43,13 @@ class JwtServiceTest {
     @Test
     void invalidToken_isRejected() {
         assertFalse(jwtService.isTokenValid("not-a-valid-jwt"));
+    }
+
+    @Test
+    void blankSecret_fallsBackToDefaultKey() {
+        ReflectionTestUtils.setField(jwtService, "secret", "");
+
+        assertDoesNotThrow(() -> jwtService.generateToken("charlie", List.of("ADMIN")));
+        assertTrue(jwtService.isTokenValid(jwtService.generateToken("charlie", List.of("ADMIN"))));
     }
 }

@@ -63,7 +63,7 @@ export default function UsersAdmin() {
     if (response.ok) {
       setUserForm({ username: '', email: '', password: '', firstName: '', lastName: '', roleIds: [] });
       await loadData();
-      setStatus('User created successfully.');
+      setStatus('User added successfully.');
     } else {
       setStatus('Unable to create user.');
     }
@@ -77,7 +77,7 @@ export default function UsersAdmin() {
     });
     if (response.ok) {
       await loadData();
-      setStatus('User deleted successfully.');
+      setStatus('User removed successfully.');
     } else {
       setStatus('Unable to delete user.');
     }

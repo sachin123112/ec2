@@ -6,6 +6,10 @@ import './Dashboard.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
+const MAX_PRODUCT_IMAGES = 6;
+const MAX_GIF_IMAGES = 2;
+const ALLOWED_PRODUCT_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+
 export default function ProductsAdmin() {
   const { token } = useAuth();
   const [products, setProducts] = useState([]);
@@ -83,10 +87,40 @@ export default function ProductsAdmin() {
 
   function handleProductImageSelection(event) {
     const files = Array.from(event.target.files || []);
-    setProductImages(files);
+    const selected = [];
+    let gifCount = 0;
+
+    for (const file of files) {
+      const type = (file.type || '').toLowerCase();
+      const extension = (file.name || '').split('.').pop()?.toLowerCase();
+      const isGif = type === 'image/gif' || extension === 'gif';
+      const isAllowed = ALLOWED_PRODUCT_IMAGE_TYPES.has(type) || ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(extension || '');
+
+      if (!isAllowed) {
+        continue;
+      }
+
+      if (isGif && gifCount >= MAX_GIF_IMAGES) {
+        continue;
+      }
+
+      if (selected.length >= MAX_PRODUCT_IMAGES) {
+        break;
+      }
+
+      selected.push(file);
+      if (isGif) gifCount += 1;
+    }
+
+    if (selected.length !== files.length) {
+      setStatus(`Upload up to ${MAX_PRODUCT_IMAGES} images total, with no more than ${MAX_GIF_IMAGES} GIFs.`);
+    }
+
+    event.target.value = '';
+    setProductImages(selected);
     setProductImagePreviews(prev => {
       prev.forEach(URL.revokeObjectURL);
-      return files.map(file => URL.createObjectURL(file));
+      return selected.map(file => URL.createObjectURL(file));
     });
   }
 
@@ -121,9 +155,12 @@ export default function ProductsAdmin() {
       formData.append('stockQuantity', payload.stockQuantity.toString());
       formData.append('netQuantity', payload.netQuantity.toString());
       if (payload.categoryId !== null) formData.append('categoryId', payload.categoryId.toString());
+      if (editingProductId) {
+        formData.append('replaceExistingImages', String(replaceExistingImages));
+      }
       productImages.forEach(file => formData.append('images', file));
 
-      response = await fetch(`${API_URL}/products`, {
+      response = await fetch(`${editingProductId ? `${API_URL}/products/${editingProductId}` : `${API_URL}/products`}`, {
         method: editingProductId ? 'PUT' : 'POST',
         headers: authHeaderBase,
         body: formData,
@@ -143,8 +180,18 @@ export default function ProductsAdmin() {
       setIsEditModalOpen(false);
       setProductImages([]);
       setProductImagePreviews(prev => { prev.forEach(URL.revokeObjectURL); return []; });
+      setReplaceExistingImages(true);
       await loadData();
-      setStatus(editingProductId ? 'Product updated successfully.' : 'Product added successfully.');
+
+      if (editingProductId) {
+        setStatus(
+          productImages.length > 0
+            ? (replaceExistingImages ? 'Images updated successfully.' : 'Images updated successfully.')
+            : 'Product updated successfully.'
+        );
+      } else {
+        setStatus('Product added successfully.');
+      }
     } else {
       const errorText = await response.text();
       setStatus(errorText || `Unable to ${editingProductId ? 'update' : 'create'} product (${response.status}).`);
@@ -192,7 +239,7 @@ export default function ProductsAdmin() {
       }
 
       setProducts(prev => prev.filter(product => product.id !== id));
-      setStatus('Product deleted successfully.');
+      setStatus('Product removed successfully.');
     } catch (err) {
       console.error('Unable to delete product', err);
       setStatus(err.message || 'Unable to delete product.');
@@ -368,21 +415,23 @@ export default function ProductsAdmin() {
                 <div style={{ display: 'grid', gap: 8 }}>
                   <span style={{ color: '#1f2937', fontSize: '1.1rem', fontWeight: 600, textAlign: 'left' }}>Image update mode</span>
                   <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 600, color: '#1f2937' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 600, color: '#1f2937', fontSize: '0.96rem' }}>
                       <input
                         type="radio"
                         name="imageReplaceMode"
                         checked={replaceExistingImages}
                         onChange={() => setReplaceExistingImages(true)}
+                        style={{ width: 16, height: 16, minHeight: 16, margin: 0 }}
                       />
                       Replace all
                     </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 600, color: '#1f2937' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 600, color: '#1f2937', fontSize: '0.96rem' }}>
                       <input
                         type="radio"
                         name="imageReplaceMode"
                         checked={!replaceExistingImages}
                         onChange={() => setReplaceExistingImages(false)}
+                        style={{ width: 16, height: 16, minHeight: 16, margin: 0 }}
                       />
                       Keep existing
                     </label>
@@ -394,10 +443,11 @@ export default function ProductsAdmin() {
                 <span>Upload replacement image(s)</span>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
                   multiple
                   onChange={handleProductImageSelection}
                   style={{ minHeight: 56, padding: '14px 16px', border: '1px solid #d1d5db', borderRadius: 12, background: '#f8fafc', fontSize: '1rem' }}
+                  aria-label="Choose up to 6 images (max 2 GIFs)"
                 />
               </label>
 
@@ -512,7 +562,7 @@ export default function ProductsAdmin() {
             </label>
             <label>
               Product Images
-              <input type="file" accept="image/*" multiple onChange={handleProductImageSelection} />
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple onChange={handleProductImageSelection} aria-label="Choose up to 6 images (max 2 GIFs)" />
             </label>
             {productImagePreviews.length > 0 && (
               <div className="image-preview-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>
