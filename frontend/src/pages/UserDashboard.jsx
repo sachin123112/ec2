@@ -47,6 +47,16 @@ function formatPhoneDisplay(countryCode, phone) {
   return `${countryCode || ''} ${digits}`.trim();
 }
 
+const requiredAddressFields = [
+  ['name', 'Contact name'],
+  ['addressLine1', 'Address'],
+  ['city', 'City'],
+  ['state', 'State'],
+  ['postalCode', 'Postal code'],
+  ['country', 'Country'],
+  ['phone', 'Phone'],
+];
+
 const emptyAddressForm = {
   id: null,
   label: 'Home',
@@ -236,8 +246,12 @@ export default function UserDashboard() {
     }
   }, [location.hash]);
 
-  function validatePhone(phone) {
-    const digits = phone.replace(/\D/g, '');
+  function validatePhone(phone, countryCode = '+91') {
+    const digits = String(phone || '').replace(/\D/g, '');
+    if (!digits) return false;
+    if (countryCode === '+91') {
+      return /^\d{10}$/.test(digits);
+    }
     return /^\d{7,15}$/.test(digits);
   }
 
@@ -251,8 +265,11 @@ export default function UserDashboard() {
     }
     if (!profileForm.phone.trim()) {
       errors.phone = 'Phone number is required.';
-    } else if (!validatePhone(profileForm.phone)) {
-      errors.phone = 'Enter a valid phone number without spaces or symbols.';
+    } else if (!validatePhone(profileForm.phone, profileForm.countryCode)) {
+      const message = profileForm.countryCode === '+91'
+        ? 'Enter a valid 10-digit Indian mobile number.'
+        : 'Enter a valid phone number without spaces or symbols.';
+      errors.phone = message;
     }
     setProfileErrors(errors);
     return Object.keys(errors).length === 0;
@@ -348,14 +365,79 @@ export default function UserDashboard() {
     }
   }
 
-  async function saveAddress() {
+  async function lookupPostalCode(value) {
+    const postalCode = String(value ?? '').trim();
+    if (!postalCode) return;
+
+    const digits = postalCode.replace(/\D/g, '');
+    if (!/^\d{5,6}$/.test(digits)) return;
+
     try {
+      const response = await fetch(`https://api.postalpincode.in/pincode/${digits}`);
+      if (!response.ok) return;
+
+      const data = await response.json();
+      const postOffice = data?.[0]?.PostOffice?.[0];
+      if (!postOffice) return;
+
+      setAddressForm(previous => ({
+        ...previous,
+        city: previous.city || postOffice.District || '',
+        state: previous.state || postOffice.State || '',
+        country: previous.country || 'India',
+        addressLine1: previous.addressLine1 || [postOffice.Name, postOffice.Block].filter(Boolean).join(', ') || previous.addressLine1,
+      }));
+    } catch (error) {
+      console.error('Unable to auto-fill address from postal code:', error);
+    }
+  }
+
+  function validateAddressForm() {
+    for (const [field, label] of requiredAddressFields) {
+      if (!String(addressForm[field] ?? '').trim()) {
+        setStatus(`${label} is required.`);
+        return false;
+      }
+    }
+
+    const digits = String(addressForm.phone ?? '').replace(/\D/g, '');
+    if (!digits) {
+      setStatus('Phone is required.');
+      return false;
+    }
+    if (!/^\d{7,15}$/.test(digits)) {
+      setStatus('Please enter a valid phone number.');
+      return false;
+    }
+
+    return true;
+  }
+
+  async function saveAddress() {
+    if (!validateAddressForm()) {
+      return;
+    }
+
+    try {
+      const payload = {
+        ...addressForm,
+        name: String(addressForm.name).trim(),
+        addressLine1: String(addressForm.addressLine1).trim(),
+        addressLine2: String(addressForm.addressLine2 || '').trim(),
+        city: String(addressForm.city).trim(),
+        state: String(addressForm.state).trim(),
+        postalCode: String(addressForm.postalCode).trim(),
+        country: String(addressForm.country).trim(),
+        phone: String(addressForm.phone).trim(),
+        label: String(addressForm.label || 'Home').trim(),
+      };
+
       const method = editingAddress ? 'PUT' : 'POST';
       const url = editingAddress ? `${API_URL}/addresses/${addressForm.id}` : `${API_URL}/users/me/addresses`;
       const response = await fetch(url, {
         method,
         headers: authHeaders,
-        body: JSON.stringify(addressForm),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -655,8 +737,11 @@ export default function UserDashboard() {
                         </select>
                         <input
                           type="tel"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={profileForm.countryCode === '+91' ? 10 : 15}
                           value={profileForm.phone}
-                          onChange={e => setProfileForm(prev => ({ ...prev, phone: e.target.value }))}
+                          onChange={e => setProfileForm(prev => ({ ...prev, phone: e.target.value.replace(/\D/g, '') }))}
                           placeholder="Enter phone number"
                         />
                       </div>
@@ -833,6 +918,8 @@ export default function UserDashboard() {
                             value={addressForm.name}
                             onChange={e => setAddressForm(prev => ({ ...prev, name: e.target.value }))}
                             placeholder="Recipient name"
+                            required
+                            aria-required="true"
                           />
                         </label>
                         <label>
@@ -842,6 +929,8 @@ export default function UserDashboard() {
                             value={addressForm.addressLine1}
                             onChange={e => setAddressForm(prev => ({ ...prev, addressLine1: e.target.value }))}
                             placeholder="Street address (address_line1)"
+                            required
+                            aria-required="true"
                           />
                         </label>
                         <label>
@@ -860,6 +949,8 @@ export default function UserDashboard() {
                             value={addressForm.city}
                             onChange={e => setAddressForm(prev => ({ ...prev, city: e.target.value }))}
                             placeholder="City"
+                            required
+                            aria-required="true"
                           />
                         </label>
                         <label>
@@ -869,15 +960,22 @@ export default function UserDashboard() {
                             value={addressForm.state}
                             onChange={e => setAddressForm(prev => ({ ...prev, state: e.target.value }))}
                             placeholder="State"
+                            required
+                            aria-required="true"
                           />
                         </label>
                         <label>
                           Postal Code
                           <input
                             type="text"
+                            inputMode="numeric"
+                            maxLength={6}
                             value={addressForm.postalCode}
-                            onChange={e => setAddressForm(prev => ({ ...prev, postalCode: e.target.value }))}
+                            onChange={e => setAddressForm(prev => ({ ...prev, postalCode: e.target.value.replace(/\D/g, '').slice(0, 6) }))}
+                            onBlur={e => lookupPostalCode(e.target.value)}
                             placeholder="Postal code"
+                            required
+                            aria-required="true"
                           />
                         </label>
                         <label>
@@ -887,15 +985,22 @@ export default function UserDashboard() {
                             value={addressForm.country}
                             onChange={e => setAddressForm(prev => ({ ...prev, country: e.target.value }))}
                             placeholder="Country"
+                            required
+                            aria-required="true"
                           />
                         </label>
                         <label>
                           Phone
                           <input
                             type="tel"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            maxLength={15}
                             value={addressForm.phone}
-                            onChange={e => setAddressForm(prev => ({ ...prev, phone: e.target.value }))}
+                            onChange={e => setAddressForm(prev => ({ ...prev, phone: e.target.value.replace(/\D/g, '') }))}
                             placeholder="Phone number"
+                            required
+                            aria-required="true"
                           />
                         </label>
                         <label>
