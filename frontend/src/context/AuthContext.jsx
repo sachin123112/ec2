@@ -6,6 +6,31 @@ const STORAGE_KEY = 'pawmart_access_token';
 const STORAGE_EMAIL = 'pawmart_user_email';
 const STORAGE_REFRESH = 'pawmart_refresh_token';
 
+function decodeJwtPayload(token) {
+  if (!token) return null;
+
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = payload + '='.repeat((4 - (payload.length % 4)) % 4);
+    const binary = atob(padded);
+    const json = decodeURIComponent(
+      Array.from(binary).map(char => `%${char.charCodeAt(0).toString(16).padStart(2, '0')}`).join('')
+    );
+    return JSON.parse(json);
+  } catch (error) {
+    console.warn('Unable to decode JWT payload:', error);
+    return null;
+  }
+}
+
+function isTokenExpired(tokenValue) {
+  const payload = decodeJwtPayload(tokenValue);
+  if (!payload || !payload.exp) return false;
+  return Number(payload.exp) * 1000 <= Date.now();
+}
+
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem(STORAGE_KEY) || '');
   const [userEmail, setUserEmail] = useState(() => localStorage.getItem(STORAGE_EMAIL) || '');
@@ -80,7 +105,7 @@ export function AuthProvider({ children }) {
   }, [refreshToken, userEmail, logout]);
 
   useEffect(() => {
-    if (!token && refreshToken) {
+    if ((!token && refreshToken) || (token && isTokenExpired(token) && refreshToken)) {
       refreshSession().catch(() => {
         /* ignore failures; logout already happens inside refreshSession */
       });

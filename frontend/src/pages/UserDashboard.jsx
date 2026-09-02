@@ -7,6 +7,30 @@ import ChangePasswordModal from '../components/ChangePasswordModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
+function decodeJwtPayload(token) {
+  if (!token) return null;
+
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = payload + '='.repeat((4 - (payload.length % 4)) % 4);
+    const binary = atob(padded);
+    const json = decodeURIComponent(
+      Array.from(binary).map(char => `%${char.charCodeAt(0).toString(16).padStart(2, '0')}`).join('')
+    );
+    return JSON.parse(json);
+  } catch (error) {
+    return null;
+  }
+}
+
+function isTokenExpired(tokenValue) {
+  const payload = decodeJwtPayload(tokenValue);
+  if (!payload || !payload.exp) return false;
+  return Number(payload.exp) * 1000 <= Date.now();
+}
+
 function formatUserName(email) {
   if (!email) return 'Valued Customer';
   const name = email.split('@')[0].replace(/[._-]/g, ' ');
@@ -38,7 +62,7 @@ const emptyAddressForm = {
 };
 
 export default function UserDashboard() {
-  const { isAuthenticated, token, userEmail, logout } = useAuth();
+  const { isAuthenticated, token, userEmail, logout, refreshSession } = useAuth();
   const [orders, setOrders] = useState([]);
   const [status, setStatus] = useState('Loading your dashboard...');
   const [activeSection, setActiveSection] = useState('Profile Information');
@@ -279,11 +303,37 @@ export default function UserDashboard() {
     formData.append('image', file);
     setStatus('Uploading profile image...');
     try {
+      let activeToken = token;
+      if (activeToken && isTokenExpired(activeToken)) {
+        await refreshSession();
+        activeToken = localStorage.getItem('pawmart_access_token') || '';
+      }
+
       const response = await fetch(`${API_URL}/users/me/profile-image`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: activeToken ? { Authorization: `Bearer ${activeToken}` } : {},
         body: formData,
       });
+
+      if (response.status === 401 && localStorage.getItem('pawmart_refresh_token')) {
+        await refreshSession();
+        const refreshedToken = localStorage.getItem('pawmart_access_token') || '';
+        const retryResponse = await fetch(`${API_URL}/users/me/profile-image`, {
+          method: 'POST',
+          headers: refreshedToken ? { Authorization: `Bearer ${refreshedToken}` } : {},
+          body: formData,
+        });
+        if (!retryResponse.ok) {
+          throw new Error('Unable to upload profile image.');
+        }
+        const updatedUser = await retryResponse.json();
+        const profileImageUrl = updatedUser.profileImageUrl || '';
+        setUserProfile(previous => ({ ...previous, profileImageUrl }));
+        setProfileForm(previous => ({ ...previous, profileImageUrl }));
+        setStatus('Profile image uploaded successfully.');
+        return;
+      }
+
       if (!response.ok) throw new Error('Unable to upload profile image.');
       const updatedUser = await response.json();
       const profileImageUrl = updatedUser.profileImageUrl || '';
@@ -630,15 +680,6 @@ export default function UserDashboard() {
                         type="date"
                         value={profileForm.dateOfBirth}
                         onChange={e => setProfileForm(prev => ({ ...prev, dateOfBirth: e.target.value }))}
-                      />
-                    </label>
-                    <label className="profile-field full-width">
-                      Profile Image URL
-                      <input
-                        type="url"
-                        value={profileForm.profileImageUrl}
-                        onChange={e => setProfileForm(prev => ({ ...prev, profileImageUrl: e.target.value }))}
-                        placeholder="https://example.com/avatar.jpg"
                       />
                     </label>
                   </div>
