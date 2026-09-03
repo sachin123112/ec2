@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useCart } from '../context/CartContext';
+import { resolveImageUrl } from '../api/products';
 import { goBackOrNavigate } from '../navigation/safeBack';
 
 const fallbackImage = 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=900&q=85';
@@ -12,7 +13,7 @@ export default function ProductDetailsScreen({ navigation, route }) {
   const [packOptions] = useState(['1 pack', '2 packs', '3 packs', '4 packs', '5 packs']);
   const [selectedPack, setSelectedPack] = useState('1 pack');
   const [showPackMenu, setShowPackMenu] = useState(false);
-  const image = product.imageUrls?.[0] || product.images?.[0] || product.image || fallbackImage;
+  const image = resolveImageUrl(product.imageUrls?.[0] || product.images?.[0] || product.image, fallbackImage);
   const related = useMemo(() => cart.length ? cart.filter((item) => item.id !== product.id).slice(0, 4) : [], [cart, product.id]);
   const price = Number(product.price || 0);
   const stock = product.stockQuantity ?? (product.inStock === false ? 0 : 8);
@@ -25,7 +26,14 @@ export default function ProductDetailsScreen({ navigation, route }) {
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backButton} onPress={() => goBackOrNavigate(navigation, 'Shop')} accessibilityLabel="Go back"><Text style={styles.backIcon}>‹</Text></TouchableOpacity>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => goBackOrNavigate(navigation, 'Shop')}
+          accessibilityLabel="Go back"
+          hitSlop={8}
+        >
+          <Text style={styles.backIcon}>‹</Text>
+        </TouchableOpacity>
         <Text style={styles.topBarTitle} numberOfLines={1}>{product.name || 'Product Details'}</Text>
         <TouchableOpacity style={styles.favoriteButton} onPress={() => toggleWishlist(product)} accessibilityLabel="Favorite"><Text style={[styles.favoriteIcon, isFavorite && styles.favoriteActive]}>{isFavorite ? '♥' : '♡'}</Text></TouchableOpacity>
       </View>
@@ -79,8 +87,8 @@ export default function ProductDetailsScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f2f6fa' },
   topBar: { height: 84, paddingHorizontal: 18, backgroundColor: '#fff', flexDirection: 'row', alignItems: 'flex-end', paddingBottom: 9, paddingTop: 0 },
-  backButton: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#f4f5f7', alignItems: 'center', justifyContent: 'center', marginBottom: -6 },
-  backIcon: { color: '#111820', fontSize: 28, lineHeight: 28, marginTop: 0, marginBottom: 2 },
+  backButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F8F8F8', borderWidth: 1, borderColor: '#E5E5E5', alignItems: 'center', justifyContent: 'center', marginBottom: -6 },
+  backIcon: { fontSize: 30, fontWeight: '300', color: '#777777', lineHeight: 32, marginTop: -2 },
   topBarTitle: { flex: 1, color: '#151b24', fontSize: 17, fontWeight: '800', marginLeft: 12, marginBottom: 2 },
   favoriteButton: { width: 42, alignItems: 'center' },
   favoriteIcon: { color: '#e83c76', fontSize: 30 },

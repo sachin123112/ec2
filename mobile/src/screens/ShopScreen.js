@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useCart } from '../context/CartContext';
-import { fetchProducts } from '../api/products';
+import { fetchProducts, resolveImageUrl } from '../api/products';
 import { products as staticProducts } from '../data/products';
 import BottomTabBar from '../components/BottomTabBar';
 
@@ -20,7 +20,8 @@ const categories = [
 ];
 
 function normalizeProduct(product) {
-  return { ...product, image: product.imageUrls?.[0] || product.images?.[0] || product.image || fallbackImage };
+  const image = product.imageUrls?.[0] || product.images?.[0] || product.image;
+  return { ...product, image: resolveImageUrl(image, fallbackImage) };
 }
 
 function CategoryTile({ category, onPress }) {
@@ -38,7 +39,6 @@ export default function ShopScreen({ navigation }) {
   const { addToCart } = useCart();
   const [products, setProducts] = useState(staticProducts.map(normalizeProduct));
   const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
   const [favorite, setFavorite] = useState(false);
 
   useEffect(() => {
@@ -53,11 +53,11 @@ export default function ShopScreen({ navigation }) {
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
     return products.filter((product) => {
-      const matchesCategory = !selectedCategory || product.category?.toLowerCase().includes(selectedCategory.split(' ')[0].toLowerCase());
+      const matchesCategory = true;
       const matchesSearch = !query || [product.name, product.category, product.subCategory].some((field) => String(field || '').toLowerCase().includes(query));
       return matchesCategory && matchesSearch;
     });
-  }, [products, search, selectedCategory]);
+  }, [products, search]);
 
   const groups = [...new Set(categories.map((category) => category.group))];
 
@@ -76,12 +76,12 @@ export default function ShopScreen({ navigation }) {
         {groups.map((group) => (
           <View key={group} style={styles.group}>
             <Text style={styles.groupTitle}>{group}</Text>
-            <View style={styles.grid}>{categories.filter((category) => category.group === group).map((category) => <CategoryTile key={category.name} category={category} onPress={() => setSelectedCategory(category.name)} />)}</View>
+            <View style={styles.grid}>{categories.filter((category) => category.group === group).map((category) => <CategoryTile key={category.name} category={category} onPress={() => navigation.navigate('CategoryProducts', { category })} />)}</View>
           </View>
         ))}
 
-        {(selectedCategory || search) && <View style={styles.results}>
-          <View style={styles.resultsHeader}><Text style={styles.resultsTitle}>{selectedCategory || 'Search results'}</Text><TouchableOpacity onPress={() => { setSelectedCategory(''); setSearch(''); }}><Text style={styles.clear}>Clear</Text></TouchableOpacity></View>
+        {search && <View style={styles.results}>
+          <View style={styles.resultsHeader}><Text style={styles.resultsTitle}>Search results</Text><TouchableOpacity onPress={() => setSearch('')}><Text style={styles.clear}>Clear</Text></TouchableOpacity></View>
           {filtered.map((item) => <TouchableOpacity style={styles.productRow} key={String(item.id)} onPress={() => navigation.navigate('ProductDetails', { product: item })} activeOpacity={0.82}><Image source={{ uri: item.image }} style={styles.productImage} /><View style={styles.productInfo}><Text style={styles.productName}>{item.name}</Text><Text style={styles.productMeta}>{item.category} · {item.subCategory}</Text><Text style={styles.productPrice}>₹{Number(item.price || 0).toLocaleString()}</Text></View><TouchableOpacity style={styles.addButton} onPress={(event) => { event.stopPropagation(); addToCart(item); }}><Text style={styles.addText}>Add</Text></TouchableOpacity></TouchableOpacity>)}
           {!filtered.length && <Text style={styles.empty}>No products found.</Text>}
         </View>}

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { fetchProducts } from '../api/products';
+import { fetchProducts, resolveImageUrl } from '../api/products';
 import { products as staticProducts } from '../data/products';
 import BottomTabBar from '../components/BottomTabBar';
 
@@ -13,9 +13,10 @@ const promoImages = {
 };
 
 function normalizeProduct(product) {
+  const image = product.imageUrls?.[0] || product.images?.[0] || product.image;
   return {
     ...product,
-    image: product.imageUrls?.[0] || product.images?.[0] || product.image || 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=400&q=80',
+    image: resolveImageUrl(image, 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=400&q=80'),
   };
 }
 

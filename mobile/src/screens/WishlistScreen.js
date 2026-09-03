@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView } from 'rea
 import BottomTabBar from '../components/BottomTabBar';
 import { goBackOrNavigate } from '../navigation/safeBack';
 import { useCart } from '../context/CartContext';
+import { resolveImageUrl } from '../api/products';
 import theme from '../theme';
 
 export default function WishlistScreen({ navigation }) {
@@ -28,7 +29,7 @@ export default function WishlistScreen({ navigation }) {
         ) : (
           wishlist.map((product) => (
             <View key={String(product.id)} style={styles.itemCard}>
-              <Image source={{ uri: product.image || product.imageUrls?.[0] || product.images?.[0] || 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=900&q=85' }} style={styles.itemImage} />
+              <Image source={{ uri: resolveImageUrl(product.image || product.imageUrls?.[0] || product.images?.[0], 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=900&q=85') }} style={styles.itemImage} />
               <View style={styles.itemInfo}>
                 <Text style={styles.itemName}>{product.name}</Text>
                 <Text style={styles.itemPrice}>₹{Number(product.price || 0).toLocaleString()}</Text>
