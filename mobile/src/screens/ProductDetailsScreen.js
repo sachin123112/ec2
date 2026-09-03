@@ -1,24 +1,53 @@
-import React, { useMemo, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useCart } from '../context/CartContext';
 import { resolveImageUrl } from '../api/products';
 import { goBackOrNavigate } from '../navigation/safeBack';
 
 const fallbackImage = 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=900&q=85';
+const productBannerWidth = Dimensions.get('window').width;
+const fallbackProductImages = [
+  fallbackImage,
+  'https://images.unsplash.com/photo-1589924691995-400dc9a65b3d?w=900&q=85',
+  'https://images.unsplash.com/photo-1535930891776-0c2dfb7fda1a?w=900&q=85',
+];
 
 export default function ProductDetailsScreen({ navigation, route }) {
   const product = route?.params?.product || {};
-  const { addToCart, cart, wishlist, toggleWishlist } = useCart();
+  const { addToCart, cart } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [packOptions] = useState(['1 pack', '2 packs', '3 packs', '4 packs', '5 packs']);
   const [selectedPack, setSelectedPack] = useState('1 pack');
   const [showPackMenu, setShowPackMenu] = useState(false);
-  const image = resolveImageUrl(product.imageUrls?.[0] || product.images?.[0] || product.image, fallbackImage);
+  const productImages = useMemo(() => {
+    const storedImages = product.imageUrls || product.images || [];
+    const imageValues = Array.isArray(storedImages) ? storedImages : [];
+    const firstImage = product.image || imageValues[0];
+    return [firstImage, imageValues[1], imageValues[2]]
+      .map((imageValue, index) => resolveImageUrl(imageValue, fallbackProductImages[index]))
+      .filter((imageValue, index, images) => images.indexOf(imageValue) === index);
+  }, [product.image, product.imageUrls, product.images]);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const imageScrollRef = useRef(null);
+
+  useEffect(() => {
+    setActiveImageIndex(0);
+  }, [product.id]);
+
+  useEffect(() => {
+    if (productImages.length < 2) return undefined;
+    const timer = setInterval(() => {
+      setActiveImageIndex((current) => {
+        const next = (current + 1) % productImages.length;
+        imageScrollRef.current?.scrollTo({ x: next * productBannerWidth, animated: true });
+        return next;
+      });
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [productImages.length]);
   const related = useMemo(() => cart.length ? cart.filter((item) => item.id !== product.id).slice(0, 4) : [], [cart, product.id]);
   const price = Number(product.price || 0);
   const stock = product.stockQuantity ?? (product.inStock === false ? 0 : 8);
-  const isFavorite = wishlist.some((item) => item.id === product.id);
-
   const addProduct = () => {
     for (let index = 0; index < quantity; index += 1) addToCart(product);
   };
@@ -35,10 +64,24 @@ export default function ProductDetailsScreen({ navigation, route }) {
           <Text style={styles.backIcon}>‹</Text>
         </TouchableOpacity>
         <Text style={styles.topBarTitle} numberOfLines={1}>{product.name || 'Product Details'}</Text>
-        <TouchableOpacity style={styles.favoriteButton} onPress={() => toggleWishlist(product)} accessibilityLabel="Favorite"><Text style={[styles.favoriteIcon, isFavorite && styles.favoriteActive]}>{isFavorite ? '♥' : '♡'}</Text></TouchableOpacity>
       </View>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.heroImageWrap}><Image source={{ uri: image }} style={styles.heroImage} /><View style={styles.imageDots}><View style={styles.dotActive} /><View style={styles.dot} /><View style={styles.dot} /></View></View>
+        <View style={styles.heroImageWrap}>
+          <ScrollView
+            ref={imageScrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(event) => setActiveImageIndex(Math.round(event.nativeEvent.contentOffset.x / productBannerWidth))}
+          >
+            {productImages.map((productImage, index) => (
+              <Image key={`${productImage}-${index}`} source={{ uri: productImage }} style={styles.heroImage} />
+            ))}
+          </ScrollView>
+          <View style={styles.imageDots}>
+            {productImages.map((productImage, index) => <View key={`${productImage}-dot`} style={index === activeImageIndex ? styles.dotActive : styles.dot} />)}
+          </View>
+        </View>
         <View style={styles.infoCard}>
           <View style={styles.badges}><Text style={styles.badge}>Open box verification</Text><Text style={styles.badgeBlue}>Best for pets</Text></View>
           <Text style={styles.name}>{product.name || 'Product'}</Text>
@@ -90,12 +133,9 @@ const styles = StyleSheet.create({
   backButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F8F8F8', borderWidth: 1, borderColor: '#E5E5E5', alignItems: 'center', justifyContent: 'center', marginBottom: -6 },
   backIcon: { fontSize: 30, fontWeight: '300', color: '#777777', lineHeight: 32, marginTop: -2 },
   topBarTitle: { flex: 1, color: '#151b24', fontSize: 17, fontWeight: '800', marginLeft: 12, marginBottom: 2 },
-  favoriteButton: { width: 42, alignItems: 'center' },
-  favoriteIcon: { color: '#e83c76', fontSize: 30 },
-  favoriteActive: { color: '#e83c76' },
   content: { paddingBottom: 112 },
   heroImageWrap: { height: 330, backgroundColor: '#f8e9ef' },
-  heroImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+  heroImage: { width: productBannerWidth, height: '100%', resizeMode: 'cover' },
   imageDots: { position: 'absolute', bottom: 14, alignSelf: 'center', flexDirection: 'row', gap: 7 },
   dotActive: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#ed3674' },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#fff' },

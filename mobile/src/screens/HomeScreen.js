@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Dimensions, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { fetchProducts, resolveImageUrl } from '../api/products';
 import { products as staticProducts } from '../data/products';
 import BottomTabBar from '../components/BottomTabBar';
@@ -11,6 +11,12 @@ const promoImages = {
   gifts: 'https://images.unsplash.com/photo-1535930891776-0c2dfb7fda1a?w=500&q=85',
   flowers: 'https://images.unsplash.com/photo-1552728089-57bdde30beb3?w=500&q=85',
 };
+const heroBannerWidth = Dimensions.get('window').width;
+const heroBanners = [
+  { id: 'raksha-bandhan', image: heroImage, eyebrow: 'Celebrate with love', title: 'Raksha\nBandhan', footer: '28th August, Friday', sponsor: 'PawMart' },
+  { id: 'pet-care', image: promoImages.gifts, eyebrow: 'Care made simple', title: 'Everything\nfor happy pets', footer: 'Food, toys and more', sponsor: 'PawMart' },
+  { id: 'pet-joy', image: promoImages.flowers, eyebrow: 'Bring home more joy', title: 'Love, play\nand pamper', footer: 'Shop pet favourites', sponsor: 'PawMart' },
+];
 
 function normalizeProduct(product) {
   const image = product.imageUrls?.[0] || product.images?.[0] || product.image;
@@ -33,11 +39,25 @@ function PromoTile({ title, image, wide }) {
 export default function HomeScreen({ navigation }) {
   const [products, setProducts] = useState(staticProducts.map(normalizeProduct));
   const [search, setSearch] = useState('');
+  const [activeHeroIndex, setActiveHeroIndex] = useState(0);
+  const heroScrollRef = useRef(null);
 
   useEffect(() => {
     fetchProducts()
       .then((items) => setProducts(items.map(normalizeProduct)))
       .catch((error) => console.warn('Unable to load products from backend:', error));
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveHeroIndex((current) => {
+        const next = (current + 1) % heroBanners.length;
+        heroScrollRef.current?.scrollTo({ x: next * heroBannerWidth, animated: true });
+        return next;
+      });
+    }, 4000);
+
+    return () => clearInterval(timer);
   }, []);
 
   const topPicks = useMemo(() => {
@@ -55,14 +75,29 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         <View style={styles.hero}>
-          <Image source={{ uri: heroImage }} style={styles.heroImage} />
-          <View style={styles.heroOverlay} />
-          <View style={styles.heroCopy}>
-            <Text style={styles.heroEyebrow}>Celebrate with love</Text>
-            <Text style={styles.heroTitle}>Raksha{'\n'}Bandhan</Text>
-            <Text style={styles.heroDate}>28th August, Friday</Text>
+          <ScrollView
+            ref={heroScrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(event) => setActiveHeroIndex(Math.round(event.nativeEvent.contentOffset.x / heroBannerWidth))}
+          >
+            {heroBanners.map((banner) => (
+              <View key={banner.id} style={styles.heroSlide}>
+                <Image source={{ uri: banner.image }} style={styles.heroImage} />
+                <View style={styles.heroOverlay} />
+                <View style={styles.heroCopy}>
+                  <Text style={styles.heroEyebrow}>{banner.eyebrow}</Text>
+                  <Text style={styles.heroTitle}>{banner.title}</Text>
+                  <Text style={styles.heroDate}>{banner.footer}</Text>
+                </View>
+                <View style={styles.sponsor}><Text style={styles.sponsorText}>Sponsored by</Text><Text style={styles.sponsorBrand}>{banner.sponsor}</Text></View>
+              </View>
+            ))}
+          </ScrollView>
+          <View style={styles.heroDots}>
+            {heroBanners.map((banner, index) => <View key={banner.id} style={[styles.heroDot, index === activeHeroIndex && styles.heroDotActive]} />)}
           </View>
-          <View style={styles.sponsor}><Text style={styles.sponsorText}>Sponsored by</Text><Text style={styles.sponsorBrand}>PawMart</Text></View>
         </View>
 
         <View style={styles.specialsGrid}>
@@ -102,6 +137,7 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, color: '#332f2b', fontSize: 15, paddingVertical: 0 },
   searchHint: { color: '#ad9e96', fontSize: 17 },
   hero: { height: 190, overflow: 'hidden', backgroundColor: '#9e0d0d' },
+  heroSlide: { width: heroBannerWidth, height: 190, overflow: 'hidden' },
   heroImage: { ...StyleSheet.absoluteFillObject, opacity: 0.28 },
   heroOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: '#8f0000', opacity: 0.72 },
   heroCopy: { position: 'absolute', left: 20, top: 25 },
@@ -111,6 +147,9 @@ const styles = StyleSheet.create({
   sponsor: { position: 'absolute', right: 18, top: 44, backgroundColor: '#b7352e', borderWidth: 1, borderColor: '#e57156', borderRadius: 22, paddingVertical: 8, paddingHorizontal: 15, alignItems: 'center' },
   sponsorText: { color: '#ffe8c7', fontSize: 9 },
   sponsorBrand: { color: '#fff', fontSize: 13, fontWeight: '800', marginTop: 2 },
+  heroDots: { position: 'absolute', right: 16, bottom: 10, flexDirection: 'row', gap: 5 },
+  heroDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#fff', opacity: 0.55 },
+  heroDotActive: { width: 18, backgroundColor: '#ffd36b', opacity: 1 },
   specialsGrid: { flexDirection: 'row', padding: 10, gap: 8, backgroundColor: '#8f0000' },
   promoTile: { height: 92, flex: 1, borderRadius: 12, overflow: 'hidden', backgroundColor: '#edd6bd' },
   promoTileWide: { height: 192, flex: 1.25 },

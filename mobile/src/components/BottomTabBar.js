@@ -4,9 +4,9 @@ import { useNavigation } from '@react-navigation/native';
 import theme from '../theme';
 
 const tabs = [
-  { key: 'Home', label: 'Home', icon: '🏠' },
+  { key: 'Home', label: 'Home', icon: '🏡' },
   { key: 'Shop', label: 'Products', icon: '🛍️' },
-  { key: 'Wishlist', label: 'Wishlist', icon: '♡' },
+  { key: 'Wishlist', label: 'Wishlist', icon: '💖' },
   { key: 'Account', label: 'Account', icon: '👤' },
 ];
 

@@ -39,7 +39,6 @@ export default function ShopScreen({ navigation }) {
   const { addToCart } = useCart();
   const [products, setProducts] = useState(staticProducts.map(normalizeProduct));
   const [search, setSearch] = useState('');
-  const [favorite, setFavorite] = useState(false);
 
   useEffect(() => {
     fetchProducts()
@@ -66,10 +65,6 @@ export default function ShopScreen({ navigation }) {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.pageHeader}>
           <Text style={styles.pageTitle}>All Categories</Text>
-          <View style={styles.headerActions}>
-            <TouchableOpacity onPress={() => setFavorite((value) => !value)} accessibilityLabel="Favorite"><Text style={[styles.headerIcon, favorite && styles.favoriteActive]}>{favorite ? '♥' : '♡'}</Text></TouchableOpacity>
-            <Text style={styles.headerIcon}>⌕</Text>
-          </View>
         </View>
         <View style={styles.searchBar}><Text style={styles.searchIcon}>⌕</Text><TextInput style={styles.searchInput} placeholder="Search pet products" placeholderTextColor="#8a9299" value={search} onChangeText={setSearch} /></View>
 
