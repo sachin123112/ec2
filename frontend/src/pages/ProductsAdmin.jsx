@@ -9,6 +9,15 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 const MAX_PRODUCT_IMAGES = 6;
 const MAX_GIF_IMAGES = 2;
 const ALLOWED_PRODUCT_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+const FALLBACK_PRODUCT_IMAGE = 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=400&q=80';
+
+function resolveProductImageUrl(imageUrl) {
+  if (!imageUrl || typeof imageUrl !== 'string') return FALLBACK_PRODUCT_IMAGE;
+  if (/^(https?:|data:|blob:)/i.test(imageUrl)) return imageUrl;
+
+  const apiOrigin = API_URL.replace(/\/api\/v1\/?$/, '');
+  return `${apiOrigin}/${imageUrl.replace(/^\/+/, '')}`;
+}
 
 export default function ProductsAdmin() {
   const { token } = useAuth();
@@ -266,7 +275,7 @@ export default function ProductsAdmin() {
         : editingProduct.image ? [editingProduct.image] : [];
 
     rawUrls.forEach(url => {
-      if (typeof url === 'string' && url.trim()) imageList.push(url.trim());
+      if (typeof url === 'string' && url.trim()) imageList.push(resolveProductImageUrl(url.trim()));
     });
 
     return imageList;
@@ -647,13 +656,20 @@ export default function ProductsAdmin() {
 
           <div className="product-card-grid">
             {filteredProducts.map(product => {
-              const productImage = product.imageUrls?.[0] || product.images?.[0] || product.image || 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=400&q=80';
+              const productImage = resolveProductImageUrl(product.imageUrls?.[0] || product.images?.[0] || product.image);
               const categoryName = product.categoryName || product.category?.name || product.category || 'Uncategorized';
 
               return (
                 <article key={product.id} className="admin-product-card">
                   <div className="admin-product-image-wrap">
-                    <img src={productImage} alt={product.name} className="admin-product-image" />
+                    <img
+                      src={productImage}
+                      alt={product.name}
+                      className="admin-product-image"
+                      onError={(event) => {
+                        if (event.currentTarget.src !== FALLBACK_PRODUCT_IMAGE) event.currentTarget.src = FALLBACK_PRODUCT_IMAGE;
+                      }}
+                    />
                     {product.badge && <span className="admin-product-badge">{product.badge}</span>}
                   </div>
 
