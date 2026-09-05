@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -15,6 +15,14 @@ export default function Navbar() {
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [foodMenuOpen, setFoodMenuOpen] = useState(false);
+  const foodSubmenuItemsRef = useRef(null);
+
+  useEffect(() => {
+    if (foodMenuOpen) {
+      foodSubmenuItemsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [foodMenuOpen]);
 
   const handleLogout = () => {
     logout();
@@ -78,6 +86,7 @@ export default function Navbar() {
               aria-expanded={dropdownOpen}
               onClick={() => {
                 setDropdownOpen(d => !d);
+                setFoodMenuOpen(false);
                 setUserMenuOpen(false);
               }}
             >
@@ -85,8 +94,36 @@ export default function Navbar() {
               <span className="dropdown-arrow">▾</span>
             </button>
             <div className={`dropdown-menu ${dropdownOpen ? 'open' : ''}`}>
-              {categories.map(category => (
-                <Link key={category.name} to={category.path} onClick={() => { setMenuOpen(false); setDropdownOpen(false); }}>
+              {categories.map(category => category.name === 'Food' ? (
+                <div key={category.name} className={`food-submenu ${foodMenuOpen ? 'open' : ''}`}>
+                  <button
+                    type="button"
+                    className="food-menu-toggle"
+                    aria-expanded={foodMenuOpen}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setDropdownOpen(true);
+                      setFoodMenuOpen(open => !open);
+                    }}
+                  >
+                    <span>Food</span>
+                    <span className="food-menu-arrow">▸</span>
+                  </button>
+                  <div ref={foodSubmenuItemsRef} className="food-submenu-items">
+                    {[
+                      ['Pet Food', 'Food'],
+                      ['Fish Food', 'Fish Food'],
+                      ['Bird Food', 'Bird Food'],
+                      ['Cat Food', 'Cat Food'],
+                    ].map(([label, categoryName]) => (
+                      <Link key={label} to={`/shop?category=${encodeURIComponent(categoryName)}`} onClick={() => { setMenuOpen(false); setDropdownOpen(false); setFoodMenuOpen(false); }}>
+                        {label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <Link key={category.name} to={category.path} onClick={() => { setMenuOpen(false); setDropdownOpen(false); setFoodMenuOpen(false); }}>
                   {category.name}
                 </Link>
               ))}

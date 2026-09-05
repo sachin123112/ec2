@@ -1,10 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { categories as defaultCategories } from '../data/products';
 import { useCart } from '../context/CartContext';
 import './Shop.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+
+function resolveProductImageUrl(imageUrl) {
+  if (!imageUrl || typeof imageUrl !== 'string') return '';
+  if (/^(https?:|data:|blob:)/i.test(imageUrl)) return imageUrl;
+
+  const apiOrigin = API_URL.replace(/\/api\/v1\/?$/, '');
+  return `${apiOrigin}/${imageUrl.replace(/^\/+/, '')}`;
+}
 
 function categoryMatches(productCategory, selectedCategory) {
   const productName = productCategory?.trim().toLowerCase();
@@ -54,6 +62,12 @@ function getFallbackImage(category, productName, icon = '🐾') {
 function normalizeProduct(product) {
   const category = typeof product.category === 'string' ? product.category : product.category?.name;
   const fallbackImage = getFallbackImage(product.categoryName || category || 'Uncategorized', product.name, '🐾');
+  const rawImageUrls = Array.isArray(product.imageUrls)
+    ? product.imageUrls
+    : Array.isArray(product.images)
+      ? product.images
+      : product.image ? [product.image] : [];
+  const imageUrls = rawImageUrls.map(resolveProductImageUrl).filter(Boolean);
   return {
     id: product.id,
     name: product.name,
@@ -62,7 +76,8 @@ function normalizeProduct(product) {
     price: product.price || 0,
     rating: product.rating || 0,
     reviews: product.reviews || 0,
-    image: product.imageUrls?.[0] || product.images?.[0] || product.image || fallbackImage,
+    image: imageUrls[0] || fallbackImage,
+    imageUrls,
     badge: product.badge || '',
     description: product.description || '',
     inStock: product.stockQuantity ? product.stockQuantity > 0 : (product.inStock !== undefined ? product.inStock : true),
@@ -77,7 +92,23 @@ export default function Shop() {
   const [sortBy, setSortBy] = useState('default');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const { addToCart } = useCart();
+
+  const selectedImages = useMemo(() => {
+    if (!selected) return [];
+    const imageUrls = Array.isArray(selected.imageUrls) ? selected.imageUrls : [];
+    const images = imageUrls.length > 0 ? imageUrls : [selected.image];
+    return images.filter(Boolean);
+  }, [selected]);
+
+  useEffect(() => {
+    if (!selected || selectedImages.length < 2) return undefined;
+    const timer = setInterval(() => {
+      setSelectedImageIndex(current => (current + 1) % selectedImages.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [selected, selectedImages.length]);
 
   useEffect(() => {
     const cat = searchParams.get('category');
@@ -209,7 +240,7 @@ export default function Shop() {
               {filtered.map(product => (
                 <div key={product.id} className="product-card">
                   {product.badge && <span className="product-badge">{product.badge}</span>}
-                  <div className="product-img-wrap" onClick={() => setSelected(product)}>
+                  <div className="product-img-wrap" onClick={() => { setSelected(product); setSelectedImageIndex(0); }}>
                     <img
                       src={product.image}
                       alt={product.name}
@@ -247,13 +278,26 @@ export default function Shop() {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <button className="modal-close" onClick={() => setSelected(null)}>✕</button>
             <img
-              src={selected.image}
+              src={selectedImages[selectedImageIndex] || selected.image}
               alt={selected.name}
               onError={(e) => {
                 const fallback = getFallbackImage(selected.category, selected.name, '🐾');
                 if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
               }}
             />
+            {selectedImages.length > 1 && (
+              <div className="modal-image-dots">
+                {selectedImages.map((image, index) => (
+                  <button
+                    key={`${image}-${index}`}
+                    type="button"
+                    className={index === selectedImageIndex ? 'modal-image-dot active' : 'modal-image-dot'}
+                    onClick={() => setSelectedImageIndex(index)}
+                    aria-label={`Show image ${index + 1}`}
+                  />
+                ))}
+              </div>
+            )}
             <div className="modal-info">
               <span className="product-category">{selected.category} · {selected.subCategory}</span>
               {selected.badge && <span className="product-badge inline-badge">{selected.badge}</span>}
