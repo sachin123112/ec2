@@ -111,7 +111,7 @@ export default function Navbar() {
                   </button>
                   <div ref={foodSubmenuItemsRef} className="food-submenu-items">
                     {[
-                      ['Pet Food', 'Food'],
+                      ['Pet Food', 'Pet Food'],
                       ['Fish Food', 'Fish Food'],
                       ['Bird Food', 'Bird Food'],
                       ['Cat Food', 'Cat Food'],

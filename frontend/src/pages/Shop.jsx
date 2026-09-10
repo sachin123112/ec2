@@ -17,7 +17,23 @@ function resolveProductImageUrl(imageUrl) {
 function categoryMatches(productCategory, selectedCategory) {
   const productName = productCategory?.trim().toLowerCase();
   const selectedName = selectedCategory?.trim().toLowerCase();
+  if (selectedName === 'food') {
+    return productName === 'food' || productName?.endsWith(' food');
+  }
   return productName === selectedName || productName === selectedName?.replace(/s$/, '') || productName?.replace(/s$/, '') === selectedName;
+}
+
+function getProductCategoryOptions(categories, products) {
+  const seen = new Set();
+  const hiddenCategories = new Set(['dog food']);
+
+  return categories.filter(category => {
+    const name = String(category.name || '').trim();
+    const key = name.toLowerCase();
+    if (!name || hiddenCategories.has(key) || seen.has(key) || !products.some(product => categoryMatches(product.category, name))) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function getCategoryIcon(categoryName) {
@@ -171,6 +187,7 @@ export default function Shop() {
   if (sortBy === 'rating') filtered = [...filtered].sort((a, b) => b.rating - a.rating);
 
   const selectedCategory = categoryOptions.find(category => categoryMatches(category.name, activeCategory))?.name || activeCategory;
+  const visibleCategoryOptions = getProductCategoryOptions(categoryOptions, products);
 
   return (
     <div className="shop">
@@ -205,7 +222,7 @@ export default function Shop() {
               aria-label="Filter products by category"
             >
               <option value="All">🐾 All ({products.length})</option>
-              {categoryOptions.map(category => (
+              {visibleCategoryOptions.map(category => (
                 <option key={category.id || category.name} value={category.name}>
                   {getCategoryIcon(category.name)} {category.name} ({products.filter(product => categoryMatches(product.category, category.name)).length})
                 </option>

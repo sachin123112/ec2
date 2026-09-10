@@ -46,6 +46,10 @@ function normalizeProduct(product) {
 
   return {
     ...product,
+    category: product.categoryName || product.category?.name || product.category || '',
+    price: Number(product.price || 0),
+    stockQuantity: Number(product.stockQuantity || 0),
+    netQuantity: Number(product.netQuantity || 0),
     image: resolveImageUrl(image, fallbackImage),
   };
 }
@@ -163,6 +167,13 @@ export default function CategoryProductsScreen({
 }) {
   const category =
     route?.params?.category || {};
+  const categoryDisplayName =
+    String(category.name || '').toLowerCase() === 'dog food'
+      ? 'Pet Food'
+      : category.name;
+  const isPetFoodCategory =
+    String(category.name || '').toLowerCase() === 'pet food' ||
+    String(category.name || '').toLowerCase() === 'dog food';
 
   const {
     addToCart,
@@ -198,9 +209,14 @@ export default function CategoryProductsScreen({
   useEffect(() => {
     fetchProducts()
       .then((data) => {
-        setProducts(
-          data.map(normalizeProduct)
-        );
+        const liveProducts = data
+          .filter((product) => String(product.categoryName || product.category?.name || product.category || '').toLowerCase() === 'pet food')
+          .map(normalizeProduct);
+        const hasSelectedCategory = liveProducts.some((product) => {
+          const productCategory = String(product.category || '').toLowerCase();
+          return productCategory === String(category.name || '').toLowerCase();
+        });
+        setProducts(hasSelectedCategory ? liveProducts : staticProducts.map(normalizeProduct));
       })
       .catch((error) => {
         console.warn(
@@ -208,12 +224,9 @@ export default function CategoryProductsScreen({
           error
         );
 
-        Alert.alert(
-          'Offline mode',
-          'Showing the local catalog.'
-        );
+        setProducts(staticProducts.map(normalizeProduct));
       });
-  }, []);
+  }, [category.name]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -239,31 +252,11 @@ export default function CategoryProductsScreen({
         .toLowerCase();
 
     const categoryAliases = {
-
-      'dog food': [
-        'dog food',
-        'dogs',
-        'dog',
-      ],
-
-      'cat food': [
-        'cat food',
-        'cats',
-        'cat',
-        'pet food',
-      ],
-
-      'bird food': [
-        'bird food',
-        'birds',
-        'bird',
-      ],
-
-      'fish food': [
-        'fish food',
-        'fish',
-      ],
-
+      'pet food': ['pet food'],
+      'dog food': ['dog food'],
+      'cat food': ['cat food'],
+      'bird food': ['bird food'],
+      'fish food': ['fish food'],
     };
 
     const matchingNames =
@@ -282,14 +275,11 @@ export default function CategoryProductsScreen({
           product.category || ''
         ).toLowerCase();
 
-      return (
-        matchingNames.includes(
-          productCategory
-        ) ||
-        categoryTerms.some((term) =>
-          productCategory.includes(term)
-        )
-      );
+      if (isPetFoodCategory) {
+        return productCategory === 'pet food';
+      }
+
+      return matchingNames.includes(productCategory) || categoryTerms.some((term) => productCategory.includes(term));
     });
 
   }, [category.name, products]);
@@ -448,7 +438,7 @@ export default function CategoryProductsScreen({
           style={styles.topBarTitle}
           numberOfLines={1}
         >
-          {category.name || 'Products'}
+          {categoryDisplayName || 'Products'}
         </Text>
 
       </View>
@@ -458,13 +448,11 @@ export default function CategoryProductsScreen({
           FILTER BAR
       ================================================== */}
 
-      <ScrollView
+      {!isPetFoodCategory && <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.filterBar}
-        contentContainerStyle={
-          styles.filterContent
-        }
+        contentContainerStyle={styles.filterContent}
       >
 
         <TouchableOpacity
@@ -552,9 +540,9 @@ export default function CategoryProductsScreen({
           </Text>
         </TouchableOpacity>
 
-      </ScrollView>
+      </ScrollView>}
 
-      <View style={styles.bannerContainer}>
+      {!isPetFoodCategory && <View style={styles.bannerContainer}>
         <ScrollView
           ref={bannerScrollRef}
           horizontal
@@ -573,14 +561,14 @@ export default function CategoryProductsScreen({
         <View style={styles.bannerDots}>
           {banners.map((banner, index) => <View key={banner.id} style={[styles.bannerDot, index === activeBanner && styles.bannerDotActive]} />)}
         </View>
-      </View>
+      </View>}
 
 
       {/* ==================================================
           FILTER MENU
       ================================================== */}
 
-      {filterMenu && (
+      {!isPetFoodCategory && filterMenu && (
         <View style={styles.filterMenu}>
 
           {filterMenu === 'filters' && (
@@ -679,7 +667,7 @@ export default function CategoryProductsScreen({
             CATEGORY SIDEBAR
         ================================================== */}
 
-        <ScrollView
+        {!isPetFoodCategory && <ScrollView
           style={styles.categoryRailScroll}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={
@@ -725,7 +713,7 @@ export default function CategoryProductsScreen({
 
           ))}
 
-        </ScrollView>
+        </ScrollView>}
 
 
         {/* ==================================================
@@ -740,13 +728,10 @@ export default function CategoryProductsScreen({
           showsVerticalScrollIndicator={false}
         >
 
-          <Text style={styles.assurance}>
-            No preservatives  •  No sodium
-          </Text>
-
-          <Text style={styles.resultCount}>
-            {filteredProducts.length} products
-          </Text>
+          {!isPetFoodCategory && <>
+            <Text style={styles.assurance}>No preservatives  •  No sodium</Text>
+            <Text style={styles.resultCount}>{filteredProducts.length} products</Text>
+          </>}
 
 
           {/* PRODUCTS */}

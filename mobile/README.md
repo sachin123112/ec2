@@ -27,8 +27,8 @@ npm run android
 
 ## Notes
 
-- The mobile app connects to the backend at `http://localhost:8080/api/v1` for iOS and `http://10.0.2.2:8080/api/v1` for Android emulators.
-- If you use a physical device, update `src/api/config.js` to point to your machine's IP address.
+- The mobile app connects to `http://localhost:8080/api/v1` for iOS and `http://10.0.2.2:8080/api/v1` for Android emulators by default.
+- For a physical device, set `EXPO_PUBLIC_API_URL` to the backend URL reachable from that device, for example `EXPO_PUBLIC_API_URL=http://192.168.1.20:8080/api/v1 npx expo start -c`.
 - Admin users are routed to the `Admin Dashboard` from the mobile login flow.
 
 ## Windows setup

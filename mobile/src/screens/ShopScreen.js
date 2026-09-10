@@ -7,16 +7,7 @@ import BottomTabBar from '../components/BottomTabBar';
 
 const fallbackImage = 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=500&q=85';
 const categories = [
-  { name: 'Dog Food', group: 'Food & Nutrition', icon: '🐶', image: 'https://images.unsplash.com/photo-1589924691995-400dc9a65b3d?w=500&q=85' },
-  { name: 'Cat Food', group: 'Food & Nutrition', icon: '🐱', image: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=500&q=85' },
-  { name: 'Bird Food', group: 'Food & Nutrition', icon: '🐦', image: 'https://images.unsplash.com/photo-1552728089-57bdde30beb3?w=500&q=85' },
-  { name: 'Fish Food', group: 'Food & Nutrition', icon: '🐠', image: 'https://images.unsplash.com/photo-1522069169874-c58ec4b76be5?w=500&q=85' },
-  { name: 'Treats', group: 'Toys & Treats', icon: '🦴', image: 'https://images.unsplash.com/photo-1582798358481-d199fb7347bb?w=500&q=85' },
-  { name: 'Pet Toys', group: 'Toys & Treats', icon: '🎾', image: 'https://images.unsplash.com/photo-1535930891776-0c2dfb7fda1a?w=500&q=85' },
-  { name: 'Beds & Comfort', group: 'Home & Comfort', icon: '🛏️', image: 'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=500&q=85' },
-  { name: 'Grooming', group: 'Care & Wellness', icon: '🧴', image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=500&q=85' },
-  { name: 'Collars & Leashes', group: 'Accessories', icon: '🏷️', image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=500&q=85' },
-  { name: 'Aquarium Care', group: 'Accessories', icon: '🫧', image: 'https://images.unsplash.com/photo-1535591273668-578e31182c4f?w=500&q=85' },
+  { name: 'Pet Food', group: 'Food & Nutrition', icon: '🐶', image: 'https://images.unsplash.com/photo-1589924691995-400dc9a65b3d?w=500&q=85' },
 ];
 
 function normalizeProduct(product) {
@@ -42,7 +33,7 @@ export default function ShopScreen({ navigation }) {
 
   useEffect(() => {
     fetchProducts()
-      .then((data) => setProducts(data.map(normalizeProduct)))
+      .then((data) => setProducts(data.filter((product) => String(product.categoryName || product.category?.name || product.category || '').toLowerCase() === 'pet food').map(normalizeProduct)))
       .catch((error) => {
         console.warn('Unable to load products from backend:', error);
         Alert.alert('Offline mode', 'Showing the local catalog.');
