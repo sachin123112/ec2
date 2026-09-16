@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image } from 'react-native';
 import { useCart } from '../context/CartContext';
-import { goBackOrNavigate } from '../navigation/safeBack';
+import BackButton from '../components/BackButton';
 import theme from '../theme';
 
 export default function CartScreen({ navigation }) {
@@ -10,6 +10,11 @@ export default function CartScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      <View style={styles.topBar}>
+        <BackButton navigation={navigation} fallbackRoute="Home" />
+        <Text style={styles.topBarTitle}>Cart</Text>
+        <View style={styles.topBarSpacer} />
+      </View>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Savings Banner */}
         {cart.length > 0 && (
@@ -154,6 +159,9 @@ export default function CartScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
+  topBar: { height: 64, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E9E5EF' },
+  topBarTitle: { flex: 1, marginLeft: 10, color: '#29242F', fontSize: 20, fontWeight: '800' },
+  topBarSpacer: { width: 40 },
 
   // Savings Banner
   savingsBanner: { backgroundColor: '#d4edda', paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginHorizontal: 12, marginTop: 12, borderRadius: 8 },
@@ -224,7 +232,7 @@ const styles = StyleSheet.create({
   unlockText: { fontSize: 12, color: '#ff9800', fontWeight: '700' },
 
   // Empty State
-  emptyContainer: { marginTop: 60, alignItems: 'center' },
+  emptyContainer: { marginTop: 24, alignItems: 'center' },
   emptyText: { fontSize: 16, color: '#999' },
 
   // Footer

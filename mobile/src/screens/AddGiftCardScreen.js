@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { goBackOrNavigate } from '../navigation/safeBack';
+import BackButton from '../components/BackButton';
 
 const instructions = [
   'Use the 16 digit PawMart Gift Card and PIN as received on your email or phone number.',
@@ -30,8 +30,8 @@ export default function AddGiftCardScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
-        <TouchableOpacity style={[styles.backButton, styles.headerContentOffset]} onPress={() => goBackOrNavigate(navigation, 'Wallet')} accessibilityLabel="Go back"><Text style={styles.backIcon}>‹</Text></TouchableOpacity>
-        <Text style={[styles.title, styles.headerContentOffset]}>Add Gift Card</Text>
+        <BackButton navigation={navigation} fallbackRoute="Wallet" />
+        <Text style={styles.title}>Add Gift Card</Text>
       </View>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.formCard}>
@@ -51,11 +51,10 @@ export default function AddGiftCardScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  topBar: { height: 88, paddingHorizontal: 20, paddingTop: 14, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#e2e5e8' },
+  topBar: { height: 64, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#e2e5e8' },
   backButton: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: '#dfe3e7', alignItems: 'center', justifyContent: 'center' },
   backIcon: { color: '#111820', fontSize: 29, lineHeight: 29, marginTop: 2 },
   title: { color: '#101820', fontSize: 20, fontWeight: '900', marginLeft: 14 },
-  headerContentOffset: { transform: [{ translateY: 14 }] },
   content: { padding: 20, paddingBottom: 140 },
   formCard: { paddingTop: 12 },
   fieldLabel: { color: '#7a8490', fontSize: 16, marginBottom: -8, marginLeft: 16, zIndex: 1, backgroundColor: '#fff', alignSelf: 'flex-start', paddingHorizontal: 7 },

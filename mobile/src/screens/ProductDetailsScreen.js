@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useCart } from '../context/CartContext';
 import { resolveImageUrl } from '../api/products';
-import { goBackOrNavigate } from '../navigation/safeBack';
+import BackButton from '../components/BackButton';
 
 const fallbackImage = 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=900&q=85';
 const productBannerWidth = Dimensions.get('window').width;
@@ -55,14 +55,7 @@ export default function ProductDetailsScreen({ navigation, route }) {
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => goBackOrNavigate(navigation, 'Shop')}
-          accessibilityLabel="Go back"
-          hitSlop={8}
-        >
-          <Text style={styles.backIcon}>‹</Text>
-        </TouchableOpacity>
+        <BackButton navigation={navigation} fallbackRoute="Shop" />
         <Text style={styles.topBarTitle} numberOfLines={1}>{product.name || 'Product Details'}</Text>
       </View>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -129,7 +122,7 @@ export default function ProductDetailsScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f2f6fa' },
-  topBar: { height: 84, paddingHorizontal: 18, backgroundColor: '#fff', flexDirection: 'row', alignItems: 'flex-end', paddingBottom: 9, paddingTop: 0 },
+  topBar: { height: 64, paddingHorizontal: 18, backgroundColor: '#fff', flexDirection: 'row', alignItems: 'center' },
   backButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F8F8F8', borderWidth: 1, borderColor: '#E5E5E5', alignItems: 'center', justifyContent: 'center', marginBottom: -6 },
   backIcon: { fontSize: 30, fontWeight: '300', color: '#777777', lineHeight: 32, marginTop: -2 },
   topBarTitle: { flex: 1, color: '#151b24', fontSize: 17, fontWeight: '800', marginLeft: 12, marginBottom: 2 },

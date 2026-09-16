@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import BottomTabBar from '../components/BottomTabBar';
-import { goBackOrNavigate } from '../navigation/safeBack';
+import BackButton from '../components/BackButton';
 import theme from '../theme';
 
 export default function AccountScreen() {
@@ -23,9 +23,7 @@ export default function AccountScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.headerButton} onPress={() => goBackOrNavigate(navigation, 'Home')} accessibilityLabel="Go back">
-          <Text style={styles.headerIcon}>‹</Text>
-        </TouchableOpacity>
+          <BackButton navigation={navigation} fallbackRoute="Home" />
         <Text style={styles.headerTitle}>Account</Text>
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.headerButton} onPress={() => navigation.navigate('Cart')} accessibilityLabel="Cart">
@@ -111,9 +109,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   topBar: {
-    height: 108,
+    height: 64,
     paddingHorizontal: 18,
-    paddingTop: 40,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,

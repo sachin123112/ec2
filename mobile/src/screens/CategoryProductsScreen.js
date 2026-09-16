@@ -15,6 +15,7 @@ import { fetchProducts, resolveImageUrl } from '../api/products';
 import { products as staticProducts } from '../data/products';
 import BottomTabBar from '../components/BottomTabBar';
 import MobilePageBanner from '../components/MobilePageBanner';
+import BackButton from '../components/BackButton';
 
 const fallbackImage =
   'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=500&q=85';
@@ -399,16 +400,6 @@ export default function CategoryProductsScreen({
   // BACK NAVIGATION
   // ======================================================
 
-  const handleBack = () => {
-
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-    } else {
-      navigation.navigate('Shop');
-    }
-
-  };
-
 
   // ======================================================
   // UI
@@ -424,17 +415,7 @@ export default function CategoryProductsScreen({
 
       <View style={styles.topBar}>
 
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={handleBack}
-          accessibilityLabel="Go back"
-          hitSlop={8}
-          activeOpacity={0.75}
-        >
-          <Text style={styles.backIcon}>
-            ‹
-          </Text>
-        </TouchableOpacity>
+        <BackButton navigation={navigation} fallbackRoute="Shop" />
 
         <Text
           style={styles.topBarTitle}
@@ -944,14 +925,13 @@ const styles = StyleSheet.create({
   // ====================================================
 
   topBar: {
-    height: 74,
-    paddingHorizontal: 10,
+    height: 64,
+    paddingHorizontal: 18,
     backgroundColor: '#FBF9F6',
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#F0F1F3',
-    paddingBottom: 5,
   },
 
   backButton: {

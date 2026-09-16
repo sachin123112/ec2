@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import BottomTabBar from '../components/BottomTabBar';
 import config from '../api/config';
-import { goBackOrNavigate } from '../navigation/safeBack';
+import BackButton from '../components/BackButton';
 
 export default function AdminDashboardScreen({ navigation }) {
   const { token, roles } = useAuth();
@@ -40,9 +40,7 @@ export default function AdminDashboardScreen({ navigation }) {
   return (
     <View style={styles.page}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => goBackOrNavigate(navigation, 'Home')} accessibilityLabel="Go back">
-          <Text style={styles.backIcon}>‹</Text>
-        </TouchableOpacity>
+        <BackButton navigation={navigation} fallbackRoute="Home" />
         <Text style={styles.heading}>Admin Dashboard</Text>
       </View>
       <View style={styles.container}>

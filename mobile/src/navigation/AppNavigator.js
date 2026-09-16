@@ -24,6 +24,7 @@ import WalletScreen from '../screens/WalletScreen';
 import AddGiftCardScreen from '../screens/AddGiftCardScreen';
 import ProductDetailsScreen from '../screens/ProductDetailsScreen';
 import CategoryProductsScreen from '../screens/CategoryProductsScreen';
+import BackButton from '../components/BackButton';
 import { useCart } from '../context/CartContext';
 import theme from '../theme';
 
@@ -66,7 +67,15 @@ export default function AppNavigator() {
     <Stack.Navigator initialRouteName="Landing" screenOptions={({ navigation }) => ({ headerRight: () => <WalletHeaderButton navigation={navigation} /> })}>
       <Stack.Screen name="Landing" component={LandingScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="Signup" component={SignupScreen} options={{ title: 'Sign Up' }} />
+      <Stack.Screen
+        name="Signup"
+        component={SignupScreen}
+        options={({ navigation }) => ({
+          title: 'Sign Up',
+          headerBackVisible: false,
+          headerLeft: () => <BackButton navigation={navigation} fallbackRoute="Login" />,
+        })}
+      />
       <Stack.Screen
         name="Home"
         component={HomeScreen}
@@ -82,13 +91,19 @@ export default function AppNavigator() {
         name="Shop"
         component={ShopScreen}
         options={({ navigation }) => ({
+          headerShown: true,
           title: 'Products',
+          headerStyle: { height: 50 },
+          headerTitleStyle: { fontSize: 20, fontWeight: '800' },
+          headerBackTitleVisible: false,
+          headerBackVisible: false,
+          headerLeft: () => <BackButton navigation={navigation} fallbackRoute="Home" />,
           headerRight: () => (
             <HeaderActions navigation={navigation} />
           ),
         })}
       />
-      <Stack.Screen name="Cart" component={CartScreen} options={{ title: 'Cart', headerStyle: { height: 84 } }} />
+      <Stack.Screen name="Cart" component={CartScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Wallet" component={WalletScreen} options={{ headerShown: false }} />
       <Stack.Screen name="AddGiftCard" component={AddGiftCardScreen} options={{ headerShown: false }} />
@@ -105,7 +120,15 @@ export default function AppNavigator() {
       <Stack.Screen name="HelpSupport" component={HelpSupportScreen} options={{ headerShown: false }} />
       <Stack.Screen name="SavedAddresses" component={SavedAddressesScreen} options={{ headerShown: false }} />
       <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="Notifications" component={NotificationScreen} options={{ title: 'Notifications' }} />
+      <Stack.Screen
+        name="Notifications"
+        component={NotificationScreen}
+        options={({ navigation }) => ({
+          title: 'Notifications',
+          headerBackVisible: false,
+          headerLeft: () => <BackButton navigation={navigation} fallbackRoute="Account" />,
+        })}
+      />
     </Stack.Navigator>
   );
 }

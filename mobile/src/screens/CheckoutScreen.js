@@ -4,7 +4,7 @@ import QRCode from 'react-native-qrcode-svg';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import config from '../api/config';
-import { goBackOrNavigate } from '../navigation/safeBack';
+import BackButton from '../components/BackButton';
 import theme from '../theme';
 
 const emptyAddress = {
@@ -195,9 +195,7 @@ export default function CheckoutScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backButton} onPress={() => goBackOrNavigate(navigation, 'Cart')} accessibilityLabel="Go back">
-          <Text style={styles.backIcon}>‹</Text>
-        </TouchableOpacity>
+        <BackButton navigation={navigation} fallbackRoute="Cart" />
         <Text style={styles.topBarTitle}>Checkout</Text>
       </View>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -262,7 +260,7 @@ export default function CheckoutScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
-  topBar: { height: 84, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'flex-end', borderBottomWidth: 1, borderBottomColor: '#e8defb', backgroundColor: theme.colors.surface, paddingBottom: 8 },
+  topBar: { height: 64, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#e8defb', backgroundColor: theme.colors.surface },
   backButton: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: '#dfe3e7', justifyContent: 'center', alignItems: 'center', marginBottom: -6 },
   backIcon: { color: theme.colors.text, fontSize: 29, lineHeight: 29, marginTop: 2 },
   topBarTitle: { marginLeft: 8, color: theme.colors.text, fontSize: 20, fontWeight: '800', marginBottom: 2 },

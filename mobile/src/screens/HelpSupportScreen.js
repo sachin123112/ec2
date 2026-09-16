@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import BottomTabBar from '../components/BottomTabBar';
-import { goBackOrNavigate } from '../navigation/safeBack';
+import BackButton from '../components/BackButton';
 import theme from '../theme';
 
 const faqs = [
@@ -22,9 +22,7 @@ export default function HelpSupportScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backButton} onPress={() => goBackOrNavigate(navigation, 'Account')} accessibilityLabel="Go back">
-          <Text style={styles.backIcon}>‹</Text>
-        </TouchableOpacity>
+        <BackButton navigation={navigation} fallbackRoute="Account" />
         <Text style={styles.topBarTitle}>Help & Support</Text>
       </View>
       <ScrollView contentContainerStyle={styles.content}>
@@ -63,7 +61,7 @@ export default function HelpSupportScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
-  topBar: { height: 108, paddingHorizontal: 18, paddingTop: 40, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#e8defb' },
+  topBar: { height: 64, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#e8defb' },
   backButton: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: '#dfe3e7', justifyContent: 'center', alignItems: 'center' },
   backIcon: { color: theme.colors.text, fontSize: 29, lineHeight: 29, marginTop: 2 },
   topBarTitle: { marginLeft: 8, color: theme.colors.text, fontSize: 20, fontWeight: '800' },

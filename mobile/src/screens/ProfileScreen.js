@@ -4,7 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../context/AuthContext';
 import config from '../api/config';
 import BottomTabBar from '../components/BottomTabBar';
-import { goBackOrNavigate } from '../navigation/safeBack';
+import BackButton from '../components/BackButton';
 import theme from '../theme';
 
 export default function ProfileScreen({ navigation }) {
@@ -142,9 +142,7 @@ export default function ProfileScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backButton} onPress={() => goBackOrNavigate(navigation, 'Account')} accessibilityLabel="Go back">
-          <Text style={styles.backIcon}>‹</Text>
-        </TouchableOpacity>
+        <BackButton navigation={navigation} fallbackRoute="Account" />
         <Text style={styles.title}>Profile</Text>
       </View>
       <ScrollView contentContainerStyle={styles.content}>
@@ -286,9 +284,8 @@ function ProfileRow({ label, value, last, editing, readOnly, inputValue, placeho
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   topBar: {
-    height: 108,
+    height: 64,
     paddingHorizontal: 18,
-    paddingTop: 40,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,

@@ -82,7 +82,7 @@ export default function ShopScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   content: { paddingBottom: 100 },
-  pageHeader: { height: 76, borderBottomWidth: 1, borderBottomColor: '#e7eaed', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  pageHeader: { height: 64, borderBottomWidth: 1, borderBottomColor: '#e7eaed', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   pageTitle: { color: '#101820', fontSize: 27, fontWeight: '800' },
   headerActions: { position: 'absolute', right: 20, flexDirection: 'row', alignItems: 'center', gap: 18 },
   headerIcon: { color: '#101820', fontSize: 36, lineHeight: 38 },

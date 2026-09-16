@@ -12,7 +12,7 @@ export default function App() {
           <AppNavigator />
         </CartProvider>
       </AuthProvider>
-      <StatusBar style="auto" />
+      <StatusBar hidden />
     </NavigationContainer>
   );
 }

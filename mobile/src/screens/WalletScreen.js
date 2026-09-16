@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { goBackOrNavigate } from '../navigation/safeBack';
+import BackButton from '../components/BackButton';
 import theme from '../theme';
 import MobilePageBanner from '../components/MobilePageBanner';
 
@@ -31,10 +31,8 @@ export default function WalletScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
-        <TouchableOpacity style={[styles.backButton, styles.headerContentOffset]} onPress={() => goBackOrNavigate(navigation, 'Home')} accessibilityLabel="Go back">
-          <Text style={styles.backIcon}>‹</Text>
-        </TouchableOpacity>
-        <Text style={[styles.topBarTitle, styles.headerContentOffset]}>Wallet</Text>
+        <BackButton navigation={navigation} fallbackRoute="Home" />
+        <Text style={styles.topBarTitle}>Wallet</Text>
       </View>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <MobilePageBanner page="WALLET" height={170} />
@@ -76,11 +74,10 @@ export default function WalletScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f4f7f8' },
-  topBar: { height: 84, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e1e6e9' },
+  topBar: { height: 64, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e1e6e9' },
   backButton: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: '#dfe3e7', justifyContent: 'center', alignItems: 'center' },
   backIcon: { color: '#111820', fontSize: 29, lineHeight: 29, marginTop: 2 },
   topBarTitle: { marginLeft: 8, marginTop: 2, color: '#111820', fontSize: 20, fontWeight: '800' },
-  headerContentOffset: { transform: [{ translateY: 16 }] },
   content: { padding: 18, paddingBottom: 36 },
   balanceCard: { height: 206, backgroundColor: '#fff', borderRadius: 22, borderWidth: 1, borderColor: '#dce2e6', alignItems: 'center', justifyContent: 'center', marginBottom: 22 },
   balanceLabel: { color: '#9099a5', fontSize: 17, letterSpacing: 0.5, marginBottom: 10 },

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import BottomTabBar from '../components/BottomTabBar';
-import { goBackOrNavigate } from '../navigation/safeBack';
+import BackButton from '../components/BackButton';
 import theme from '../theme';
 import config from '../api/config';
 
@@ -33,9 +33,7 @@ export default function SettingsScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backButton} onPress={() => goBackOrNavigate(navigation, 'Account')} accessibilityLabel="Go back">
-          <Text style={styles.backIcon}>‹</Text>
-        </TouchableOpacity>
+        <BackButton navigation={navigation} fallbackRoute="Account" />
         <Text style={styles.topBarTitle}>Notification Settings</Text>
       </View>
       <ScrollView contentContainerStyle={styles.content}>
@@ -83,9 +81,8 @@ export default function SettingsScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   topBar: {
-    height: 108,
+    height: 64,
     paddingHorizontal: 18,
-    paddingTop: 40,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
