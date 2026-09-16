@@ -32,7 +32,7 @@ export default function LinksScreen({ navigation }) {
   const loadBanners = async () => {
     try {
       setBannerLoading(true);
-      const response = await fetch(`${API_URL}/banners`);
+      const response = await fetch(`${API_URL}/banners?page=HOME`);
       if (response.ok) {
         const data = await response.json();
         setBanners(Array.isArray(data) ? data : []);

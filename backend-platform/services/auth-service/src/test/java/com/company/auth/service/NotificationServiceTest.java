@@ -32,7 +32,6 @@ class NotificationServiceTest {
     @InjectMocks
     private NotificationService notificationService;
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     void shouldCreateNotificationsForAllUsers() {
         User admin = new User();
@@ -51,6 +50,7 @@ class NotificationServiceTest {
                 "product"
         );
 
+        @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Notification>> captor = ArgumentCaptor.forClass(List.class);
         verify(notificationRepository).saveAll(captor.capture());
 

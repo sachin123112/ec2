@@ -42,7 +42,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.stream(allowedOrigins.split(","))
-            .map(String::trim)
+            .map(origin -> origin.trim())
             .filter(origin -> !origin.isEmpty())
             .toList());
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
@@ -73,6 +73,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT, "/api/v1/security-settings").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/v1/roles").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/products/**", "/api/v1/categories/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/banners").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/banners").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/banners/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/v1/products", "/api/v1/categories").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/v1/products/**", "/api/v1/categories/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/users/me", "/api/v1/users/me/**").authenticated()

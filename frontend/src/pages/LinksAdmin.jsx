@@ -4,6 +4,17 @@ import './Dashboard.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 const ALLOWED_BANNER_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const BANNER_PAGES = [
+  { value: 'HOME', label: 'Mobile Home page' },
+  { value: 'WALLET', label: 'Mobile Wallet page' },
+  { value: 'PRODUCTS', label: 'Mobile Products page' },
+  { value: 'WISHLIST', label: 'Mobile Wishlist page' },
+];
+
+function resolveBannerUrl(imageUrl) {
+  if (!imageUrl || /^(https?:|data:|blob:)/i.test(imageUrl)) return imageUrl;
+  return `${API_URL.replace(/\/api\/v1\/?$/, '')}/${imageUrl.replace(/^\/+/, '')}`;
+}
 
 export default function LinksAdmin() {
   const { token } = useAuth();
@@ -11,6 +22,7 @@ export default function LinksAdmin() {
   const [banners, setBanners] = useState([]);
   const [bannerFile, setBannerFile] = useState(null);
   const [bannerPreview, setBannerPreview] = useState('');
+  const [bannerPage, setBannerPage] = useState('HOME');
   const [linkForm, setLinkForm] = useState({ label: '', url: '', description: '', isActive: true });
   const [status, setStatus] = useState('');
 
@@ -108,6 +120,7 @@ export default function LinksAdmin() {
     setStatus('Uploading banner...');
     const formData = new FormData();
     formData.append('image', bannerFile);
+    formData.append('page', bannerPage);
 
     try {
       const response = await fetch(`${API_URL}/banners`, {
@@ -181,6 +194,16 @@ export default function LinksAdmin() {
           <div style={{ marginBottom: '30px' }}>
             <h3 style={{ marginBottom: '15px' }}>Upload New Banner</h3>
             <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
+              Mobile page
+            </label>
+            <select
+              value={bannerPage}
+              onChange={event => setBannerPage(event.target.value)}
+              style={{ display: 'block', marginBottom: '12px', padding: '8px', minWidth: '220px' }}
+            >
+              {BANNER_PAGES.map(page => <option key={page.value} value={page.value}>{page.label}</option>)}
+            </select>
+            <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
               Upload Banner Image
             </label>
             <input 
@@ -219,11 +242,13 @@ export default function LinksAdmin() {
                 {banners.map((banner) => (
                   <div key={banner.id} style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '10px', textAlign: 'center' }}>
                     <img 
-                      src={banner.imageUrl} 
+                      src={resolveBannerUrl(banner.imageUrl)} 
                       alt={`Banner ${banner.id}`} 
                       style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '6px', marginBottom: '10px' }} 
                     />
-                    <p style={{ fontSize: '12px', color: '#666', marginBottom: '8px' }}>ID: {banner.id}</p>
+                    <p style={{ fontSize: '12px', color: '#666', marginBottom: '8px' }}>
+                      {BANNER_PAGES.find(page => page.value === banner.pageKey)?.label || banner.pageKey} · ID: {banner.id}
+                    </p>
                     <button 
                       type="button" 
                       className="btn-danger" 

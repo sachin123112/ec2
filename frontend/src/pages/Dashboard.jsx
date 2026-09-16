@@ -19,6 +19,7 @@ import {
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ArcElement);
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+const categoryColors = ['#2563eb', '#10b981', '#f59e0b', '#a78bfa', '#f472b6', '#14b8a6', '#facc15'];
 
 export default function Dashboard() {
   const { isAuthenticated, logout, token, hardRefresh, userEmail, roles } = useAuth();
@@ -34,6 +35,7 @@ export default function Dashboard() {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [salesPeriod, setSalesPeriod] = useState(30);
   const [status, setStatus] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [dateRange, setDateRange] = useState(() => {
@@ -133,26 +135,29 @@ export default function Dashboard() {
   }, [authHeaders]);
 
   const salesChartData = useMemo(() => {
-    // Build last 7 days labels
+    const dayCount = Number(salesPeriod);
     const labels = [];
+    const dates = [];
     const today = new Date();
-    for (let i = 6; i >= 0; i--) {
+    today.setHours(0, 0, 0, 0);
+    for (let i = dayCount - 1; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(today.getDate() - i);
+      dates.push(d);
       labels.push(d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
     }
 
-    // Aggregate orders by day
     const ordersByDay = labels.map(() => 0);
     const revenueByDay = labels.map(() => 0);
     orders.forEach(o => {
       const date = o.createdAt ? new Date(o.createdAt) : o.date ? new Date(o.date) : null;
-      if (!date) return;
-      const label = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-      const idx = labels.indexOf(label);
+      if (!date || Number.isNaN(date.getTime())) return;
+      date.setHours(0, 0, 0, 0);
+      const idx = dates.findIndex(day => day.getTime() === date.getTime());
       if (idx >= 0) {
         ordersByDay[idx] += 1;
-        revenueByDay[idx] += parseFloat(o.totalAmount || 0);
+        const amount = Number.parseFloat(o.totalAmount);
+        revenueByDay[idx] += Number.isFinite(amount) ? amount : 0;
       }
     });
 
@@ -175,17 +180,27 @@ export default function Dashboard() {
         },
       ],
     };
-  }, [orders]);
+  }, [orders, salesPeriod]);
 
-  const topCategories = useMemo(() => ([
-    { name: 'Dogs', value: 2, color: '#2563eb' },
-    { name: 'Fish', value: 3, color: '#10b981' },
-    { name: 'Plants', value: 4, color: '#f59e0b' },
-    { name: 'Birds', value: 5, color: '#a78bfa' },
-    { name: 'Pet Food', value: 6, color: '#f472b6' },
-    { name: 'Fish Food', value: 3, color: '#14b8a6' },
-    { name: 'Aquarium', value: 34, color: '#facc15' },
-  ]), []);
+  const topCategories = useMemo(() => {
+    const productCounts = new Map();
+    categories.forEach(category => productCounts.set(category.name, 0));
+
+    products.forEach(product => {
+      const categoryName = product.categoryName || product.category?.name || product.category || 'Uncategorized';
+      productCounts.set(categoryName, (productCounts.get(categoryName) || 0) + 1);
+    });
+
+    return Array.from(productCounts, ([name, value], index) => ({
+      name,
+      value,
+      color: categoryColors[index % categoryColors.length],
+    }))
+      .sort((first, second) => second.value - first.value || first.name.localeCompare(second.name))
+      .slice(0, 7);
+  }, [categories, products]);
+
+  const topCategory = topCategories[0];
 
   const donutData = useMemo(() => ({
     labels: topCategories.map(item => item.name),
@@ -428,9 +443,14 @@ export default function Dashboard() {
         <div className="sales-card dashboard-card">
           <div className="section-header">
             <h3>Sales Overview</h3>
-            <select className="period-select">
-              <option>Last 7 Days</option>
-              <option>Last 30 Days</option>
+            <select
+              className="period-select"
+              value={salesPeriod}
+              onChange={event => setSalesPeriod(Number(event.target.value))}
+            >
+              <option value="7">Last 7 Days</option>
+              <option value="30">Last 30 Days</option>
+              <option value="90">Last 90 Days</option>
             </select>
           </div>
           <div className="chart-placeholder">
@@ -441,8 +461,8 @@ export default function Dashboard() {
                 interaction: { mode: 'index', intersect: false },
                 stacked: false,
                 scales: {
-                  y: { type: 'linear', display: true, position: 'left' },
-                  y1: { type: 'linear', display: false, position: 'right' },
+                  y: { type: 'linear', display: true, position: 'left', beginAtZero: true, title: { display: true, text: 'Orders' } },
+                  y1: { type: 'linear', display: true, position: 'right', beginAtZero: true, title: { display: true, text: 'Revenue' }, grid: { drawOnChartArea: false } },
                 },
                 plugins: { legend: { position: 'top' } },
               }}
@@ -459,7 +479,7 @@ export default function Dashboard() {
                 <p>Overview of product categories</p>
               </div>
             </div>
-            <button type="button" className="top-categories-action">
+            <button type="button" className="top-categories-action" onClick={() => navigate('/admin/categories')}>
               View All <span className="chevron">›</span>
             </button>
           </div>
@@ -481,7 +501,7 @@ export default function Dashboard() {
                   }}
                 />
                 <div className="donut-center-label">
-                  <strong>26</strong>
+                  <strong>{categories.length}</strong>
                   <span>Categories</span>
                 </div>
               </div>
@@ -503,11 +523,11 @@ export default function Dashboard() {
           <div className="top-categories-footer">
             <div className="footer-left">
               <span className="trend-icon">📈</span>
-              <span>Top category is <strong>Dogs</strong></span>
+              <span>Top category is <strong>{topCategory?.name || 'N/A'}</strong></span>
             </div>
             <div className="footer-right">
-              <span className="trend-pill">📈 20%</span>
-              <span className="footer-note">from last 30 days</span>
+              <span className="trend-pill">{topCategory?.value || 0} products</span>
+              <span className="footer-note">in current catalog</span>
             </div>
           </div>
         </div>

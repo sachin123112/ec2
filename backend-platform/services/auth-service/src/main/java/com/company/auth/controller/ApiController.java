@@ -514,7 +514,7 @@ public class ApiController {
         boolean isAdmin = authentication.getAuthorities().stream()
             .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
         if (isAdmin) {
-            orders = orderRepository.findTop500ByOrderByCreatedAtDescIdDesc();
+            orders = orderRepository.findAllByOrderByCreatedAtDescIdDesc();
         } else {
             User user = userRepository.findByEmail(authentication.getName())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));

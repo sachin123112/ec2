@@ -14,6 +14,7 @@ import { useCart } from '../context/CartContext';
 import { fetchProducts, resolveImageUrl } from '../api/products';
 import { products as staticProducts } from '../data/products';
 import BottomTabBar from '../components/BottomTabBar';
+import MobilePageBanner from '../components/MobilePageBanner';
 
 const fallbackImage =
   'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=500&q=85';
@@ -415,6 +416,7 @@ export default function CategoryProductsScreen({
 
   return (
     <View style={styles.container}>
+      <MobilePageBanner page="PRODUCTS" height={170} />
 
       {/* ==================================================
           HEADER

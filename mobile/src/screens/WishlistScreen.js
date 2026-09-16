@@ -5,6 +5,7 @@ import { goBackOrNavigate } from '../navigation/safeBack';
 import { useCart } from '../context/CartContext';
 import { resolveImageUrl } from '../api/products';
 import theme from '../theme';
+import MobilePageBanner from '../components/MobilePageBanner';
 
 export default function WishlistScreen({ navigation }) {
   const { wishlist, removeFromWishlist, addToCart } = useCart();
@@ -22,6 +23,7 @@ export default function WishlistScreen({ navigation }) {
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+        <MobilePageBanner page="WISHLIST" height={170} />
         <Text style={styles.heading}>Wishlist</Text>
 
         {wishlist.length === 0 ? (

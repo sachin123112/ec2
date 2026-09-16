@@ -3,6 +3,7 @@ import { Dimensions, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOp
 import { fetchProducts, resolveImageUrl } from '../api/products';
 import { products as staticProducts } from '../data/products';
 import BottomTabBar from '../components/BottomTabBar';
+import MobilePageBanner from '../components/MobilePageBanner';
 
 const heroImage = 'https://images.unsplash.com/photo-1606800052052-a08af7148866?w=900&q=85';
 const promoImages = {
@@ -73,6 +74,8 @@ export default function HomeScreen({ navigation }) {
           <TextInput style={styles.searchInput} placeholder="Search for pets, food, accessories..." placeholderTextColor="#8b8b8b" value={search} onChangeText={setSearch} />
           <Text style={styles.searchHint}>⌘</Text>
         </View>
+
+        <MobilePageBanner page="HOME" height={190} />
 
         <View style={styles.hero}>
           <ScrollView

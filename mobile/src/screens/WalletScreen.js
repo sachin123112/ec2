@@ -3,6 +3,7 @@ import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { goBackOrNavigate } from '../navigation/safeBack';
 import theme from '../theme';
+import MobilePageBanner from '../components/MobilePageBanner';
 
 const WALLET_BALANCE_KEY = 'pawmart_wallet_balance';
 const presets = [500, 1000, 2000, 5000];
@@ -36,6 +37,7 @@ export default function WalletScreen({ navigation }) {
         <Text style={[styles.topBarTitle, styles.headerContentOffset]}>Wallet</Text>
       </View>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <MobilePageBanner page="WALLET" height={170} />
         <View style={styles.balanceCard}>
           <Text style={styles.balanceLabel}>AVAILABLE BALANCE</Text>
           <Text style={styles.balanceValue}>₹{balance.toLocaleString()}</Text>

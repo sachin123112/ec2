@@ -11,6 +11,8 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long> {
 
 	List<OrderEntity> findTop500ByOrderByCreatedAtDescIdDesc();
 
+	List<OrderEntity> findAllByOrderByCreatedAtDescIdDesc();
+
 	@Query("select coalesce(sum(o.totalAmount), 0) from OrderEntity o")
 	java.math.BigDecimal sumTotalAmount();
 

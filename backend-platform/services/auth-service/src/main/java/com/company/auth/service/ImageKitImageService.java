@@ -62,6 +62,10 @@ public class ImageKitImageService {
         return uploadImage(image, "/users/" + userId);
     }
 
+    public String uploadMobileBanner(MultipartFile image, String pageKey) {
+        return uploadImage(image, "/mobile-banners/" + pageKey.toLowerCase());
+    }
+
     private String uploadImage(MultipartFile image, String folder) {
         if (!StringUtils.hasText(privateKey) || !StringUtils.hasText(urlEndpoint)) {
             return saveLocalUploadFallback(image, folder);
