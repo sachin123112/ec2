@@ -5,11 +5,56 @@ import { fetchProducts, resolveImageUrl } from '../api/products';
 import { products as staticProducts } from '../data/products';
 import BottomTabBar from '../components/BottomTabBar';
 import MobilePageBanner from '../components/MobilePageBanner';
+import config from '../api/config';
 
 const fallbackImage = 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=500&q=85';
-const categories = [
+const fallbackCategories = [
   { name: 'Pet Food', group: 'Food & Nutrition', icon: '🐶', image: 'https://images.unsplash.com/photo-1589924691995-400dc9a65b3d?w=500&q=85' },
+  { name: 'Cats', group: 'Pets & Care', icon: '🐱', image: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=500&q=85' },
+  { name: 'Birds', group: 'Pets & Care', icon: '🐦', image: 'https://images.unsplash.com/photo-1444464666168-49d633b86797?w=500&q=85' },
+  { name: 'Fish', group: 'Pets & Care', icon: '🐠', image: 'https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=500&q=85' },
+  { name: 'Aquarium Plants', group: 'Home & Habitat', icon: '🌿', image: 'https://images.unsplash.com/photo-1520302519878-4f8b8b4f7f98?w=500&q=85' },
+  { name: 'Small Pets', group: 'Pets & Care', icon: '🐹', image: 'https://images.unsplash.com/photo-1425082661705-1834bfd09dca?w=500&q=85' },
+  { name: 'Reptiles', group: 'Pets & Care', icon: '🦎', image: 'https://images.unsplash.com/photo-1527159516962-2d7e6f7c1b6b?w=500&q=85' },
 ];
+
+const categoryPresentation = Object.fromEntries(fallbackCategories.map(category => [category.name.toLowerCase(), category]));
+
+function normalizeCategory(category) {
+  const fallback = categoryPresentation[String(category.name || '').toLowerCase()] || {};
+  const name = String(category.name || '');
+  const normalizedName = name.toLowerCase();
+  const group = normalizedName.includes('food') || normalizedName.includes('treat')
+    ? 'Food & Nutrition'
+    : normalizedName.includes('fish') || normalizedName.includes('aquarium')
+      ? 'Aquatics'
+      : normalizedName.includes('toy') || normalizedName.includes('play')
+        ? 'Toys & Play'
+        : normalizedName.includes('bed') || normalizedName.includes('comfort') || normalizedName.includes('tank') || normalizedName.includes('habitat') || normalizedName.includes('stone') || normalizedName.includes('wood')
+          ? 'Habitat & Comfort'
+          : normalizedName.includes('groom') || normalizedName.includes('collar') || normalizedName.includes('leash') || normalizedName.includes('care')
+            ? 'Care & Accessories'
+            : fallback.group || 'Other Categories';
+  const icon = normalizedName.includes('food') || normalizedName.includes('treat')
+    ? '🥣'
+    : normalizedName.includes('fish') || normalizedName.includes('aquarium')
+      ? '🐠'
+      : normalizedName.includes('toy') || normalizedName.includes('play')
+        ? '🧸'
+        : normalizedName.includes('bed') || normalizedName.includes('comfort') || normalizedName.includes('tank') || normalizedName.includes('habitat')
+          ? '🏡'
+          : normalizedName.includes('groom') || normalizedName.includes('collar') || normalizedName.includes('leash') || normalizedName.includes('care')
+            ? '✨'
+            : fallback.icon || '🐾';
+  return {
+    ...fallback,
+    ...category,
+    name,
+    group,
+    icon,
+    image: fallback.image || fallbackCategories[0].image,
+  };
+}
 
 function normalizeProduct(product) {
   const image = product.imageUrls?.[0] || product.images?.[0] || product.image;
@@ -30,13 +75,18 @@ function CategoryTile({ category, onPress }) {
 export default function ShopScreen({ navigation }) {
   const { addToCart } = useCart();
   const [products, setProducts] = useState(staticProducts.map(normalizeProduct));
+  const [categories, setCategories] = useState(fallbackCategories);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    fetchProducts()
-      .then((data) => setProducts(data.filter((product) => String(product.categoryName || product.category?.name || product.category || '').toLowerCase() === 'pet food').map(normalizeProduct)))
+    Promise.all([fetchProducts(), fetch(`${config.API_URL}/categories`)
+      .then(response => response.ok ? response.json() : Promise.reject(new Error('Unable to load categories')))])
+      .then(([productData, categoryData]) => {
+        setProducts(productData.map(normalizeProduct));
+        if (Array.isArray(categoryData) && categoryData.length) setCategories(categoryData.map(normalizeCategory));
+      })
       .catch((error) => {
-        console.warn('Unable to load products from backend:', error);
+        console.warn('Unable to load product categories from backend:', error);
         Alert.alert('Offline mode', 'Showing the local catalog.');
       });
   }, []);
@@ -50,7 +100,11 @@ export default function ShopScreen({ navigation }) {
     });
   }, [products, search]);
 
-  const groups = [...new Set(categories.map((category) => category.group))];
+  const groups = [...new Set(categories.map((category) => category.group))].sort((first, second) => {
+    if (first === 'Other Categories') return 1;
+    if (second === 'Other Categories') return -1;
+    return 0;
+  });
 
   return (
     <View style={styles.container}>

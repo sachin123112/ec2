@@ -63,7 +63,7 @@ export default function HomeScreen({ navigation }) {
 
   const topPicks = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return products.filter((product) => !query || product.name.toLowerCase().includes(query) || product.category?.toLowerCase().includes(query)).slice(0, 8);
+    return products.filter((product) => !query || product.name.toLowerCase().includes(query) || product.category?.toLowerCase().includes(query)).slice(0, 12);
   }, [products, search]);
 
   return (
@@ -116,16 +116,38 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         <View style={styles.sectionHeading}><Text style={styles.sectionTitle}>Top Picks</Text><View style={styles.headingLine} /></View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.productsRow}>
-          {topPicks.map((item) => (
-            <TouchableOpacity key={String(item.id)} style={styles.product} onPress={() => navigation.navigate('ProductDetails', { product: item })} activeOpacity={0.8}>
-              <View style={styles.productImageWrap}><Image source={{ uri: item.image }} style={styles.productImage} /></View>
-              <Text style={styles.productPrice}>₹{Number(item.price || 0).toLocaleString()}</Text>
-              <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
-              <Text style={styles.productAction}>Add to cart</Text>
+        <View style={styles.verticalProducts}>
+          {topPicks.slice(0, 4).map((item) => (
+            <TouchableOpacity key={String(item.id)} style={styles.verticalProduct} onPress={() => navigation.navigate('ProductDetails', { product: item })} activeOpacity={0.8}>
+              <Image source={{ uri: item.image }} style={styles.verticalProductImage} />
+              <View style={styles.verticalProductInfo}>
+                <Text style={styles.verticalProductName} numberOfLines={2}>{item.name}</Text>
+                <Text style={styles.verticalProductCategory}>{item.category || 'Pet care'}</Text>
+                <Text style={styles.verticalProductPrice}>₹{Number(item.price || 0).toLocaleString()}</Text>
+              </View>
+              <Text style={styles.verticalProductArrow}>›</Text>
             </TouchableOpacity>
           ))}
-        </ScrollView>
+        </View>
+
+        {topPicks.length > 4 && (
+          <>
+            <View style={[styles.sectionHeading, styles.secondarySectionHeading]}>
+              <Text style={styles.sectionTitle}>More for your pet</Text>
+              <View style={styles.headingLine} />
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.productsRow}>
+              {topPicks.slice(4).map((item) => (
+                <TouchableOpacity key={`more-${item.id}`} style={styles.product} onPress={() => navigation.navigate('ProductDetails', { product: item })} activeOpacity={0.8}>
+                  <View style={styles.productImageWrap}><Image source={{ uri: item.image }} style={styles.productImage} /></View>
+                  <Text style={styles.productPrice}>₹{Number(item.price || 0).toLocaleString()}</Text>
+                  <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
+                  <Text style={styles.productAction}>Add to cart</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </>
+        )}
       </ScrollView>
       <BottomTabBar activeTab="Home" />
     </View>
@@ -168,9 +190,18 @@ const styles = StyleSheet.create({
   offerSubtitle: { color: '#ffe0cd', fontSize: 12, marginTop: 3 },
   offerArrow: { color: '#fff', backgroundColor: '#8b0909', width: 34, height: 34, borderRadius: 17, textAlign: 'center', fontSize: 30, lineHeight: 29 },
   sectionHeading: { backgroundColor: '#fff', alignItems: 'center', paddingTop: 2, paddingBottom: 5 },
+  secondarySectionHeading: { marginTop: 18 },
   sectionTitle: { color: '#8c1715', fontSize: 18, fontWeight: '800' },
   headingLine: { width: 76, height: 2, backgroundColor: '#e2a23b', marginTop: 4 },
   productsRow: { paddingHorizontal: 12, paddingTop: 10, gap: 12 },
+  verticalProducts: { paddingHorizontal: 12, paddingTop: 8, backgroundColor: '#fff' },
+  verticalProduct: { minHeight: 96, flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: '#f0dcd2', borderRadius: 14, padding: 10, marginBottom: 10 },
+  verticalProductImage: { width: 76, height: 76, borderRadius: 10, backgroundColor: '#fff1dc' },
+  verticalProductInfo: { flex: 1, marginLeft: 12 },
+  verticalProductName: { color: '#5b4438', fontSize: 14, lineHeight: 18, fontWeight: '800' },
+  verticalProductCategory: { color: '#9a8175', fontSize: 11, marginTop: 3 },
+  verticalProductPrice: { color: '#b51d1b', fontSize: 16, fontWeight: '800', marginTop: 5 },
+  verticalProductArrow: { color: '#9e291e', fontSize: 28, fontWeight: '300', paddingHorizontal: 6 },
   product: { width: 100 },
   productImageWrap: { height: 88, borderRadius: 10, backgroundColor: '#fff1dc', overflow: 'hidden', marginBottom: 6 },
   productImage: { width: '100%', height: '100%', resizeMode: 'cover' },

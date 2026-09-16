@@ -211,9 +211,7 @@ export default function CategoryProductsScreen({
   useEffect(() => {
     fetchProducts()
       .then((data) => {
-        const liveProducts = data
-          .filter((product) => String(product.categoryName || product.category?.name || product.category || '').toLowerCase() === 'pet food')
-          .map(normalizeProduct);
+        const liveProducts = data.map(normalizeProduct);
         const hasSelectedCategory = liveProducts.some((product) => {
           const productCategory = String(product.category || '').toLowerCase();
           return productCategory === String(category.name || '').toLowerCase();
