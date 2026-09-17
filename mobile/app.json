@@ -7,6 +7,11 @@
     "platforms": ["ios", "android", "web"],
     "sdkVersion": "50.0.0",
     "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "bundleIdentifier": "com.pawmart.mobile",
+      "supportsTablet": false,
+      "buildNumber": "1"
+    },
     "android": {
       "package": "com.pawmart.mobile",
       "versionCode": 1,

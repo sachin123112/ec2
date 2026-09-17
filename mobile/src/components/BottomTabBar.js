@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import theme from '../theme';
 
 const tabs = [
@@ -12,9 +13,10 @@ const tabs = [
 
 export default function BottomTabBar({ activeTab }) {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 10, height: Platform.OS === 'ios' ? 86 : 78 }]}>
       {tabs.map((tab) => {
         const selected = tab.key === activeTab;
         return (
@@ -38,14 +40,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: 78,
     flexDirection: 'row',
     justifyContent: 'space-around',
     backgroundColor: theme.colors.surface,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
     paddingTop: 8,
-    paddingBottom: 10,
     paddingHorizontal: 12,
     zIndex: 10,
     elevation: 12,
@@ -64,16 +64,19 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.accent,
   },
   icon: {
-    fontSize: 20,
+    fontSize: 19,
     color: theme.colors.muted,
-    marginBottom: 4,
+    marginBottom: 2,
+    lineHeight: 20,
   },
   iconSelected: {
     color: theme.colors.surface,
   },
   label: {
     color: theme.colors.muted,
-    fontSize: theme.typography.caption,
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '600',
   },
   labelSelected: {
     color: theme.colors.surface,

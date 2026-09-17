@@ -26,14 +26,15 @@ const banners = [
   { id: 'care', image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=1200&q=85', title: 'Everyday care made easy' },
 ];
 
-const categoryRail = [
-  { name: 'Top Picks', icon: '✦' },
-  { name: 'Powders & Pastes', icon: '🧴' },
-  { name: 'Dry Fruits & Nuts', icon: '🥜' },
-  { name: 'Dates & Seeds', icon: '🌰' },
-  { name: 'Whole Spices', icon: '🫙' },
-  { name: 'Salt', icon: '🧂' },
-];
+function getCategoryIcon(name) {
+  const normalizedName = String(name || '').toLowerCase();
+  if (normalizedName.includes('food') || normalizedName.includes('treat')) return '🥣';
+  if (normalizedName.includes('fish') || normalizedName.includes('aquarium')) return '🐠';
+  if (normalizedName.includes('toy') || normalizedName.includes('play')) return '🧸';
+  if (normalizedName.includes('bed') || normalizedName.includes('habitat') || normalizedName.includes('tank')) return '🏡';
+  if (normalizedName.includes('groom') || normalizedName.includes('collar') || normalizedName.includes('leash') || normalizedName.includes('care')) return '✨';
+  return '🐾';
+}
 
 
 // ======================================================
@@ -169,13 +170,16 @@ export default function CategoryProductsScreen({
 }) {
   const category =
     route?.params?.category || {};
+  const normalizedCategoryName = String(category.name || '').toLowerCase();
   const categoryDisplayName =
-    String(category.name || '').toLowerCase() === 'dog food'
+    normalizedCategoryName === 'dog food'
       ? 'Pet Food'
-      : category.name;
+      : normalizedCategoryName === 'bird food' || normalizedCategoryName === 'fish food' || normalizedCategoryName === 'cat food' || normalizedCategoryName === 'pet food' || normalizedCategoryName === 'food'
+        ? 'Food'
+        : category.name;
   const isPetFoodCategory =
-    String(category.name || '').toLowerCase() === 'pet food' ||
-    String(category.name || '').toLowerCase() === 'dog food';
+    normalizedCategoryName === 'pet food' ||
+    normalizedCategoryName === 'dog food';
 
   const {
     addToCart,
@@ -352,6 +356,18 @@ export default function CategoryProductsScreen({
     selectedBrand,
     selectedType,
   ]);
+
+  const categoryRailItems = useMemo(() => {
+    const names = [category.name, ...products.map(product => product.category)].filter(Boolean);
+    return [...new Set(names.map(name => String(name).trim()))]
+      .filter((name) => {
+        const normalized = String(name).toLowerCase();
+        return !['pet food', 'dog food', 'cat food', 'fish food', 'bird food', 'food'].includes(normalized);
+      })
+      .filter(Boolean)
+      .sort((first, second) => first.localeCompare(second))
+      .map(name => ({ name, icon: getCategoryIcon(name) }));
+  }, [category.name, products]);
 
 
   // ======================================================
@@ -656,7 +672,7 @@ export default function CategoryProductsScreen({
           }
         >
 
-          {categoryRail.map((item) => (
+          {categoryRailItems.map((item) => (
 
             <TouchableOpacity
               key={item.name}
@@ -666,11 +682,10 @@ export default function CategoryProductsScreen({
                   item.name &&
                   styles.railItemActive,
               ]}
-              onPress={() =>
-                setActiveRailItem(
-                  item.name
-                )
-              }
+              onPress={() => {
+                setActiveRailItem(item.name);
+                navigation.navigate('CategoryProducts', { category: { name: item.name } });
+              }}
               activeOpacity={0.8}
             >
 
@@ -930,6 +945,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#F0F1F3',
+    paddingTop: 0,
   },
 
   backButton: {
@@ -958,6 +974,7 @@ const styles = StyleSheet.create({
     color: '#181B20',
     fontSize: 18,
     fontWeight: '800',
+    lineHeight: 22,
   },
 
   searchButton: {
