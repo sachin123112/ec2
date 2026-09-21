@@ -26,6 +26,10 @@
 - Deployment Architecture
 - Scalability Considerations
 
+## Mobile / iOS Quick Start
+- [iOS Quick Start for MacBook + Xcode](mobile/IOS_SETUP_MACBOOK_QUICKSTART.md)
+- [Full iOS Setup Guide](mobile/IOS_SETUP.md)
+
 ## Next Steps
 1. Create Spring Boot multi-module project
 2. Configure PostgreSQL and Flyway

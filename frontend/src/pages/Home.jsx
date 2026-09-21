@@ -134,7 +134,9 @@ export default function Home() {
               className="category-card"
               style={{ background: cat.bg, borderColor: cat.color }}
             >
-              <span className="cat-icon">{cat.icon}</span>
+              <span className={`cat-icon ${cat.icon === 'wood' ? 'wood-logo' : ''}`}>
+                {cat.icon === 'wood' ? <span aria-hidden="true" /> : cat.icon}
+              </span>
               <span className="cat-name" style={{ color: cat.color }}>{cat.name}</span>
               <span className="cat-arrow" style={{ color: cat.color }}>→</span>
             </Link>

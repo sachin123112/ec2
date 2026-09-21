@@ -1,10 +1,57 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { categories as defaultCategories } from '../data/products';
 import { useCart } from '../context/CartContext';
 import './Shop.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+
+const shopCategoryRail = [
+  { label: 'All', active: true, icon: '🛍️' },
+  { label: 'Dogs', icon: '🐶' },
+  { label: 'Cats', icon: '🐱' },
+  { label: 'Birds', icon: '🐦' },
+  { label: 'Fish', icon: '🐠' },
+  { label: 'Food', icon: '🥗' },
+  { label: 'Aquarium Plants', icon: '🌿' },
+  { label: 'Small Pets', icon: '🐹' },
+  { label: 'Aquarium Wood', icon: 'wood' },
+  { label: 'Accessories', icon: '🎀' },
+  { label: 'Toys', icon: '🧸' },
+];
+
+const promoBanners = [
+  {
+    tag: 'Fresh picks',
+    title: 'Healthy meals',
+    subtitle: 'Complete nutrition for active pets',
+    image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=1200&q=80',
+    cta: 'Shop Food →',
+    theme: 'peach',
+  },
+  {
+    tag: 'Play & explore',
+    title: 'Toys, treats & more fun',
+    subtitle: 'Keep your pets active, engaged and happy.',
+    image: 'https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=1200&q=80',
+    cta: 'Shop Toys →',
+    theme: 'mint',
+  },
+  {
+    tag: 'Aquarium life',
+    title: 'Beautiful tanks, happier fish',
+    subtitle: 'Everything for a clean and vibrant aquarium.',
+    image: 'https://images.unsplash.com/photo-1544551763-46a013bb70b5?auto=format&fit=crop&w=1200&q=80',
+    cta: 'Shop Aquarium →',
+    theme: 'blue',
+  },
+];
+
+const heroPets = [
+  'https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=900&q=80',
+  'https://images.unsplash.com/photo-1511044568932-338cba0ad803?auto=format&fit=crop&w=900&q=80',
+  'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=900&q=80',
+];
 
 function resolveProductImageUrl(imageUrl) {
   if (!imageUrl || typeof imageUrl !== 'string') return '';
@@ -50,7 +97,7 @@ function getFallbackImage(category, productName, icon = '🐾') {
     Birds: ['#2980B9', '#EBF5FB'],
     Fish: ['#16A085', '#E8F8F5'],
     'Small Pets': ['#F39C12', '#FEF5E7'],
-    Reptiles: ['#27AE60', '#EAFAF1'],
+    'Aquarium Wood': ['#8B5E3C', '#F7EEE7'],
     'Aquarium Plants': ['#2ECC71', '#EAFBF1'],
     Food: ['#F39C12', '#FFF4E6'],
   };
@@ -109,6 +156,10 @@ export default function Shop() {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [showTopDeck, setShowTopDeck] = useState(true);
+  const [showHero, setShowHero] = useState(true);
+  const lastScrollYRef = useRef(0);
+  const hideTimerRef = useRef(null);
   const { addToCart } = useCart();
 
   const selectedImages = useMemo(() => {
@@ -132,6 +183,44 @@ export default function Shop() {
     setActiveCategory(cat || 'All');
     setSearch(q || '');
   }, [searchParams]);
+
+  const activeCategoryLabel = activeCategory === 'All' ? 'All' : (categoryOptions.find(category => categoryMatches(category.name, activeCategory))?.name || activeCategory);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      const previousY = lastScrollYRef.current;
+      const delta = currentY - previousY;
+
+      if (currentY < 60) {
+        if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+        setShowHero(true);
+        setShowTopDeck(true);
+        lastScrollYRef.current = currentY;
+        return;
+      }
+
+      if (delta > 16 && currentY > 120) {
+        if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+        hideTimerRef.current = setTimeout(() => setShowHero(false), 90);
+      } else if (delta < -16) {
+        if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+        setShowHero(true);
+      }
+
+      if (currentY > 200) {
+        setShowTopDeck(true);
+      }
+
+      lastScrollYRef.current = currentY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -170,7 +259,7 @@ export default function Shop() {
   let filtered = products;
 
   if (activeCategory !== 'All') {
-    filtered = filtered.filter(p => categoryMatches(p.category, activeCategory));
+    filtered = filtered.filter(p => categoryMatches(p.category, activeCategoryLabel));
   }
 
   if (search.trim()) {
@@ -194,8 +283,43 @@ export default function Shop() {
       {/* Shop Header */}
       <div className="shop-header">
         <div className="shop-header-inner">
-          <h1>🛍️ Pet Shop</h1>
+          <h1>�️ Pet Shop</h1>
           <p>Showing <strong>{filtered.length}</strong> products</p>
+        </div>
+      </div>
+
+      <div className={`shop-category-strip ${showTopDeck ? '' : 'is-hidden'}`} aria-label="Category navigation">
+        {shopCategoryRail.map(item => {
+          const isActive = activeCategoryLabel === item.label || (item.label === 'All' && activeCategory === 'All');
+          return (
+            <button
+              key={item.label}
+              type="button"
+              className={`shop-category-item ${isActive ? 'active' : ''}`}
+              aria-pressed={isActive}
+              onClick={() => setActiveCategory(item.label === 'All' ? 'All' : item.label)}
+            >
+              <span className={`shop-category-icon ${item.icon === 'wood' ? 'wood-logo' : ''}`}>
+                {item.icon === 'wood' ? <span aria-hidden="true" /> : item.icon}
+              </span>
+              <span className="shop-category-label">{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className={`shop-hero-banner ${showHero ? '' : 'is-hidden'}`}>
+        <div className="shop-banner-grid">
+          {promoBanners.map((banner) => (
+            <article key={banner.title} className="shop-banner-card" style={{ backgroundImage: `url(${banner.image})` }}>
+              <div className="shop-banner-overlay" />
+              <div className="shop-banner-content">
+                <span className="shop-banner-tag">{banner.tag}</span>
+                <h2>{banner.title}</h2>
+                <p>{banner.subtitle}</p>
+              </div>
+            </article>
+          ))}
         </div>
       </div>
 
@@ -217,7 +341,7 @@ export default function Shop() {
             <h3>Categories</h3>
             <select
               className="category-select"
-              value={selectedCategory}
+              value={activeCategory === 'All' ? 'All' : activeCategoryLabel}
               onChange={e => setActiveCategory(e.target.value)}
               aria-label="Filter products by category"
             >

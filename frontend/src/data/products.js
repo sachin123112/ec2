@@ -4,7 +4,7 @@ const catalog = [
   { category: 'Birds', icon: '🐦', color: '#2980B9', bg: '#EBF5FB', subCategories: ['Food', 'Toys', 'Accessories'] },
   { category: 'Fish', icon: '🐠', color: '#16A085', bg: '#E8F8F5', subCategories: ['Food', 'Accessories'] },
   { category: 'Small Pets', icon: '🐹', color: '#F39C12', bg: '#FEF5E7', subCategories: ['Food', 'Toys', 'Habitat', 'Accessories'] },
-  { category: 'Reptiles', icon: '🦎', color: '#27AE60', bg: '#EAFAF1', subCategories: ['Food', 'Habitat', 'Accessories'] },
+  { category: 'Aquarium Wood', icon: 'wood', color: '#8B5E3C', bg: '#F7EEE7', subCategories: ['Decor', 'Habitat', 'Accessories'] },
   { category: 'Aquarium Plants', icon: '🌿', color: '#2ECC71', bg: '#EAFBF1', subCategories: ['Plants', 'Decor', 'Accessories'] },
   { category: 'Food', icon: '🥗', color: '#F39C12', bg: '#FFF4E6', subCategories: ['Pet Food', 'Treats', 'Supplements', 'Premium'] },
 ];
@@ -36,7 +36,7 @@ const productNames = {
   Birds: ['Nut Blend', 'Seed Cubes', 'Swing Rope', 'Tidy Feeder', 'Perch Grip', 'Nest Cushion', 'Feather Treat', 'Shiny Bell', 'Bird Ladder', 'Color Ball', 'Tidy Spray', 'Caress Mix', 'Grit Blend', 'Chewing Sticks', 'Hanging Toy', 'Parrot Platter', 'Feather Guard', 'Cage Cover', 'Clean Bristle', 'Bowls Plus', 'Pecking Toy', 'Pine Perch', 'Dried Fruit Mix', 'Wooden Ring', 'Claw Groomer', 'Tasty Puff', 'Climber Set', 'Travel Cage', 'Seed Dispenser', 'Vitamin Sprinkle', 'Social Swing', 'Bath Splash', 'Perch Guard', 'Feather Brush', 'Mimic Bell', 'Calm Essential', 'Nest Pad', 'Foraging Toy', 'Rainproof Cover', 'Pine Ladder', 'Cage Ladder', 'Feeder Combo', 'Travel Carrier', 'Bamboo Perch'],
   Fish: ['Glow Pellets', 'Tank Brush', 'Floating Veggie', 'Water Guard', 'Utility Net', 'Plant Pot', 'Cave Decor', 'Probiotic Mix', 'Tank Cleaner', 'Leaf Hide', 'Bubble Stone', 'Shell Decor', 'Color Boost', 'Ph Balance Pack', 'Surface Skimmer', 'Repair Valve', 'Churn Filter', 'Mini Rocks', 'Crystal Pellets', 'River Stones', 'Pond Strips', 'Fern Bundle', 'Bubble Lamp', 'Day Glow Mix', 'Gentle Net', 'Clean Salt Pack', 'Plasma Food', 'Freshwater Granules', 'Reef Stone', 'Aquarium Lamp', 'Bio Filter', 'Cozy Coral', 'Mini Bowl', 'Plant Cover', 'Algae Scrubber', 'Oxygen Stone', 'Glass Cleaner', 'Flow Nozzle', 'Warm Heater', 'Wave Pump', 'Pebble Tray', 'Water Test Kit', 'Sponge Filter', 'Fish Food Cubes', 'Tidal Treat Mix'],
   'Small Pets': ['Hay Crunch', 'Wheel Sprint', 'Tunnel Run', 'Snack Trail', 'Hamster Dome', 'Cage Chew', 'Burrow Tunnel', 'Feeder Bowl', 'Nest Pad', 'Wheel Cover', 'Munch Mix', 'Comfort Hut', 'Scented Timber', 'Play Ramp', 'Clean Litter', 'Bunny Brush', 'Soft Bedding', 'Pocket Carrier', 'Mini Wheel', 'Seed Bowl', 'Ladder Climber', 'Wooly Nest', 'Chew Block', 'Tunnel Tube', 'Garden Hay', 'Muzzle Toy', 'Tooth Stick', 'Pillow Nest', 'Cage Shelf', 'Bunny Meal Kit', 'Hideaway Cube', 'Bedding Saver', 'Cage Ladder', 'Moss Carpet', 'Tasty Granules', 'Rolling Ball', 'Kibble Scoop', 'Comfort Crate', 'Nap Blanket', 'Quiet Wheel', 'Bridge Toy', 'Pet Pot', 'Toy Ring', 'Fresh Snack Box', 'Clean Brush', 'Hamster Treat Pack'],
-  Reptiles: ['Meal Worm Mix', 'Heat Rock', 'Cave Hide', 'Calcium Dust', 'Terrarium Tray', 'UV Lamp', 'Humidity Pod', 'Leaf Shelter', 'Crisp Crunch', 'Basking Log', 'Feeder Tongs', 'Water Dish', 'Lizard Ladder', 'Plant Pot', 'Stone Hide', 'Warm Mat', 'Digestive Pellets', 'Sun Glow Lamp', 'Spray Mist', 'Rock Tunnel', 'Terrarium Brush', 'Reptile Nest', 'Leaf Hide', 'Sip Cup', 'Forest Moss', 'Sand Scoop', 'Basking Stone', 'Worm Feeder', 'Terrarium Cover', 'Glow Rock', 'Humidity Gauge', 'Cage Scoop', 'Feeding Dish', 'Climbing Branch', 'Tropical Plant', 'Lizard Treats', 'Heat Guard', 'Pet Shelter', 'Mini Logger', 'Snake Hide', 'Dew Dish', 'Hygiene Wipes', 'Warm Pad', 'Crest Basket'],
+  'Aquarium Wood': ['Basking Log', 'Driftwood Arch', 'Root Decor', 'Mopani Branch', 'Spider Wood', 'Cave Root', 'River Log', 'Bogwood Hide', 'Curved Timber', 'Natural Branch', 'Aquascape Root', 'Hollow Wood', 'Tank Terrace', 'Mini Driftwood', 'Twisted Root', 'Woodland Cave', 'Branch Cluster', 'Nano Log', 'Forest Root', 'Aquarium Stump'],
   'Aquarium Plants': ['Java Fern', 'Amazon Sword', 'Hornwort', 'Anubias', 'Water Sprite', 'Cryptocoryne', 'Bacopa', 'Moss Carpet', 'Lily Pad', 'Ludwigia', 'Rotala', 'Valisneria', 'Marimo Moss', 'Duckweed Pack', 'Cabomba', 'Water Wisteria', 'Najas', 'Glossostigma', 'Aponogeton', 'Hydrocotyle'],
   Food: ['Premium Kibble', 'Salmon Bites', 'Herbal Blend', 'Protein Mix', 'Treat Cubes', 'Vet Formula', 'Omega Boost', 'Digestive Pellets', 'Grain-Free Feast', 'Natural Mix', 'Senior Formula', 'Chicken Crunch', 'Meat Tender', 'Organic Feast', 'Fish Flakes', 'Scoop Blend', 'Wellness Bowl', 'Fresh Harvest', 'Mini Grains', 'Daily Nutrition'],
 };
@@ -48,7 +48,7 @@ const categoryDisplayName = {
   Birds: 'Bird',
   Fish: 'Fish',
   'Small Pets': 'Small Pet',
-  Reptiles: 'Reptile',
+  'Aquarium Wood': 'Aquarium Wood',
   'Aquarium Plants': 'Aquarium Plant',
   Food: 'Food',
 };
@@ -68,7 +68,7 @@ catalog.forEach(({ category, subCategories }) => {
       Birds: getSvgImageDataUri(`${categoryDisplayName[category]} ${name}`, category, '🐦', '#2980B9', '#EBF5FB'),
       Fish: getSvgImageDataUri(`${categoryDisplayName[category]} ${name}`, category, '🐠', '#16A085', '#E8F8F5'),
       'Small Pets': getSvgImageDataUri(`${categoryDisplayName[category]} ${name}`, category, '🐹', '#F39C12', '#FEF5E7'),
-      Reptiles: getSvgImageDataUri(`${categoryDisplayName[category]} ${name}`, category, '🦎', '#27AE60', '#EAFAF1'),
+      'Aquarium Wood': getSvgImageDataUri(`${categoryDisplayName[category]} ${name}`, category, '▰', '#8B5E3C', '#F7EEE7'),
       'Aquarium Plants': getSvgImageDataUri(`${categoryDisplayName[category]} ${name}`, category, '🌿', '#2ECC71', '#EAFBF1'),
       Food: getSvgImageDataUri(`${categoryDisplayName[category]} ${name}`, category, '🥗', '#F39C12', '#FFF4E6'),
     };

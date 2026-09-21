@@ -211,6 +211,19 @@
   font-size: 3rem;
 }
 
+.cat-icon.wood-logo > span {
+  display: block;
+  width: 76px;
+  height: 48px;
+  border: 4px solid #6f351d;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at center, transparent 0 24%, #b96735 26% 34%, transparent 36% 52%, #8b4828 54% 64%, transparent 66%),
+    #c97942;
+  box-shadow: 12px 0 0 -4px #a9572f;
+  transform: rotate(-12deg);
+}
+
 .cat-name {
   font-size: 1.1rem;
   font-weight: 700;
