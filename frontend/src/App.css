@@ -8,6 +8,22 @@
   flex: 1;
 }
 
+.admin-app-main {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  background: #f6f8fb;
+}
+
+.route-content {
+  min-width: 0;
+}
+
+.admin-route-content {
+  flex: 1;
+  min-width: 0;
+}
+
 .hero {
   position: relative;
 

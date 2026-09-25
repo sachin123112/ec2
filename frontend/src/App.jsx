@@ -1,10 +1,15 @@
-import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
+import AdminSidebar from './components/AdminSidebar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
 import Shop from './pages/Shop';
+import Offers from './pages/Offers';
+import Brands from './pages/Brands';
+import BrandsAdmin from './pages/BrandsAdmin';
+import OffersAdmin from './pages/OffersAdmin';
 import Cart from './pages/Cart';
 import Checkout, { CheckoutSuccess } from './pages/Checkout';
 import Login from './pages/Login';
@@ -45,14 +50,19 @@ function AppContent() {
   const location = useLocation();
   const authPaths = ['/login', '/signup', '/forgot-password', '/reset-password'];
   const hideLayout = authPaths.includes(location.pathname);
+  const isAdminPath = location.pathname.startsWith('/admin');
 
   return (
     <div className="app-wrapper">
       {!hideLayout && <Navbar />}
-      <main className="app-main">
-        <Routes>
+      <main className={`app-main${isAdminPath ? ' admin-app-main' : ''}`}>
+        {isAdminPath && <AdminSidebar />}
+        <div className={isAdminPath ? 'admin-route-content' : 'route-content'}>
+          <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/shop" element={<Shop />} />
+          <Route path="/offers" element={<Offers />} />
+          <Route path="/brands" element={<Brands />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
           <Route path="/checkout/success" element={<ProtectedRoute><CheckoutSuccess /></ProtectedRoute>} />
@@ -111,6 +121,16 @@ function AppContent() {
               <OrdersAdmin />
             </ProtectedRoute>
           } />
+          <Route path="/admin/brands" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <BrandsAdmin />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/offers" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <OffersAdmin />
+            </ProtectedRoute>
+          } />
           <Route path="/notifications" element={
             <ProtectedRoute requiredRole="USER">
               <NotificationsUser />
@@ -131,7 +151,8 @@ function AppContent() {
               <Settings />
             </ProtectedRoute>
           } />
-        </Routes>
+          </Routes>
+        </div>
       </main>
       {!hideLayout && <Footer />}
     </div>
@@ -142,9 +163,9 @@ function App() {
   return (
     <AuthProvider>
       <CartProvider>
-        <BrowserRouter>
+        <HashRouter>
           <AppContent />
-        </BrowserRouter>
+        </HashRouter>
       </CartProvider>
     </AuthProvider>
   );

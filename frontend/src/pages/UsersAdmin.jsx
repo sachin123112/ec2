@@ -6,7 +6,7 @@ import './Dashboard.css';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 export default function UsersAdmin() {
-  const { token } = useAuth();
+  const { token, refreshSession } = useAuth();
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [userForm, setUserForm] = useState({ username: '', email: '', password: '', firstName: '', lastName: '', roleIds: [] });
@@ -23,11 +23,30 @@ export default function UsersAdmin() {
     'Content-Type': 'application/json',
   }), [authHeaderBase]);
 
+  const fetchWithAuthRetry = useCallback(async (url, options = {}) => {
+    let response = await fetch(url, { ...options, headers: { ...authHeaders, ...(options.headers || {}) } });
+    if (response.status !== 401) return response;
+
+    try {
+      const refreshed = await refreshSession();
+      const refreshedHeaders = {
+        ...authHeaders,
+        ...(options.headers || {}),
+        Authorization: `Bearer ${refreshed.accessToken}`,
+      };
+      response = await fetch(url, { ...options, headers: refreshedHeaders });
+    } catch {
+      // Preserve the original 401 so the page can show the authentication failure.
+    }
+
+    return response;
+  }, [authHeaders, refreshSession]);
+
   const loadData = useCallback(async () => {
     try {
       const [usersRes, rolesRes] = await Promise.all([
-        fetch(`${API_URL}/users`, { headers: authHeaders }),
-        fetch(`${API_URL}/roles`, { headers: authHeaders }),
+        fetchWithAuthRetry(`${API_URL}/users`),
+        fetchWithAuthRetry(`${API_URL}/roles`),
       ]);
       if (!usersRes.ok) {
         const errorText = await usersRes.text();
@@ -40,7 +59,7 @@ export default function UsersAdmin() {
       console.error(err);
       setStatus(err.message || 'Unable to load users data.');
     }
-  }, [authHeaders]);
+  }, [fetchWithAuthRetry]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -55,9 +74,8 @@ export default function UsersAdmin() {
       lastName: userForm.lastName,
       roleIds: userForm.roleIds.map(roleId => parseInt(roleId, 10)),
     };
-    const response = await fetch(`${API_URL}/users`, {
+    const response = await fetchWithAuthRetry(`${API_URL}/users`, {
       method: 'POST',
-      headers: authHeaders,
       body: JSON.stringify(payload),
     });
     if (response.ok) {
@@ -71,9 +89,8 @@ export default function UsersAdmin() {
 
   async function handleDeleteUser(id) {
     setStatus('Deleting user...');
-    const response = await fetch(`${API_URL}/users/${id}`, {
+    const response = await fetchWithAuthRetry(`${API_URL}/users/${id}`, {
       method: 'DELETE',
-      headers: authHeaders,
     });
     if (response.ok) {
       await loadData();

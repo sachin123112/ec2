@@ -58,6 +58,16 @@ export default function Navbar() {
 
   return (
     <nav className="navbar">
+      <div className="navbar-utility">
+        <div className="navbar-utility-track">
+          <span>🚚 Free shipping on orders above ₹499</span>
+          <span>🎁 Upto 30% OFF on Pet Food &amp; Accessories</span>
+          <span>◷ 24/7 Customer Support</span>
+          <span aria-hidden="true">🚚 Free shipping on orders above ₹499</span>
+          <span aria-hidden="true">🎁 Upto 30% OFF on Pet Food &amp; Accessories</span>
+          <span aria-hidden="true">◷ 24/7 Customer Support</span>
+        </div>
+      </div>
       <div className="navbar-container">
         {/* Logo */}
         <Link to="/" className="navbar-logo">
@@ -129,6 +139,8 @@ export default function Navbar() {
               ))}
             </div>
           </div>
+          <Link to="/brands" onClick={() => setMenuOpen(false)}>Brands</Link>
+          <Link to="/offers" onClick={() => setMenuOpen(false)} className="nav-offers">Offers <span>New</span></Link>
           <Link
             to="/cart"
             className="navbar-cart-link"

@@ -1,0 +1,77 @@
+.brands-admin-page {
+  min-height: 100vh;
+  padding: 34px clamp(18px, 4vw, 58px) 54px;
+  background: #f6f8fb;
+  color: #172238;
+}
+
+.brands-admin-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  max-width: 1320px;
+  margin: 0 auto 24px;
+}
+
+.brands-admin-header h1 { margin: 0; font-size: clamp(1.7rem, 3vw, 2.25rem); letter-spacing: -0.06em; }
+.brands-admin-breadcrumb { display: flex; gap: 8px; margin-top: 8px; color: #8c97a8; font-size: 0.75rem; }
+.brands-admin-breadcrumb a { color: #8490a3; text-decoration: none; }
+.brands-admin-add { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 0 16px; border: 0; border-radius: 8px; background: #ff642a; color: #fff; font-size: 0.75rem; font-weight: 800; cursor: pointer; box-shadow: 0 8px 16px rgba(255, 100, 42, 0.2); }
+.brands-admin-add span { font-size: 1.1rem; line-height: 1; }
+.brands-admin-message { max-width: 1320px; margin: 0 auto 14px; padding: 10px 14px; border-radius: 8px; background: #fff5ed; color: #b74c1f; font-size: 0.78rem; }
+.brands-admin-card { max-width: 1320px; margin: 0 auto; overflow: hidden; border: 1px solid #e9eef5; border-radius: 14px; background: #fff; box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04); }
+.brands-admin-toolbar { display: flex; align-items: center; gap: 18px; padding: 18px 20px; border-bottom: 1px solid #edf1f5; }
+.brands-admin-search { display: flex; align-items: center; width: min(360px, 100%); height: 36px; border: 1px solid #dfe6ef; border-radius: 7px; color: #94a0b1; }
+.brands-admin-search span { padding-left: 11px; font-size: 1.15rem; }
+.brands-admin-search input { width: 100%; height: 100%; padding: 0 10px; border: 0; outline: 0; color: #27344a; font: inherit; font-size: 0.75rem; }
+.brands-admin-filter { display: flex; align-items: center; gap: 10px; color: #354157; font-size: 0.72rem; font-weight: 700; }
+.brands-admin-filter select { min-width: 100px; height: 36px; padding: 0 28px 0 12px; border: 1px solid #dfe6ef; border-radius: 7px; background: #fff; color: #354157; font: inherit; font-size: 0.72rem; }
+.brands-admin-table-wrap { overflow-x: auto; }
+.brands-admin-table { width: 100%; min-width: 900px; border-collapse: collapse; font-size: 0.72rem; }
+.brands-admin-table th { padding: 12px 14px; background: #f8fafc; color: #303d52; font-size: 0.66rem; font-weight: 800; text-align: left; white-space: nowrap; }
+.brands-admin-table td { height: 54px; padding: 8px 14px; border-top: 1px solid #edf1f5; color: #667286; white-space: nowrap; }
+.brands-admin-table th:first-child, .brands-admin-table td:first-child { padding-left: 20px; }
+.brands-admin-table input[type='checkbox'] { width: 14px; height: 14px; accent-color: #ff642a; }
+.brands-admin-name { color: #26344a !important; font-weight: 700; }
+.brands-admin-logo { display: flex; align-items: center; justify-content: center; width: 98px; height: 26px; padding: 0 6px; border-radius: 4px; background: #f3f5f8; color: #182237; font-size: 0.61rem; font-weight: 900; letter-spacing: -0.04em; text-transform: uppercase; }
+.brands-admin-logo--red { color: #e62932; }
+.brands-admin-logo--gold { color: #bc7612; background: #fff7d9; }
+.brands-admin-logo--purple { color: #8d258e; background: #fae8fa; }
+.brands-admin-logo--coral { color: #f06450; background: #fff0ee; }
+.brands-admin-logo--blue { color: #2161b5; background: #eaf3ff; }
+.brands-admin-logo--teal { color: #087f85; background: #e5f8f5; }
+.brands-admin-logo--black { color: #1d2430; background: #eef0f3; }
+.brands-admin-status { padding: 5px 9px; border: 0; border-radius: 4px; font-size: 0.62rem; font-weight: 800; cursor: pointer; }
+.brands-admin-status--active { background: #daf6e7; color: #19945d; }
+.brands-admin-status--inactive { background: #ffe2e5; color: #e6535e; }
+.brands-admin-actions { display: flex; gap: 8px; }
+.brands-admin-edit, .brands-admin-delete { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 5px; background: #fff; font-size: 0.9rem; cursor: pointer; }
+.brands-admin-edit { border: 1px solid #5b9cff; color: #2479ed; }
+.brands-admin-delete { border: 1px solid #ff6971; color: #f0444e; transform: rotate(180deg); }
+.brands-admin-empty { padding: 38px 20px; color: #8a95a5; text-align: center; }
+.brands-admin-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 20px; border-top: 1px solid #edf1f5; color: #7d8898; font-size: 0.68rem; }
+.brands-admin-pagination { display: flex; gap: 5px; }
+.brands-admin-pagination button { width: 25px; height: 25px; border: 1px solid #e3e8ef; border-radius: 5px; background: #fff; color: #536075; cursor: pointer; font-size: 0.7rem; }
+.brands-admin-pagination button.active { border-color: #ff642a; background: #ff642a; color: #fff; }
+.brands-admin-pagination button:disabled { color: #c7ced9; cursor: not-allowed; }
+.brands-admin-modal-backdrop { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 20px; background: rgba(15, 23, 42, 0.5); }
+.brands-admin-modal { width: min(430px, 100%); padding: 22px; border-radius: 15px; background: #fff; box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22); }
+.brands-admin-modal-heading { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
+.brands-admin-kicker { color: #ff642a; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; }
+.brands-admin-modal h2 { margin: 3px 0 0; font-size: 1.4rem; }
+.brands-admin-close { border: 0; background: transparent; color: #8590a0; font-size: 1.6rem; cursor: pointer; }
+.brands-admin-modal label { display: grid; gap: 7px; margin-top: 14px; color: #354157; font-size: 0.75rem; font-weight: 700; }
+.brands-admin-modal input, .brands-admin-modal select { height: 42px; padding: 0 12px; border: 1px solid #dfe6ef; border-radius: 7px; outline: 0; background: #f9fbfd; color: #243149; font: inherit; }
+.brands-admin-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+.brands-admin-secondary { padding: 0 14px; border: 1px solid #dfe6ef; border-radius: 8px; background: #fff; color: #536075; font-weight: 700; cursor: pointer; }
+
+@media (max-width: 680px) {
+  .brands-admin-page { padding: 24px 12px 40px; }
+  .brands-admin-header { align-items: stretch; flex-direction: column; }
+  .brands-admin-add { align-self: flex-start; }
+  .brands-admin-toolbar { align-items: stretch; flex-direction: column; gap: 12px; }
+  .brands-admin-search { width: 100%; }
+  .brands-admin-filter { justify-content: space-between; }
+  .brands-admin-footer { align-items: flex-start; flex-direction: column; }
+}

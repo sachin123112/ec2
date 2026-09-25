@@ -1,14 +1,40 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useCart } from '../context/CartContext';
 import './Cart.css';
+
+function resolveBannerUrl(imageUrl) {
+  if (!imageUrl || /^(https?:|data:|blob:)/i.test(imageUrl)) return imageUrl;
+  return `${(import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1').replace(/\/api\/v1\/?$/, '')}/${imageUrl.replace(/^\/+/, '')}`;
+}
 
 export default function Cart() {
   const { cart, removeFromCart, updateQty, clearCart, totalPrice } = useCart();
   const navigate = useNavigate();
+  const [pageBanner, setPageBanner] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1'}/banners?page=CART`)
+      .then(response => response.ok ? response.json() : [])
+      .then(data => {
+        if (!mounted) return;
+        setPageBanner(Array.isArray(data) && data.length > 0 ? data[0] : null);
+      })
+      .catch(() => {});
+
+    return () => { mounted = false; };
+  }, []);
 
   if (cart.length === 0) {
     return (
       <div className="cart-empty">
+        {pageBanner && (
+          <section aria-label="Cart page banner" style={{ width: 'min(1200px, calc(100% - 32px))', margin: '0 auto 1.25rem', borderRadius: '18px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(21, 33, 59, 0.08)' }}>
+            <img src={resolveBannerUrl(pageBanner.imageUrl)} alt="Cart banner" style={{ display: 'block', width: '100%', height: '220px', objectFit: 'cover' }} />
+          </section>
+        )}
         <span>🛒</span>
         <h2>Your cart is empty</h2>
         <p>Looks like you haven't added anything yet. Go spoil your pet!</p>
@@ -22,6 +48,11 @@ export default function Cart() {
 
   return (
     <div className="cart-page">
+      {pageBanner && (
+        <section aria-label="Cart page banner" style={{ width: 'min(1200px, calc(100% - 32px))', margin: '0 auto 1.25rem', borderRadius: '18px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(21, 33, 59, 0.08)' }}>
+          <img src={resolveBannerUrl(pageBanner.imageUrl)} alt="Cart banner" style={{ display: 'block', width: '100%', height: '220px', objectFit: 'cover' }} />
+        </section>
+      )}
       <div className="cart-header">
         <h1>🛒 Your Cart</h1>
         <button className="btn-clear" onClick={clearCart}>Clear All</button>

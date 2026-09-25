@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { products as dummyProducts, categories as defaultCategories } from '../data/products';
 import './Dashboard.css';
+import './ProductsAdmin.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
@@ -302,17 +303,19 @@ export default function ProductsAdmin() {
   });
 
   return (
-    <div className="dashboard-page">
+    <div className="dashboard-page products-admin-page">
       <div className="dashboard-header">
         <div className="dashboard-header-left">
-          <h1>Product Management</h1>
-          <p>Manage products and catalog</p>
+          <div className="products-admin-breadcrumb">Dashboard <span>›</span> Products <span>›</span> Manage Products</div>
+          <h1>Manage Products</h1>
+          <p>Add, edit or manage your store products</p>
           <div className="header-links" style={{ marginTop: 12, display: 'flex', gap: 12 }}>
             <Link to="/admin/users" className="btn-outline">Users</Link>
             <Link to="/admin/orders" className="btn-outline">Orders</Link>
             <Link to="/admin/categories" className="btn-outline">Categories</Link>
           </div>
         </div>
+        <button type="button" className="products-admin-header-action" onClick={() => document.querySelector('.products-admin-form-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>+ Add Product</button>
       </div>
 
       <div className="dashboard-status">{status}</div>
@@ -526,9 +529,9 @@ export default function ProductsAdmin() {
         </div>
       )}
 
-      <div className="dashboard-grid">
-        <div className="dashboard-card">
-          <h2>{editingProductId ? 'Edit Product' : 'Add Product'}</h2>
+      <div className="dashboard-grid products-admin-layout">
+        <div className="dashboard-card products-admin-form-card">
+          <h2>{editingProductId ? 'Edit Product' : 'Add New Product'}</h2>
           <form onSubmit={handleCreateProduct} className="panel-form">
             <label>
               Name
@@ -589,7 +592,7 @@ export default function ProductsAdmin() {
           </form>
         </div>
 
-        <div className="dashboard-card wide-card">
+        <div className="dashboard-card wide-card products-admin-catalog-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
             <h2>Product Catalog</h2>
             <div className="date-range-filter">

@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/v1/banners")
 public class MobileBannerController {
-    private static final Set<String> PAGE_KEYS = Set.of("HOME", "WALLET", "PRODUCTS", "WISHLIST");
+    private static final Set<String> PAGE_KEYS = Set.of("HOME", "SHOP", "BRANDS", "OFFERS", "CART", "WALLET", "PRODUCTS", "WISHLIST");
     private final MobileBannerRepository repository;
     private final ImageKitImageService imageService;
 

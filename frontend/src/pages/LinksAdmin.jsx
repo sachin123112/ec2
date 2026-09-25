@@ -1,11 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
+import './LinksAdmin.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 const ALLOWED_BANNER_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const BANNER_PAGES = [
-  { value: 'HOME', label: 'Mobile Home page' },
+const ADMIN_BANNER_PAGES = [
+  { value: 'HOME', label: 'Home page' },
+  { value: 'SHOP', label: 'Shop page' },
+  { value: 'BRANDS', label: 'Brand page' },
+  { value: 'OFFERS', label: 'Offer page' },
+  { value: 'CART', label: 'Cart page' },
+];
+const MOBILE_BANNER_PAGES = [
   { value: 'WALLET', label: 'Mobile Wallet page' },
   { value: 'PRODUCTS', label: 'Mobile Products page' },
   { value: 'WISHLIST', label: 'Mobile Wishlist page' },
@@ -23,6 +30,7 @@ export default function LinksAdmin() {
   const [bannerFile, setBannerFile] = useState(null);
   const [bannerPreview, setBannerPreview] = useState('');
   const [bannerPage, setBannerPage] = useState('HOME');
+  const [mobileBannerPage, setMobileBannerPage] = useState('WALLET');
   const [linkForm, setLinkForm] = useState({ label: '', url: '', description: '', isActive: true });
   const [status, setStatus] = useState('');
 
@@ -111,7 +119,7 @@ export default function LinksAdmin() {
     setStatus('Banner image selected. Click "Upload Banner" to save.');
   }
 
-  async function handleBannerUpload() {
+  async function handleBannerUpload(pageOverride = bannerPage) {
     if (!bannerFile) {
       setStatus('Please select a banner image first.');
       return;
@@ -120,7 +128,7 @@ export default function LinksAdmin() {
     setStatus('Uploading banner...');
     const formData = new FormData();
     formData.append('image', bannerFile);
-    formData.append('page', bannerPage);
+    formData.append('page', pageOverride);
 
     try {
       const response = await fetch(`${API_URL}/banners`, {
@@ -189,19 +197,24 @@ export default function LinksAdmin() {
 
       <div className="dashboard-grid">
         <div className="dashboard-card">
-          <h2>Banner Management</h2>
-          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px 10px', borderRadius: '999px', background: '#e0f2fe', color: '#075985', fontWeight: 700, fontSize: '12px', letterSpacing: '0.04em' }}>
+              MOBILE
+            </span>
+            <h2 style={{ margin: 0 }}>Banner Management</h2>
+          </div>
+
           <div style={{ marginBottom: '30px' }}>
             <h3 style={{ marginBottom: '15px' }}>Upload New Banner</h3>
             <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
-              Mobile page
+              Page
             </label>
             <select
-              value={bannerPage}
-              onChange={event => setBannerPage(event.target.value)}
+              value={mobileBannerPage}
+              onChange={event => setMobileBannerPage(event.target.value)}
               style={{ display: 'block', marginBottom: '12px', padding: '8px', minWidth: '220px' }}
             >
-              {BANNER_PAGES.map(page => <option key={page.value} value={page.value}>{page.label}</option>)}
+              {MOBILE_BANNER_PAGES.map(page => <option key={page.value} value={page.value}>{page.label}</option>)}
             </select>
             <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
               Upload Banner Image
@@ -224,8 +237,8 @@ export default function LinksAdmin() {
             )}
             
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button type="button" className="btn-primary" onClick={handleBannerUpload} disabled={!bannerFile}>
-                Upload Banner
+              <button type="button" className="btn-primary" onClick={() => handleBannerUpload(mobileBannerPage)} disabled={!bannerFile}>
+                Upload Mobile Banner
               </button>
               {bannerFile && (
                 <button type="button" className="btn-secondary" onClick={cancelBannerUpload}>
@@ -235,11 +248,11 @@ export default function LinksAdmin() {
             </div>
           </div>
 
-          {banners && banners.length > 0 && (
+          {banners.filter(banner => MOBILE_BANNER_PAGES.some(page => page.value === banner.pageKey)).length > 0 && (
             <div>
-              <h3 style={{ marginBottom: '15px' }}>Uploaded Banners ({banners.length})</h3>
+              <h3 style={{ marginBottom: '15px' }}>Uploaded Mobile Banners ({banners.filter(banner => MOBILE_BANNER_PAGES.some(page => page.value === banner.pageKey)).length})</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                {banners.map((banner) => (
+                {banners.filter(banner => MOBILE_BANNER_PAGES.some(page => page.value === banner.pageKey)).map((banner) => (
                   <div key={banner.id} style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '10px', textAlign: 'center' }}>
                     <img 
                       src={resolveBannerUrl(banner.imageUrl)} 
@@ -247,7 +260,7 @@ export default function LinksAdmin() {
                       style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '6px', marginBottom: '10px' }} 
                     />
                     <p style={{ fontSize: '12px', color: '#666', marginBottom: '8px' }}>
-                      {BANNER_PAGES.find(page => page.value === banner.pageKey)?.label || banner.pageKey} · ID: {banner.id}
+                      {MOBILE_BANNER_PAGES.find(page => page.value === banner.pageKey)?.label || banner.pageKey} · ID: {banner.id}
                     </p>
                     <button 
                       type="button" 
@@ -264,8 +277,46 @@ export default function LinksAdmin() {
           )}
         </div>
 
-        <div className="dashboard-card">
-          <h2>Add Link</h2>
+        <div className="dashboard-card wide-card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px 10px', borderRadius: '999px', background: '#dcfce7', color: '#166534', fontWeight: 700, fontSize: '12px', letterSpacing: '0.04em' }}>
+              ADMIN
+            </span>
+            <h2 style={{ margin: 0 }}>Link Management</h2>
+          </div>
+
+          <div className="links-admin-banner-section">
+            <div className="links-admin-section-heading">
+              <div>
+                <span className="links-admin-section-kicker">ADMIN</span>
+                <h3>Storefront Banners</h3>
+              </div>
+              <span>Home, shop, brands, offers and cart</span>
+            </div>
+            <div className="links-admin-banner-controls">
+              <label>
+                Admin page
+                <select value={bannerPage} onChange={event => setBannerPage(event.target.value)}>
+                  {ADMIN_BANNER_PAGES.map(page => <option key={page.value} value={page.value}>{page.label}</option>)}
+                </select>
+              </label>
+              <label>
+                Banner image
+                <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleBannerFileSelect} />
+              </label>
+              <button type="button" className="btn-primary" onClick={handleBannerUpload} disabled={!bannerFile}>Upload Admin Banner</button>
+            </div>
+            <div className="links-admin-banner-list">
+              {banners.filter(banner => ADMIN_BANNER_PAGES.some(page => page.value === banner.pageKey)).map(banner => (
+                <div key={banner.id} className="links-admin-banner-item">
+                  <img src={resolveBannerUrl(banner.imageUrl)} alt={`${banner.pageKey} banner`} />
+                  <div><strong>{ADMIN_BANNER_PAGES.find(page => page.value === banner.pageKey)?.label || banner.pageKey}</strong><span>ID: {banner.id}</span></div>
+                  <button type="button" className="btn-danger btn-sm" onClick={() => handleBannerDelete(banner.id)}>Delete</button>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <form onSubmit={handleCreateLink} className="panel-form">
             <label>
               Label
@@ -288,35 +339,35 @@ export default function LinksAdmin() {
             </label>
             <button type="submit" className="btn-primary">Save Link</button>
           </form>
-        </div>
 
-        <div className="dashboard-card wide-card">
-          <h2>Link List</h2>
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Label</th>
-                  <th>URL</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {links.map(link => (
-                  <tr key={link.id}>
-                    <td>{link.id}</td>
-                    <td>{link.label}</td>
-                    <td><a href={link.url} target="_blank" rel="noreferrer">Open</a></td>
-                    <td>{link.isActive ? 'Active' : 'Inactive'}</td>
-                    <td>
-                      <button className="btn-danger btn-sm" onClick={() => handleDeleteLink(link.id)}>Delete</button>
-                    </td>
+          <div style={{ marginTop: '24px' }}>
+            <h3 style={{ marginBottom: '12px' }}>Link List</h3>
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Label</th>
+                    <th>URL</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {links.map(link => (
+                    <tr key={link.id}>
+                      <td>{link.id}</td>
+                      <td>{link.label}</td>
+                      <td><a href={link.url} target="_blank" rel="noreferrer">Open</a></td>
+                      <td>{link.isActive ? 'Active' : 'Inactive'}</td>
+                      <td>
+                        <button className="btn-danger btn-sm" onClick={() => handleDeleteLink(link.id)}>Delete</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>

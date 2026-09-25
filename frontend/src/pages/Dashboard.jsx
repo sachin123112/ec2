@@ -327,18 +327,37 @@ export default function Dashboard() {
         </div>
       </div>
 
+      <section className="dashboard-welcome" aria-label="Dashboard welcome">
+        <div>
+          <span className="dashboard-welcome-kicker">PawMart admin</span>
+          <h2>Welcome Back, <strong>{displayName || 'Admin'}!</strong></h2>
+          <p>Here's what's happening with your store today.</p>
+        </div>
+        <img src="/images/hero-pets.png" alt="Happy dog and cat" />
+        <div className="dashboard-welcome-paw paw-one">✦</div>
+        <div className="dashboard-welcome-paw paw-two">♡</div>
+      </section>
+
       <div className="dashboard-summary">
-        <div className="summary-card">
-          <span>Products</span>
+        <div className="summary-card summary-products">
+          <span className="summary-icon">◇</span><div><span>Products</span>
           <strong>{products.length}</strong>
+          <small>in your catalog</small></div>
         </div>
-        <div className="summary-card">
-          <span>Orders</span>
+        <div className="summary-card summary-orders">
+          <span className="summary-icon">▣</span><div><span>Orders</span>
           <strong>{orders.length}</strong>
+          <small>new orders</small></div>
         </div>
-        <div className="summary-card">
-          <span>Categories</span>
+        <div className="summary-card summary-categories">
+          <span className="summary-icon">☷</span><div><span>Categories</span>
           <strong>{categories.length}</strong>
+          <small>active categories</small></div>
+        </div>
+        <div className="summary-card summary-customers">
+          <span className="summary-icon">♙</span><div><span>Customers</span>
+          <strong>0</strong>
+          <small>new customers</small></div>
         </div>
       </div>
 
@@ -422,6 +441,18 @@ export default function Dashboard() {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 7h18v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 3v4M8 3v4" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
               <div className="tile-label">Manage Orders</div>
+            </button>
+            <button className="action-tile" onClick={() => navigate('/admin/brands')}>
+              <div className="tile-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4z" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 8v8M8.5 11.5h7" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+              <div className="tile-label">Manage Brands</div>
+            </button>
+            <button className="action-tile" onClick={() => navigate('/admin/offers')}>
+              <div className="tile-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 12.5V7a2 2 0 00-2-2H6a2 2 0 00-2 2v5.5a2 2 0 001.2 1.8l5.8 2.9a2 2 0 001.9 0l5.8-2.9A2 2 0 0020 12.5z" stroke="#f97316" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 10V4M12 20v-4" stroke="#f97316" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+              <div className="tile-label">Manage Offers</div>
             </button>
             <button className="action-tile" onClick={() => navigate('/reports')}>
               <div className="tile-icon">

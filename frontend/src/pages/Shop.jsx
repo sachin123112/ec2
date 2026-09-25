@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { Fragment, useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { categories as defaultCategories } from '../data/products';
 import { useCart } from '../context/CartContext';
@@ -7,14 +7,14 @@ import './Shop.css';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 const shopCategoryRail = [
-  { label: 'All', active: true, icon: '🛍️' },
-  { label: 'Dogs', icon: '🐶' },
-  { label: 'Cats', icon: '🐱' },
-  { label: 'Birds', icon: '🐦' },
-  { label: 'Fish', icon: '🐠' },
-  { label: 'Food', icon: '🥗' },
-  { label: 'Aquarium Plants', icon: '🌿' },
-  { label: 'Small Pets', icon: '🐹' },
+  { label: 'All', active: true, icon: '🛍️', image: null },
+  { label: 'Dogs', icon: '🐶', image: '/images/category-dogs.png' },
+  { label: 'Cats', icon: '🐱', image: '/images/category-cats.png' },
+  { label: 'Birds', icon: '🐦', image: '/images/category-birds.png' },
+  { label: 'Fish', icon: '🐠', image: '/images/category-fish.png' },
+  { label: 'Food', icon: '🥗', image: '/images/category-food.png' },
+  { label: 'Aquarium Plants', icon: '🌿', image: '/images/category-aquarium-plants.png' },
+  { label: 'Small Pets', icon: '🐹', image: '/images/category-small-pets.png' },
   { label: 'Aquarium Wood', icon: 'wood' },
   { label: 'Accessories', icon: '🎀' },
   { label: 'Toys', icon: '🧸' },
@@ -147,9 +147,15 @@ function normalizeProduct(product) {
   };
 }
 
+function resolveBannerUrl(imageUrl) {
+  if (!imageUrl || /^(https?:|data:|blob:)/i.test(imageUrl)) return imageUrl;
+  return `${API_URL.replace(/\/api\/v1\/?$/, '')}/${imageUrl.replace(/^\/+/, '')}`;
+}
+
 export default function Shop() {
   const [products, setProducts] = useState([]);
   const [categoryOptions, setCategoryOptions] = useState(defaultCategories);
+  const [pageBanner, setPageBanner] = useState(null);
   const [searchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState('All');
   const [sortBy, setSortBy] = useState('default');
@@ -244,7 +250,21 @@ export default function Shop() {
       }
     }
 
+    async function fetchBanner() {
+      try {
+        const response = await fetch(`${API_URL}/banners?page=SHOP`);
+        if (!mounted) return;
+        if (response.ok) {
+          const data = await response.json();
+          setPageBanner(Array.isArray(data) && data.length > 0 ? data[0] : null);
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     fetchProducts();
+    fetchBanner();
 
     function onProductsUpdated(e) {
       if (e && e.detail) {
@@ -280,13 +300,22 @@ export default function Shop() {
 
   return (
     <div className="shop">
-      {/* Shop Header */}
-      <div className="shop-header">
-        <div className="shop-header-inner">
-          <h1>�️ Pet Shop</h1>
-          <p>Showing <strong>{filtered.length}</strong> products</p>
+      {pageBanner && (
+        <section aria-label="Shop banner" style={{ width: 'min(1200px, calc(100% - 32px))', margin: '1rem auto 0', borderRadius: '18px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(21, 33, 59, 0.08)' }}>
+          <img src={resolveBannerUrl(pageBanner.imageUrl)} alt="Shop banner" style={{ display: 'block', width: '100%', height: '220px', objectFit: 'cover' }} />
+        </section>
+      )}
+      <section className={`shop-main-hero ${showHero ? '' : 'is-hidden'}`}>
+        <div className="shop-main-hero-copy">
+          <span className="shop-hero-kicker">🐾 Premium pet essentials</span>
+          <h1>Up to <strong>30%</strong> OFF</h1>
+          <h2>on Premium Pet Essentials</h2>
+          <div className="shop-hero-perks"><span>● High Quality</span><span>● Trusted Brands</span><span>● Fast Delivery</span></div>
+          <button type="button" className="shop-primary-btn" onClick={() => setActiveCategory('All')}>Shop Now <b>→</b></button>
         </div>
-      </div>
+        <img className="shop-main-hero-image" src="/images/hero-pets.png" alt="Happy dog and cat with pet essentials" />
+        <div className="shop-hero-sticker">Happy Pets<br /><strong>Happier Lives</strong> ♡</div>
+      </section>
 
       <div className={`shop-category-strip ${showTopDeck ? '' : 'is-hidden'}`} aria-label="Category navigation">
         {shopCategoryRail.map(item => {
@@ -300,27 +329,12 @@ export default function Shop() {
               onClick={() => setActiveCategory(item.label === 'All' ? 'All' : item.label)}
             >
               <span className={`shop-category-icon ${item.icon === 'wood' ? 'wood-logo' : ''}`}>
-                {item.icon === 'wood' ? <span aria-hidden="true" /> : item.icon}
+                {item.image ? <img src={item.image} alt="" /> : item.icon === 'wood' ? <span aria-hidden="true" /> : item.icon}
               </span>
               <span className="shop-category-label">{item.label}</span>
             </button>
           );
         })}
-      </div>
-
-      <div className={`shop-hero-banner ${showHero ? '' : 'is-hidden'}`}>
-        <div className="shop-banner-grid">
-          {promoBanners.map((banner) => (
-            <article key={banner.title} className="shop-banner-card" style={{ backgroundImage: `url(${banner.image})` }}>
-              <div className="shop-banner-overlay" />
-              <div className="shop-banner-content">
-                <span className="shop-banner-tag">{banner.tag}</span>
-                <h2>{banner.title}</h2>
-                <p>{banner.subtitle}</p>
-              </div>
-            </article>
-          ))}
-        </div>
       </div>
 
       <div className="shop-body">
@@ -378,7 +392,8 @@ export default function Shop() {
             </div>
           ) : (
             <div className="shop-products-grid">
-              {filtered.map(product => (
+              {filtered.map((product, index) => (
+                <Fragment key={product.id}>
                 <div key={product.id} className="product-card">
                   {product.badge && <span className="product-badge">{product.badge}</span>}
                   <div className="product-img-wrap" onClick={() => { setSelected(product); setSelectedImageIndex(0); }}>
@@ -407,6 +422,17 @@ export default function Shop() {
                     </div>
                   </div>
                 </div>
+                {index === 3 && (
+                  <>
+                    <article className="shop-inline-promo shop-inline-promo-food">
+                      <div><strong>Healthy Meals<br />for Happier Pets</strong><small>Nutrition made for a longer, healthier life.</small><button type="button" onClick={() => setActiveCategory('Food')}>Shop Food <b>→</b></button></div>
+                    </article>
+                    <article className="shop-inline-promo shop-inline-promo-toys">
+                      <div><strong>Toys &amp; Accessories<br />for Every Adventure</strong><small>Playtime essentials for happy pets.</small><button type="button" onClick={() => setActiveCategory('Toys')}>Shop Now <b>→</b></button></div>
+                    </article>
+                  </>
+                )}
+                </Fragment>
               ))}
             </div>
           )}

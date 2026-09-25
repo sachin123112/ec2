@@ -5,9 +5,41 @@ import { useEffect, useState } from 'react';
 import './Home.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+const API_ORIGIN = API_URL.replace(/\/api\/v1\/?$/, '');
+
+function resolveBannerUrl(imageUrl) {
+  if (!imageUrl || /^(https?:|data:|blob:)/i.test(imageUrl)) return imageUrl;
+  return `${API_ORIGIN}/${imageUrl.replace(/^\/+/, '')}`;
+}
+
+const fallbackFeatured = [
+  { id: 'fallback-1', name: 'Royal Canin Dog Food', category: 'Dogs', subCategory: 'Food', price: 1299, rating: 4.8, reviews: 120, image: '/images/product-royal-canin.png', badge: 'Best Seller', inStock: true },
+  { id: 'fallback-2', name: 'Pedigree Adult Dog Food', category: 'Dogs', subCategory: 'Food', price: 999, rating: 4.7, reviews: 94, image: '/images/product-pedigree.png', badge: 'Popular', inStock: true },
+  { id: 'fallback-3', name: 'Whiskas Cat Food', category: 'Cats', subCategory: 'Food', price: 899, rating: 4.6, reviews: 64, image: '/images/product-whiskas.png', badge: 'Top Rated', inStock: true },
+  { id: 'fallback-4', name: 'Kong Chew Toy', category: 'Dogs', subCategory: 'Toys', price: 499, rating: 4.8, reviews: 38, image: '/images/product-kong.png', badge: 'Best Seller', inStock: true },
+  { id: 'fallback-5', name: 'Comfort Pet Bed', category: 'Dogs', subCategory: 'Home Care', price: 799, rating: 4.7, reviews: 52, image: '/images/product-bed.png', badge: 'Popular', inStock: true },
+  { id: 'fallback-6', name: 'Aquarium Live Plant', category: 'Aquarium Plants', subCategory: 'Plants', price: 299, rating: 4.5, reviews: 26, image: '/images/product-plant.png', badge: 'New', inStock: true },
+];
 
 function useFeaturedProducts() {
-  const [featured, setFeatured] = useState([]);
+  const [featured, setFeatured] = useState(fallbackFeatured);
+
+  const normalizeProduct = (product) => {
+    const image = product.imageUrls?.[0] || product.images?.[0] || product.image || '';
+    return {
+      id: product.id,
+      name: product.name,
+      category: product.categoryName || product.category || 'Uncategorized',
+      subCategory: product.subCategory || '',
+      price: Number(product.price || 0),
+      rating: Number(product.rating || 4.5),
+      reviews: Number(product.reviews || 0),
+      image: image.startsWith('/') ? `${API_ORIGIN}${image}` : (image || '/images/product-royal-canin.png'),
+      badge: product.badge || '',
+      description: product.description || '',
+      inStock: product.stockQuantity !== undefined ? product.stockQuantity > 0 : (product.inStock !== false),
+    };
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -17,20 +49,9 @@ function useFeaturedProducts() {
         if (!mounted) return;
         if (res.ok) {
           const all = await res.json();
-          const norm = all.map(p => ({
-            id: p.id,
-            name: p.name,
-            category: p.category || (p.category && p.category.name) || 'Uncategorized',
-            subCategory: p.subCategory || '',
-            price: p.price || 0,
-            rating: p.rating || 0,
-            reviews: p.reviews || 0,
-            image: p.imageUrls?.[0] || p.images?.[0] || p.image || 'https://via.placeholder.com/400',
-            badge: p.badge || '',
-            description: p.description || '',
-            inStock: p.stockQuantity ? p.stockQuantity > 0 : (p.inStock !== undefined ? p.inStock : true),
-          }));
-          setFeatured(norm.filter(p => p.badge === 'Best Seller' || p.badge === 'Top Rated'));
+          const norm = all.map(normalizeProduct);
+          const apiFeatured = norm.filter(p => p.badge === 'Best Seller' || p.badge === 'Top Rated');
+          setFeatured(apiFeatured.length ? apiFeatured.slice(0, 6) : norm.slice(0, 6));
         }
       } catch {
         // ignore
@@ -41,20 +62,9 @@ function useFeaturedProducts() {
 
     function onProductsUpdated(e) {
       if (e && e.detail) {
-        const norm = e.detail.map(p => ({
-          id: p.id,
-          name: p.name,
-          category: p.category || (p.category && p.category.name) || 'Uncategorized',
-          subCategory: p.subCategory || '',
-          price: p.price || 0,
-          rating: p.rating || 0,
-          reviews: p.reviews || 0,
-          image: p.imageUrls?.[0] || p.images?.[0] || p.image || 'https://via.placeholder.com/400',
-          badge: p.badge || '',
-          description: p.description || '',
-          inStock: p.stockQuantity ? p.stockQuantity > 0 : (p.inStock !== undefined ? p.inStock : true),
-        }));
-        setFeatured(norm.filter(p => p.badge === 'Best Seller' || p.badge === 'Top Rated'));
+        const norm = e.detail.map(normalizeProduct);
+        const apiFeatured = norm.filter(p => p.badge === 'Best Seller' || p.badge === 'Top Rated');
+        setFeatured(apiFeatured.length ? apiFeatured.slice(0, 6) : norm.slice(0, 6));
       }
     }
 
@@ -89,12 +99,48 @@ const testimonials = [
   },
 ];
 
+const categoryImages = {
+  Dogs: '/images/category-dogs.png',
+  Cats: '/images/category-cats.png',
+  Birds: '/images/category-birds.png',
+  Fish: '/images/category-fish.png',
+  'Small Pets': '/images/category-small-pets.png',
+  'Aquarium Wood': '/images/category-aquarium-wood.png',
+  'Aquarium Plants': '/images/category-aquarium-plants.png',
+  Food: '/images/category-food.png',
+};
+
 export default function Home() {
   const { addToCart } = useCart();
   const featured = useFeaturedProducts();
+  const [pageBanner, setPageBanner] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    fetch(`${API_URL}/banners?page=HOME`)
+      .then(response => response.ok ? response.json() : [])
+      .then(data => {
+        if (!mounted) return;
+        const banner = Array.isArray(data) && data.length > 0 ? data[0] : null;
+        setPageBanner(banner);
+      })
+      .catch(() => {
+        if (mounted) setPageBanner(null);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <div className="home">
+      {pageBanner && (
+        <section aria-label="Home banner" style={{ width: 'min(1200px, calc(100% - 32px))', margin: '0 auto 1.25rem', borderRadius: '18px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(21, 33, 59, 0.08)' }}>
+          <img src={resolveBannerUrl(pageBanner.imageUrl)} alt="Home banner" style={{ display: 'block', width: '100%', height: '220px', objectFit: 'cover' }} />
+        </section>
+      )}
       {/* Hero */}
       <section className="hero">
         <div className="hero-content">
@@ -113,11 +159,18 @@ export default function Home() {
         </div>
         <div className="hero-image">
           <img
-            src="https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=600&q=80"
+            src="/images/hero-pets.png"
             alt="Happy pets"
           />
           <div className="hero-badge">🚚 Free delivery over ₹999</div>
         </div>
+      </section>
+
+      <section className="home-benefits" aria-label="PawMart benefits">
+        <div><span>🚚</span><strong>Fast Delivery</strong><small>Across India</small></div>
+        <div><span>🛡️</span><strong>100% Genuine</strong><small>Products</small></div>
+        <div><span>⟳</span><strong>Easy Returns</strong><small>7 Days</small></div>
+        <div><span>🎧</span><strong>24/7 Support</strong><small>We&apos;re here to help</small></div>
       </section>
 
       {/* Categories */}
@@ -134,14 +187,29 @@ export default function Home() {
               className="category-card"
               style={{ background: cat.bg, borderColor: cat.color }}
             >
-              <span className={`cat-icon ${cat.icon === 'wood' ? 'wood-logo' : ''}`}>
-                {cat.icon === 'wood' ? <span aria-hidden="true" /> : cat.icon}
+              <span className="cat-icon">
+                <img src={categoryImages[cat.name]} alt="" loading="lazy" />
               </span>
               <span className="cat-name" style={{ color: cat.color }}>{cat.name}</span>
               <span className="cat-arrow" style={{ color: cat.color }}>→</span>
             </Link>
           ))}
         </div>
+      </section>
+
+      <section className="promo-grid" aria-label="Featured offers">
+        <Link to="/shop?category=Food" className="promo-card promo-food">
+          <span className="promo-eyebrow">Premium pet nutrition</span>
+          <strong>Up to <b>30% OFF</b></strong>
+          <span>Stock up on their favourite food.</span>
+          <span className="promo-link">Shop Food <b>→</b></span>
+        </Link>
+        <Link to="/shop?category=Small%20Pets" className="promo-card promo-toys">
+          <span className="promo-eyebrow">Playtime essentials</span>
+          <strong>Toys &amp; Accessories</strong>
+          <span>For happy, active pets</span>
+          <span className="promo-link">Shop Now <b>→</b></span>
+        </Link>
       </section>
 
       {/* Featured Products */}
