@@ -35,6 +35,7 @@ import com.company.auth.repository.UserRepository;
 import com.company.auth.service.SearchService;
 import com.company.auth.service.EmailNotificationService;
 import com.company.auth.service.ImageKitImageService;
+import com.company.auth.service.FinanceService;
 import com.company.auth.service.NotificationService;
 import com.company.auth.repository.PaymentSettingsRepository;
 import com.company.auth.model.PaymentSettings;
@@ -86,6 +87,7 @@ public class ApiController {
     private final ImageKitImageService imageKitImageService;
     private final NotificationService notificationService;
     private final PaymentSettingsRepository paymentSettingsRepository;
+    private final FinanceService financeService;
 
     public ApiController(
             UserRepository userRepository,
@@ -101,7 +103,8 @@ public class ApiController {
             EmailNotificationService emailNotificationService,
             ImageKitImageService imageKitImageService,
             NotificationService notificationService,
-            PaymentSettingsRepository paymentSettingsRepository) {
+            PaymentSettingsRepository paymentSettingsRepository,
+            FinanceService financeService) {
         this.userRepository = userRepository;
         this.productRepository = productRepository;
         this.orderRepository = orderRepository;
@@ -116,6 +119,7 @@ public class ApiController {
         this.imageKitImageService = imageKitImageService;
         this.notificationService = notificationService;
         this.paymentSettingsRepository = paymentSettingsRepository;
+        this.financeService = financeService;
     }
 
     @GetMapping("/users")
@@ -541,6 +545,7 @@ public class ApiController {
             @ApiResponse(responseCode = "201", description = "Created order",
                 content = @Content(schema = @Schema(implementation = OrderDto.class)))
         })
+        @Transactional
         public ResponseEntity<OrderDto> createOrder(
             Authentication authentication, @RequestBody CreateOrderRequest request) {
         OrderEntity order = new OrderEntity();
@@ -584,6 +589,7 @@ public class ApiController {
         paymentRepository.save(payment);
         OrderEntity savedOrder = order;
         searchService.indexOrder(savedOrder);
+        financeService.postOnlineOrder(savedOrder);
         userRepository.findById(savedOrder.getUserId()).ifPresent(user -> emailNotificationService.sendOrderCreated(savedOrder, user));
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(savedOrder));
     }

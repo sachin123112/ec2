@@ -1,8 +1,226 @@
-.admin-sidebar { position: sticky; top: 0; z-index: 10; display: flex; flex: 0 0 218px; flex-direction: column; min-height: calc(100vh - 72px); padding: 22px 12px; background: linear-gradient(180deg, #111a27 0%, #1c2634 100%); color: #d5dce7; box-shadow: 6px 0 18px rgba(15, 23, 42, 0.08); transition: flex-basis 180ms ease, width 180ms ease; }
-.admin-sidebar.collapsed { flex-basis: 72px; }
-.admin-sidebar-brand { position: relative; display: flex; align-items: center; gap: 8px; padding: 0 13px 24px; color: #fff; font-size: 1.12rem; letter-spacing: -0.05em; white-space: nowrap; }
-.admin-sidebar-brand strong span { color: #ff682f; }.admin-sidebar-paw { display: grid; place-items: center; width: 25px; height: 25px; border-radius: 8px; background: #ff682f; color: #fff; font-size: 0.8rem; }
-.admin-sidebar-toggle { display: grid; place-items: center; width: 24px; height: 24px; margin-left: auto; border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 6px; background: rgba(255, 255, 255, 0.06); color: #d5dce7; cursor: pointer; font-size: 1.25rem; line-height: 1; transform: rotate(0deg); }
-.admin-sidebar.collapsed .admin-sidebar-brand strong { display: none; }.admin-sidebar.collapsed .admin-sidebar-brand { justify-content: center; padding-right: 0; padding-left: 0; }.admin-sidebar.collapsed .admin-sidebar-toggle { position: absolute; top: 0; left: 36px; transform: rotate(180deg); }.admin-sidebar.collapsed .admin-sidebar-link { justify-content: center; padding: 0; }.admin-sidebar.collapsed .admin-sidebar-link span:last-child { display: none; }
-.admin-sidebar-nav { display: grid; gap: 5px; }.admin-sidebar-link { display: flex; align-items: center; gap: 12px; min-height: 39px; padding: 0 13px; border-radius: 6px; color: #c6cfdb; font-size: 0.74rem; font-weight: 600; text-decoration: none; transition: background 160ms ease, color 160ms ease; }.admin-sidebar-link:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }.admin-sidebar-link.active { background: #ff642a; color: #fff; box-shadow: 0 7px 15px rgba(255, 100, 42, 0.2); }.admin-sidebar-icon { display: grid; place-items: center; width: 17px; color: currentColor; font-size: 0.95rem; line-height: 1; }
-@media (max-width: 760px) { .admin-sidebar, .admin-sidebar.collapsed { position: static; flex-basis: auto; min-height: auto; padding: 10px; overflow-x: auto; }.admin-sidebar-brand, .admin-sidebar.collapsed .admin-sidebar-brand { justify-content: flex-start; padding: 4px 8px 12px; }.admin-sidebar-brand strong, .admin-sidebar.collapsed .admin-sidebar-brand strong { display: inline; }.admin-sidebar-toggle, .admin-sidebar.collapsed .admin-sidebar-toggle { position: static; margin-left: auto; transform: none; }.admin-sidebar-nav { display: flex; min-width: max-content; gap: 5px; }.admin-sidebar-link, .admin-sidebar.collapsed .admin-sidebar-link { justify-content: flex-start; min-height: 35px; padding: 0 11px; }.admin-sidebar-link span:last-child, .admin-sidebar.collapsed .admin-sidebar-link span:last-child { display: inline; font-size: 0.68rem; } }
+.admin-sidebar {
+	position: sticky;
+	top: 0;
+	z-index: 10;
+	display: flex;
+	flex: 0 0 290px;
+	align-self: flex-start;
+	flex-direction: column;
+	height: calc(100vh - 72px);
+	min-height: calc(100vh - 72px);
+	padding: 16px 16px 18px;
+	overflow: hidden;
+	background: linear-gradient(180deg, #101e30 0%, #0c1727 100%);
+	color: #dce5f0;
+	border-right: 1px solid #1f3045;
+	box-shadow: 5px 0 16px rgba(12, 23, 39, 0.12);
+	transition: flex-basis 180ms ease;
+}
+
+.admin-sidebar.collapsed { flex-basis: 76px; }
+
+.admin-sidebar-brand {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-height: 48px;
+	padding: 0 12px 0 14px;
+	margin-bottom: 16px;
+	color: #f7f9fc;
+	white-space: nowrap;
+}
+
+.admin-sidebar-paw {
+	display: grid;
+	flex: 0 0 38px;
+	place-items: center;
+	width: 38px;
+	height: 38px;
+	border-radius: 10px;
+	background: linear-gradient(145deg, #ff7043, #f4511e);
+	color: #fff;
+	box-shadow: 0 5px 12px rgba(244, 81, 30, 0.2);
+}
+
+.admin-sidebar-paw svg { width: 24px; height: 24px; fill: currentColor; }
+.admin-sidebar-brand-copy { display: flex; min-width: 0; flex-direction: column; gap: 1px; }
+.admin-sidebar-brand-copy strong { font-size: 1.18rem; line-height: 1.1; letter-spacing: 0; }
+.admin-sidebar-brand-copy strong span { color: #f4511e; }
+.admin-sidebar-brand-copy small { color: #9ba9bb; font-size: 0.7rem; font-weight: 600; }
+
+.admin-sidebar-toggle {
+	display: grid;
+	flex: 0 0 32px;
+	place-items: center;
+	width: 32px;
+	height: 32px;
+	margin-left: auto;
+	border: 1px solid #304158;
+	border-radius: 7px;
+	background: #15253a;
+	color: #dce5f0;
+	cursor: pointer;
+	font-size: 1.35rem;
+	line-height: 1;
+	transition: border-color 150ms ease, background 150ms ease;
+}
+
+.admin-sidebar-toggle:hover { border-color: #f4a184; background: #25364b; color: #ff9a70; }
+.admin-sidebar-nav { display: flex; min-height: 0; flex-direction: column; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #34465c transparent; }
+
+.admin-sidebar-link {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 13px;
+	min-height: 36px;
+	padding: 0 10px;
+	border: 1px solid transparent;
+	border-radius: 8px;
+	color: #c7d1de;
+	font-size: 0.82rem;
+	font-weight: 600;
+	text-decoration: none;
+	transition: background 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.admin-sidebar-link:hover { background: rgba(255, 255, 255, 0.07); color: #fff; }
+.admin-sidebar-link.active { border-color: rgba(255, 133, 88, 0.28); background: rgba(244, 81, 30, 0.14); color: #ff9a70; box-shadow: none; }
+.admin-sidebar-primary-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 6px; }
+.admin-sidebar-primary-link { min-height: 70px; flex-direction: column; justify-content: center; gap: 5px; padding: 8px 6px; border-color: #24354a; background: #15253a; color: #d4deea; font-size: 0.74rem; text-align: center; }
+.admin-sidebar-primary-link:hover { border-color: #3a4c62; background: #1a2c42; }
+.admin-sidebar-primary-link.active { border-color: rgba(255, 133, 88, 0.4); background: rgba(244, 81, 30, 0.15); color: #ff9a70; }
+.admin-sidebar-primary-link .admin-sidebar-icon { width: 22px; height: 22px; flex-basis: 22px; color: #91a0b4; }
+.admin-sidebar-primary-link.active .admin-sidebar-icon { color: #ff8355; }
+.admin-sidebar-primary-link .admin-sidebar-group-chevron { display: none; }
+.admin-sidebar-dashboard { margin-bottom: 0; }
+.admin-sidebar-dashboard.active, .admin-sidebar-primary-link.admin-sidebar-account-trigger.active { min-height: 70px; }
+.admin-sidebar-link-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-sidebar-icon { width: 21px; height: 21px; flex: 0 0 21px; }
+.admin-sidebar-icon-dashboard { color: #e64a19; fill: currentColor; stroke: none; }
+.admin-sidebar-icon-products { color: #19b8f2; }
+.admin-sidebar-icon-categories { color: #a855f7; }
+.admin-sidebar-icon-brands { color: #ec4899; }
+.admin-sidebar-icon-offers { color: #10b981; }
+.admin-sidebar-icon-orders { color: #fb7b22; }
+.admin-sidebar-icon-customers { color: #18a9f5; }
+.admin-sidebar-icon-vendors { color: #18a9f5; }
+.admin-sidebar-icon-banners { color: #a855f7; }
+.admin-sidebar-icon-reviews { color: #fbbf24; }
+.admin-sidebar-icon-reports { color: #a855f7; }
+.admin-sidebar-icon-settings { color: #aebbd0; }
+.admin-sidebar-icon-expenses { color: #10b981; }
+.admin-sidebar-icon-income { color: #10b981; }
+.admin-sidebar-icon-vouchers { color: #a855f7; }
+.admin-sidebar-icon-gst { color: #ec4899; }
+.admin-sidebar-icon-tds { color: #18a9f5; }
+.admin-sidebar-icon-invoices { color: #fbbf24; }
+.admin-sidebar-icon-categories { stroke: none; }
+.admin-sidebar-icon-accounts { color: #e64a19; fill: currentColor; stroke: none; }
+.admin-sidebar-chevron { margin-left: auto; color: #7f90a6; font-size: 1.2rem; line-height: 1; }
+.admin-sidebar-link.active .admin-sidebar-chevron { color: #ff9a70; }
+.admin-sidebar-count { min-width: 30px; margin-left: auto; padding: 4px 7px; border-radius: 999px; background: #f4511e; color: #fff; font-size: 0.7rem; font-weight: 800; text-align: center; line-height: 1; }
+.admin-sidebar-count + .admin-sidebar-chevron { margin-left: 0; }
+
+.admin-sidebar-group { margin-top: 12px; padding-top: 11px; border-top: 1px solid #25364a; }
+.admin-sidebar-section-title { margin: 0 10px 7px; color: #8e9db1; font-size: 0.64rem; font-weight: 800; letter-spacing: 0.1em; line-height: 1.4; text-transform: uppercase; }
+.admin-sidebar-account-trigger { width: 100%; border: 1px solid transparent; background: transparent; font: inherit; text-align: left; cursor: pointer; }
+.admin-sidebar-account-trigger.active { min-height: 70px; border-color: rgba(255, 133, 88, 0.4); background: rgba(244, 81, 30, 0.15); color: #ff9a70; box-shadow: none; }
+.admin-sidebar-account-trigger.active::before { display: none; }
+.admin-sidebar-group-chevron { margin-left: auto; color: #9ba9bb; font-size: 1.1rem; }
+.admin-sidebar-account-items { position: relative; display: grid; gap: 1px; margin: 3px 0 1px 19px; padding-left: 18px; }
+.admin-sidebar-account-items::before { position: absolute; top: 0; bottom: 11px; left: 0; width: 1px; background: #31435a; content: ''; }
+.admin-sidebar-child { min-height: 36px; gap: 11px; padding-left: 7px; font-size: 0.77rem; }
+.admin-sidebar-child::before { position: absolute; left: -21px; width: 7px; height: 7px; border-radius: 50%; background: #657991; content: ''; }
+.admin-sidebar-child.active { background: rgba(244, 81, 30, 0.14); color: #ff9a70; box-shadow: none; }
+.admin-sidebar-child.active::before { background: #ff8355; }
+.admin-sidebar-finance-sections { min-height: 0; }
+.admin-sidebar-finance-group { margin-top: 7px; padding-top: 9px; }
+.admin-sidebar-finance-group .admin-sidebar-child { gap: 10px; padding-left: 9px; font-size: 0.74rem; }
+.admin-sidebar-finance-group .admin-sidebar-child::before { display: none; }
+.admin-sidebar-finance-group .admin-sidebar-icon { width: 18px; height: 18px; flex-basis: 18px; }
+.admin-sidebar-finance-subgroup + .admin-sidebar-finance-subgroup { margin-top: 5px; padding-top: 5px; border-top: 1px solid #24394f; }
+.admin-sidebar-finance-report-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 5px; }
+.admin-sidebar-finance-report-grid .admin-sidebar-child { min-width: 0; gap: 5px; padding: 0 3px; font-size: 0.64rem; }
+.admin-sidebar-finance-report-grid .admin-sidebar-icon { width: 15px; height: 15px; flex-basis: 15px; }
+.admin-sidebar-finance-report-grid .admin-sidebar-chevron { display: none; }
+
+.admin-sidebar-finance {
+	background: linear-gradient(180deg, #101e30 0%, #0c1727 100%);
+	border-right-color: #1f3045;
+	color: #dce5f0;
+	box-shadow: 5px 0 16px rgba(12, 23, 39, 0.12);
+}
+.admin-sidebar-finance .admin-sidebar-brand { color: #f7f9fc; }
+.admin-sidebar-finance .admin-sidebar-brand-copy small { color: #9ba9bb; }
+.admin-sidebar-finance .admin-sidebar-toggle { border-color: #304158; background: #15253a; color: #dce5f0; }
+.admin-sidebar-finance .admin-sidebar-toggle:hover { border-color: #f4a184; background: #25364b; color: #ff9a70; }
+.admin-sidebar-finance .admin-sidebar-primary-link { border-color: #24354a; background: #15253a; color: #d4deea; }
+.admin-sidebar-finance .admin-sidebar-primary-link:hover { border-color: #3a4c62; background: #1a2c42; }
+.admin-sidebar-finance .admin-sidebar-primary-link.active { border-color: rgba(255, 133, 88, 0.4); background: rgba(244, 81, 30, 0.15); color: #ff9a70; }
+.admin-sidebar-finance .admin-sidebar-primary-link .admin-sidebar-icon { color: #91a0b4; }
+.admin-sidebar-finance .admin-sidebar-primary-link.active .admin-sidebar-icon { color: #ff8355; }
+.admin-sidebar-finance .admin-sidebar-group { border-top-color: #25364a; }
+.admin-sidebar-finance .admin-sidebar-section-title { color: #8e9db1; }
+.admin-sidebar-finance .admin-sidebar-finance-group-creation .admin-sidebar-section-title { color: #70cdbd; }
+.admin-sidebar-finance .admin-sidebar-finance-group-transaction .admin-sidebar-section-title { color: #f3ae6a; }
+.admin-sidebar-finance .admin-sidebar-finance-group-gst-tds .admin-sidebar-section-title { color: #ec83b7; }
+.admin-sidebar-finance .admin-sidebar-finance-group-reports .admin-sidebar-section-title { color: #b49be8; }
+.admin-sidebar-finance .admin-sidebar-child { color: #c7d1de; }
+.admin-sidebar-finance .admin-sidebar-child:hover { background: rgba(255, 255, 255, 0.07); color: #fff; }
+.admin-sidebar-finance .admin-sidebar-child.active { border-color: rgba(255, 133, 88, 0.28); background: rgba(244, 81, 30, 0.14); color: #ff9a70; }
+.admin-sidebar-finance .admin-sidebar-child .admin-sidebar-chevron { color: #7f90a6; }
+.admin-sidebar-finance .admin-sidebar-child.active .admin-sidebar-chevron { color: #ff9a70; }
+.admin-sidebar-finance-link-vendor-master .admin-sidebar-icon, .admin-sidebar-finance-link-vendor-payment .admin-sidebar-icon, .admin-sidebar-finance-link-vendor-ledger .admin-sidebar-icon { color: #f5bd53; }
+.admin-sidebar-finance-link-customer-master .admin-sidebar-icon, .admin-sidebar-finance-link-customer-receipt .admin-sidebar-icon, .admin-sidebar-finance-link-customer-ledger .admin-sidebar-icon { color: #49c9d5; }
+.admin-sidebar-finance-link-product-accounting-mapping .admin-sidebar-icon, .admin-sidebar-finance-link-products-ledger .admin-sidebar-icon { color: #5ad1b4; }
+.admin-sidebar-finance-link-group-ledger .admin-sidebar-icon, .admin-sidebar-finance-link-reports .admin-sidebar-icon, .admin-sidebar-finance-link-day-book .admin-sidebar-icon, .admin-sidebar-finance-link-trial-balance .admin-sidebar-icon, .admin-sidebar-finance-link-profit-loss .admin-sidebar-icon, .admin-sidebar-finance-link-balance-sheet .admin-sidebar-icon { color: #b59af2; }
+.admin-sidebar-finance-link-bank-accounts .admin-sidebar-icon, .admin-sidebar-finance-link-bank-deposit .admin-sidebar-icon, .admin-sidebar-finance-link-bank-withdrawal .admin-sidebar-icon, .admin-sidebar-finance-link-bank-transfer .admin-sidebar-icon, .admin-sidebar-finance-link-bank-reconciliation .admin-sidebar-icon, .admin-sidebar-finance-link-bank-book .admin-sidebar-icon, .admin-sidebar-finance-link-bank-ledger .admin-sidebar-icon { color: #67a8ff; }
+.admin-sidebar-finance-link-cash-petty-cash .admin-sidebar-icon, .admin-sidebar-finance-link-cash-in-hand .admin-sidebar-icon, .admin-sidebar-finance-link-petty-cash .admin-sidebar-icon, .admin-sidebar-finance-link-general-receipt .admin-sidebar-icon { color: #52d397; }
+.admin-sidebar-finance-link-hsn-sac .admin-sidebar-icon, .admin-sidebar-finance-link-gst-rates .admin-sidebar-icon, .admin-sidebar-finance-link-input-gst .admin-sidebar-icon, .admin-sidebar-finance-link-output-gst .admin-sidebar-icon, .admin-sidebar-finance-link-cgst-sgst-igst .admin-sidebar-icon, .admin-sidebar-finance-link-gst-reconciliation .admin-sidebar-icon, .admin-sidebar-finance-link-gst-report .admin-sidebar-icon, .admin-sidebar-finance-link-hsn-wise-summary .admin-sidebar-icon { color: #ed83b7; }
+.admin-sidebar-finance-link-tds-sections-rates .admin-sidebar-icon, .admin-sidebar-finance-link-tds-deduction .admin-sidebar-icon, .admin-sidebar-finance-link-tds-payable .admin-sidebar-icon, .admin-sidebar-finance-link-tds-reconciliation .admin-sidebar-icon, .admin-sidebar-finance-link-tds-report .admin-sidebar-icon { color: #fb8e83; }
+.admin-sidebar-finance-link-charges .admin-sidebar-icon, .admin-sidebar-finance-link-expense-voucher .admin-sidebar-icon, .admin-sidebar-finance-link-general-payment .admin-sidebar-icon, .admin-sidebar-finance-link-petty-cash-payment .admin-sidebar-icon, .admin-sidebar-finance-link-expense-ledger .admin-sidebar-icon { color: #ff9f59; }
+.admin-sidebar-finance-link-purchase-order .admin-sidebar-icon, .admin-sidebar-finance-link-goods-receipt-grn .admin-sidebar-icon, .admin-sidebar-finance-link-purchase-invoice .admin-sidebar-icon, .admin-sidebar-finance-link-purchase-voucher .admin-sidebar-icon, .admin-sidebar-finance-link-purchase-return .admin-sidebar-icon, .admin-sidebar-finance-link-debit-note .admin-sidebar-icon, .admin-sidebar-finance-link-purchase-outstanding .admin-sidebar-icon, .admin-sidebar-finance-link-purchase-register .admin-sidebar-icon, .admin-sidebar-finance-link-inward-report .admin-sidebar-icon { color: #f3a24f; }
+.admin-sidebar-finance-link-online-orders .admin-sidebar-icon, .admin-sidebar-finance-link-sales-invoice .admin-sidebar-icon, .admin-sidebar-finance-link-sales-voucher .admin-sidebar-icon, .admin-sidebar-finance-link-dispatch-outward .admin-sidebar-icon, .admin-sidebar-finance-link-sales-return .admin-sidebar-icon, .admin-sidebar-finance-link-refund .admin-sidebar-icon, .admin-sidebar-finance-link-credit-note .admin-sidebar-icon, .admin-sidebar-finance-link-customer-outstanding .admin-sidebar-icon, .admin-sidebar-finance-link-sales-register .admin-sidebar-icon, .admin-sidebar-finance-link-outward-report .admin-sidebar-icon { color: #36c8a0; }
+.admin-sidebar-finance-link-journal-voucher .admin-sidebar-icon, .admin-sidebar-finance-link-contra-voucher .admin-sidebar-icon, .admin-sidebar-finance-link-voucher-debit-note .admin-sidebar-icon, .admin-sidebar-finance-link-voucher-credit-note .admin-sidebar-icon { color: #c18af1; }
+.admin-sidebar-finance-link-payment-gateway-settlement .admin-sidebar-icon, .admin-sidebar-finance-link-cod-settlement .admin-sidebar-icon { color: #64b5f6; }
+.admin-sidebar-finance-link-vendor-outstanding .admin-sidebar-icon, .admin-sidebar-finance-link-vendor-outstanding-report .admin-sidebar-icon, .admin-sidebar-finance-link-customer-outstanding-report .admin-sidebar-icon, .admin-sidebar-finance-link-vendor-statement .admin-sidebar-icon { color: #f5bd53; }
+
+.admin-sidebar.collapsed .admin-sidebar-brand-copy,
+.admin-sidebar.collapsed .admin-sidebar-section-title,
+.admin-sidebar.collapsed .admin-sidebar-link-label,
+.admin-sidebar.collapsed .admin-sidebar-chevron,
+.admin-sidebar.collapsed .admin-sidebar-count,
+.admin-sidebar.collapsed .admin-sidebar-group-chevron,
+.admin-sidebar.collapsed .admin-sidebar-account-items { display: none; }
+.admin-sidebar.collapsed .admin-sidebar-brand { justify-content: center; padding: 0; }
+.admin-sidebar.collapsed .admin-sidebar-toggle { position: absolute; top: 0; right: -5px; width: 23px; height: 28px; font-size: 1rem; transform: translateX(50%) rotate(180deg); }
+.admin-sidebar.collapsed .admin-sidebar-link { justify-content: center; padding: 0; }
+.admin-sidebar.collapsed .admin-sidebar-group { margin-top: 10px; padding-top: 8px; }
+.admin-sidebar.collapsed .admin-sidebar-account-trigger.active::before { display: none; }
+.admin-sidebar.collapsed .admin-sidebar-finance-report-grid { grid-template-columns: 1fr; }
+
+@media (max-width: 760px) {
+	.admin-sidebar, .admin-sidebar.collapsed { position: static; width: 100%; height: auto; max-height: 150px; min-height: auto; flex: 0 0 auto; padding: 8px 12px 10px; overflow: hidden; }
+	.admin-sidebar-brand, .admin-sidebar.collapsed .admin-sidebar-brand { min-height: 34px; justify-content: flex-start; padding: 0 4px 7px; margin-bottom: 5px; }
+	.admin-sidebar-paw { width: 28px; height: 28px; flex-basis: 28px; border-radius: 8px; }
+	.admin-sidebar-paw svg { width: 18px; height: 18px; }
+	.admin-sidebar-brand-copy strong { font-size: 0.95rem; }
+	.admin-sidebar-brand-copy small { font-size: 0.58rem; }
+	.admin-sidebar-toggle, .admin-sidebar.collapsed .admin-sidebar-toggle { position: static; width: 28px; height: 26px; margin-left: auto; transform: none; }
+	.admin-sidebar.collapsed .admin-sidebar-brand-copy { display: flex; }
+	.admin-sidebar-nav { display: flex; flex-direction: row; gap: 5px; overflow-x: auto; overflow-y: hidden; }
+	.admin-sidebar-group { display: contents; }
+	.admin-sidebar-finance-sections { display: contents; }
+	.admin-sidebar-finance-subgroup, .admin-sidebar-finance-report-grid { display: contents; }
+	.admin-sidebar-section-title { display: none; }
+	.admin-sidebar-primary-links { display: flex; flex: 0 0 auto; gap: 5px; margin: 0; }
+	.admin-sidebar-account-items { display: contents; }
+	.admin-sidebar-link, .admin-sidebar.collapsed .admin-sidebar-link { min-height: 36px; flex: 0 0 auto; justify-content: flex-start; gap: 8px; padding: 0 9px; font-size: 0.72rem; }
+	.admin-sidebar-primary-link, .admin-sidebar.collapsed .admin-sidebar-primary-link { min-height: 36px; flex-direction: row; gap: 8px; padding: 0 9px; text-align: left; }
+	.admin-sidebar-link-label, .admin-sidebar.collapsed .admin-sidebar-link-label { display: inline; }
+	.admin-sidebar-icon { width: 17px; height: 17px; flex-basis: 17px; }
+	.admin-sidebar-chevron, .admin-sidebar.collapsed .admin-sidebar-chevron, .admin-sidebar-group-chevron { display: none; }
+	.admin-sidebar-count { display: inline-block !important; }
+}

@@ -30,6 +30,7 @@ import GoogleCallback from './pages/GoogleCallback';
 import UserDashboard from './pages/UserDashboard';
 import NotificationsAdmin from './pages/NotificationsAdmin';
 import NotificationsUser from './pages/NotificationsUser';
+import AccountsFinance from './pages/AccountsFinance';
 import './App.css';
 
 function ProtectedRoute({ children, requiredRole }) {
@@ -119,6 +120,11 @@ function AppContent() {
           <Route path="/admin/orders" element={
             <ProtectedRoute requiredRole="ADMIN">
               <OrdersAdmin />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/accounts" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AccountsFinance />
             </ProtectedRoute>
           } />
           <Route path="/admin/brands" element={
