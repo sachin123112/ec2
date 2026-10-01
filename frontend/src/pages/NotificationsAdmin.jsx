@@ -73,6 +73,12 @@ export default function NotificationsAdmin() {
     }
   };
 
+  const handleOpenOrders = (event, notification) => {
+    event.stopPropagation();
+    if (!notification.read) handleMarkAsRead(notification.id);
+    navigate('/admin/orders');
+  };
+
   const handleClearAll = async () => {
     try {
       const response = await fetch(`${API_URL}/notifications/clear-all`, {
@@ -202,6 +208,11 @@ export default function NotificationsAdmin() {
                 <div className="notification-time">
                   {formatTime(notification.timestamp)}
                 </div>
+                {notification.type === 'order' && (
+                  <button type="button" className="notification-track-btn" onClick={event => handleOpenOrders(event, notification)}>
+                    Open orders
+                  </button>
+                )}
               </div>
 
               <button

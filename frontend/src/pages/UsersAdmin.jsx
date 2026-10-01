@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+
+const roleToneMap = {
+  ADMIN: 'admin',
+  USER: 'user',
+  MOBILE_ADMIN: 'mobile-admin',
+  MOBILE_USER: 'mobile-user',
+};
 
 export default function UsersAdmin() {
   const { token, refreshSession } = useAuth();
@@ -100,44 +106,78 @@ export default function UsersAdmin() {
     }
   }
 
-  const filteredUsers = users;
+  const getUserRoles = (user) => {
+    if (Array.isArray(user.roles) && user.roles.length) return user.roles;
+    if (Array.isArray(user.roleNames) && user.roleNames.length) return user.roleNames;
+    if (user.role) return [user.role];
+    return ['USER'];
+  };
+
+  const formatDate = (value) => {
+    if (!value) return '—';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
 
   return (
-    <div className="dashboard-page">
-      <div className="dashboard-header">
-        <div className="dashboard-header-left">
-          <h1>Users</h1>
-          <p>Manage application users</p>
-          <div className="header-links" style={{ marginTop: 12, display: 'flex', gap: 12 }}>
-            <Link to="/admin/products" className="btn-outline">Products</Link>
-            <Link to="/admin/orders" className="btn-outline">Orders</Link>
-            <Link to="/admin/categories" className="btn-outline">Categories</Link>
+    <div className="user-admin-page dashboard-page">
+      <div className="breadcrumb">
+        <Link to="/admin/dashboard">Dashboard</Link>
+        <span>›</span>
+        <Link to="/admin/users">Users</Link>
+        <span>›</span>
+        <span className="breadcrumb-current">Manage Users</span>
+      </div>
+
+      <div className="user-admin-page-header">
+        <div className="user-admin-title-wrap">
+          <div className="user-admin-icon">👥</div>
+          <div>
+            <h1>Manage Users</h1>
+            <p>Add new users and manage store access</p>
+          </div>
+        </div>
+
+        <div className="user-admin-banner">
+          <div className="user-admin-banner-inner">
+            <span className="user-admin-banner-paw">🐾</span>
+            <span className="user-admin-banner-paw">🐾</span>
+            <span className="user-admin-banner-paw">🐾</span>
           </div>
         </div>
       </div>
 
       <div className="dashboard-status">{status}</div>
 
-      <div className="dashboard-grid">
-        <div className="dashboard-card">
-          <h2>Create User</h2>
-          <form onSubmit={handleCreateUser} className="panel-form">
-            <label>
-              Username
-              <input value={userForm.username} onChange={e => setUserForm({...userForm, username: e.target.value})} required />
+      <div className="user-admin-layout">
+        <div className="user-admin-card user-admin-form-card">
+          <div className="user-admin-section-header">
+            <div className="user-admin-section-icon">👤</div>
+            <h2>Create User</h2>
+          </div>
+          <p className="user-admin-helper">Add a new user to access the store</p>
+
+          <form onSubmit={handleCreateUser} className="panel-form user-panel-form">
+            <label className="field-group">
+              <span>Username</span>
+              <input value={userForm.username} onChange={e => setUserForm({ ...userForm, username: e.target.value })} required placeholder="Enter username" />
             </label>
-            <label>
-              Email
-              <input type="email" value={userForm.email} onChange={e => setUserForm({...userForm, email: e.target.value})} required />
+
+            <label className="field-group">
+              <span>Email</span>
+              <input type="email" value={userForm.email} onChange={e => setUserForm({ ...userForm, email: e.target.value })} required placeholder="Enter email address" />
             </label>
-            <label>
-              Password
-              <input type="password" value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} required />
+
+            <label className="field-group">
+              <span>Password</span>
+              <input type="password" value={userForm.password} onChange={e => setUserForm({ ...userForm, password: e.target.value })} required placeholder="Enter password" />
             </label>
-            <label>
-              Roles (multi-select)
+
+            <label className="field-group">
+              <span>Role (multi-select)</span>
               <select
-                className="permissions-multi-select"
+                className="user-role-select"
                 multiple
                 value={userForm.roleIds}
                 onChange={e => setUserForm({
@@ -151,47 +191,94 @@ export default function UsersAdmin() {
                 ))}
               </select>
             </label>
-            <label>
-              First Name
-              <input value={userForm.firstName} onChange={e => setUserForm({...userForm, firstName: e.target.value})} />
+
+            <label className="field-group">
+              <span>First Name</span>
+              <input value={userForm.firstName} onChange={e => setUserForm({ ...userForm, firstName: e.target.value })} placeholder="Enter first name" />
             </label>
-            <label>
-              Last Name
-              <input value={userForm.lastName} onChange={e => setUserForm({...userForm, lastName: e.target.value})} />
+
+            <label className="field-group">
+              <span>Last Name</span>
+              <input value={userForm.lastName} onChange={e => setUserForm({ ...userForm, lastName: e.target.value })} placeholder="Enter last name" />
             </label>
-            <button type="submit" className="btn-primary">Add User</button>
+
+            <button type="submit" className="btn-primary user-submit-btn">Add User</button>
           </form>
         </div>
 
-        <div className="dashboard-card wide-card">
-          <h2>User List</h2>
-          <div className="table-scroll">
-            <table>
+        <div className="user-admin-card user-admin-list-card">
+          <div className="user-admin-section-header user-admin-list-header">
+            <div className="user-admin-section-icon user-admin-section-icon-alt">👥</div>
+            <h2>User List</h2>
+          </div>
+          <p className="user-admin-helper">Manage, edit or delete users from the system</p>
+
+          <div className="user-admin-controls">
+            <div className="user-admin-search-box">
+              <span>⌕</span>
+              <input type="text" placeholder="Search users..." />
+            </div>
+            <select className="user-admin-filter" defaultValue="all">
+              <option value="all">All Roles</option>
+              <option value="admin">Admin</option>
+              <option value="user">User</option>
+            </select>
+          </div>
+
+          <div className="table-scroll user-admin-table-wrap">
+            <table className="user-admin-table">
               <thead>
                 <tr>
-                  <th>ID</th>
+                  <th>#</th>
                   <th>Email</th>
                   <th>Username</th>
-                  <th>Role</th>
+                  <th>Role(s)</th>
                   <th>Status</th>
+                  <th>Created At</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.map(user => (
+                {users.map((user, index) => (
                   <tr key={user.id}>
-                    <td>{user.id}</td>
-                    <td>{user.email}</td>
+                    <td>{index + 1}</td>
+                    <td className="user-email-cell">
+                      <div className="user-avatar-td">{(user.firstName || user.username || 'U').charAt(0).toUpperCase()}</div>
+                      <span>{user.email}</span>
+                    </td>
                     <td>{user.username}</td>
-                    <td>{user.roles?.join(', ')}</td>
-                    <td>{user.status}</td>
                     <td>
-                      <button className="btn-danger btn-sm" onClick={() => handleDeleteUser(user.id)}>Delete</button>
+                      <div className="user-role-badges">
+                        {getUserRoles(user).map((role) => (
+                          <span key={role} className={`role-badge ${roleToneMap[role.toUpperCase()] || 'user'}`}>
+                            {role.toUpperCase()}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td>
+                      <span className="status-pill active">Active</span>
+                    </td>
+                    <td>{formatDate(user.createdAt || user.created_at)}</td>
+                    <td>
+                      <div className="user-action-buttons">
+                        <button type="button" className="icon-button" aria-label="Edit user">✎</button>
+                        <button type="button" className="icon-button danger" aria-label="Delete user" onClick={() => handleDeleteUser(user.id)}>🗑</button>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <div className="user-admin-pagination">
+            <span>Showing 1 to 4 of 4 users</span>
+            <div className="pagination-controls">
+              <button type="button" className="pager-button">‹</button>
+              <button type="button" className="pager-button active">1</button>
+              <button type="button" className="pager-button">›</button>
+            </div>
           </div>
         </div>
       </div>

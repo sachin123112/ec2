@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 public class OrderDto {
     private Long id;
     private Long userId;
+    private String customerName;
     private String orderNumber;
     private BigDecimal totalAmount;
     private String status;
@@ -25,6 +26,14 @@ public class OrderDto {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public String getCustomerName() {
+        return customerName;
+    }
+
+    public void setCustomerName(String customerName) {
+        this.customerName = customerName;
     }
 
     public String getOrderNumber() {

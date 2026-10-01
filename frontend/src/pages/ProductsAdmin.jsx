@@ -36,6 +36,7 @@ export default function ProductsAdmin() {
   const [dateTo, setDateTo] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
+  const [viewMode, setViewMode] = useState('grid');
 
   const authHeaderBase = useMemo(() => {
     const headers = {};
@@ -225,6 +226,16 @@ export default function ProductsAdmin() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  function startAddProduct() {
+    setEditingProductId(null);
+    setIsEditModalOpen(true);
+    setProductForm({ name: '', description: '', sku: '', price: '0.00', stockQuantity: '0', netQuantity: '0', categoryId: '' });
+    setProductImages([]);
+    setProductImagePreviews(prev => { prev.forEach(URL.revokeObjectURL); return []; });
+    setReplaceExistingImages(true);
+    setStatus('');
+  }
+
   function cancelEditProduct() {
     setEditingProductId(null);
     setIsEditModalOpen(false);
@@ -306,7 +317,13 @@ export default function ProductsAdmin() {
     <div className="dashboard-page products-admin-page">
       <div className="dashboard-header">
         <div className="dashboard-header-left">
-          <div className="products-admin-breadcrumb">Dashboard <span>›</span> Products <span>›</span> Manage Products</div>
+          <div className="products-admin-breadcrumb">
+            <Link to="/admin/dashboard">Dashboard</Link>
+            <span>›</span>
+            <Link to="/admin/products">Products</Link>
+            <span>›</span>
+            <span className="products-admin-breadcrumb-current">Manage Products</span>
+          </div>
           <h1>Manage Products</h1>
           <p>Add, edit or manage your store products</p>
           <div className="header-links" style={{ marginTop: 12, display: 'flex', gap: 12 }}>
@@ -315,7 +332,7 @@ export default function ProductsAdmin() {
             <Link to="/admin/categories" className="btn-outline">Categories</Link>
           </div>
         </div>
-        <button type="button" className="products-admin-header-action" onClick={() => document.querySelector('.products-admin-form-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>+ Add Product</button>
+        <button type="button" className="products-admin-header-action" onClick={startAddProduct}>+ Add Product</button>
       </div>
 
       <div className="dashboard-status">{status}</div>
@@ -324,7 +341,7 @@ export default function ProductsAdmin() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.58)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 1000, overflowY: 'auto' }}>
           <div style={{ width: 'min(620px, 100%)', maxHeight: '90vh', overflowY: 'auto', background: '#fff', borderRadius: 18, padding: '18px 22px 22px', boxShadow: '0 20px 60px rgba(15, 23, 42, 0.25)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 700, color: '#1f2937' }}>Edit Product</h2>
+              <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 700, color: '#1f2937' }}>{editingProductId ? 'Edit Product' : 'Add Product'}</h2>
               <button type="button" className="btn-outline btn-sm" onClick={cancelEditProduct}>Close</button>
             </div>
 
@@ -521,7 +538,7 @@ export default function ProductsAdmin() {
                     flexShrink: 0
                   }}
                 >
-                  Update Product
+                  {editingProductId ? 'Update Product' : 'Save Product'}
                 </button>
               </div>
             </form>
@@ -530,68 +547,6 @@ export default function ProductsAdmin() {
       )}
 
       <div className="dashboard-grid products-admin-layout">
-        <div className="dashboard-card products-admin-form-card">
-          <h2>{editingProductId ? 'Edit Product' : 'Add New Product'}</h2>
-          <form onSubmit={handleCreateProduct} className="panel-form">
-            <label>
-              Name
-              <input value={productForm.name} onChange={e => setProductForm({...productForm, name: e.target.value})} required />
-            </label>
-            <label>
-              SKU
-              <input value={productForm.sku} placeholder="Select a category" readOnly required />
-            </label>
-            <label>
-              Category
-              <select
-                value={productForm.categoryId}
-                onChange={e => setProductForm({
-                  ...productForm,
-                  categoryId: e.target.value,
-                  sku: getNextSku(e.target.value),
-                })}
-                required
-              >
-                <option value="">Select category</option>
-                {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-              </select>
-            </label>
-            <label>
-              Price
-              <input type="number" step="0.01" value={productForm.price} onChange={e => setProductForm({...productForm, price: e.target.value})} required />
-            </label>
-            <label>
-              Stock
-              <input type="number" value={productForm.stockQuantity} onChange={e => setProductForm({...productForm, stockQuantity: e.target.value})} required />
-            </label>
-            <label>
-              Net Quantity
-              <input type="number" value={productForm.netQuantity} onChange={e => setProductForm({...productForm, netQuantity: e.target.value})} required />
-            </label>
-            <label>
-              Description
-              <textarea value={productForm.description} onChange={e => setProductForm({...productForm, description: e.target.value})} rows={4} />
-            </label>
-            <label>
-              Product Images
-              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple onChange={handleProductImageSelection} aria-label="Choose up to 6 images (max 2 GIFs)" />
-            </label>
-            {productImagePreviews.length > 0 && (
-              <div className="image-preview-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>
-                {productImagePreviews.map((src, index) => (
-                  <div key={index} className="image-preview-card" style={{ border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden', background: '#f8fafc' }}>
-                    <img src={src} alt={`Preview ${index + 1}`} style={{ width: '100%', height: 110, objectFit: 'cover', display: 'block' }} />
-                    <button type="button" className="btn-outline btn-sm" onClick={() => removeProductImage(index)} style={{ width: '100%', borderRadius: 0, border: 'none', borderTop: '1px solid #e5e7eb' }}>
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <button type="submit" className="btn-primary">Save Product</button>
-          </form>
-        </div>
-
         <div className="dashboard-card wide-card products-admin-catalog-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
             <h2>Product Catalog</h2>
@@ -641,6 +596,23 @@ export default function ProductsAdmin() {
               </select>
             </div>
 
+            <div className="catalog-view-actions" aria-label="Product view controls">
+              <button
+                type="button"
+                className={`catalog-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                onClick={() => setViewMode('grid')}
+              >
+                Grid
+              </button>
+              <button
+                type="button"
+                className={`catalog-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+                onClick={() => setViewMode('list')}
+              >
+                List
+              </button>
+            </div>
+
             {(searchTerm || activeCategory !== 'All' || dateFrom || dateTo) && (
               <button
                 type="button"
@@ -657,13 +629,13 @@ export default function ProductsAdmin() {
             )}
           </div>
 
-          <div className="product-card-grid">
+          <div className={`product-card-grid ${viewMode === 'list' ? 'list-view' : ''}`}>
             {filteredProducts.map(product => {
               const productImage = resolveProductImageUrl(product.imageUrls?.[0] || product.images?.[0] || product.image);
               const categoryName = product.categoryName || product.category?.name || product.category || 'Uncategorized';
 
               return (
-                <article key={product.id} className="admin-product-card">
+                <article key={product.id} className={`admin-product-card ${viewMode === 'list' ? 'list-view-card' : ''}`}>
                   <div className="admin-product-image-wrap">
                     <img
                       src={productImage}
@@ -691,16 +663,34 @@ export default function ProductsAdmin() {
                     </div>
 
                     <div className="admin-product-actions">
-                      <button type="button" className="btn-outline btn-sm" onClick={() => startEditProduct(product)}>
-                        Edit
+                      <button
+                        type="button"
+                        className="btn-outline btn-sm action-icon-btn"
+                        onClick={() => startEditProduct(product)}
+                        aria-label={`Edit ${product.name}`}
+                        title="Edit product"
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25Zm14.71-9.71a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.36 1.36 3.75 3.75 1.36-1.36Z" />
+                        </svg>
                       </button>
                       <button
                         type="button"
-                        className="btn-danger btn-sm"
+                        className="btn-danger btn-sm action-icon-btn"
                         onClick={() => handleDeleteProduct(product.id)}
                         disabled={deletingProductId === product.id}
+                        aria-label={`Delete ${product.name}`}
+                        title="Delete product"
                       >
-                        {deletingProductId === product.id ? 'Deleting...' : 'Delete'}
+                        {deletingProductId === product.id ? (
+                          <svg viewBox="0 0 24 24" aria-hidden="true" className="spinner-icon">
+                            <path d="M12 2a10 10 0 1 1-7.07 17.07" />
+                          </svg>
+                        ) : (
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 7h16M9 7V4h6v3M7 7l1 12h8l1-12M10 11v5M14 11v5" />
+                          </svg>
+                        )}
                       </button>
                     </div>
                   </div>

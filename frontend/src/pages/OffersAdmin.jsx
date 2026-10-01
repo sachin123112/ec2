@@ -66,7 +66,16 @@ export default function OffersAdmin() {
   return (
     <div className="offers-admin-page">
       <header className="offers-admin-header">
-        <div><h1>Manage Offers</h1><div className="offers-admin-breadcrumb"><Link to="/admin/dashboard">Home</Link><span>›</span><span>Offers</span></div></div>
+        <div>
+          <div className="offers-admin-breadcrumb">
+            <Link to="/admin/dashboard">Dashboard</Link>
+            <span>›</span>
+            <Link to="/admin/offers">Offers</Link>
+            <span>›</span>
+            <span className="offers-admin-breadcrumb-current">Manage Offers</span>
+          </div>
+          <h1>Manage Offers</h1>
+        </div>
         <button type="button" className="offers-admin-add" onClick={() => setIsAddOpen(true)}><span>+</span> Add Offer</button>
       </header>
 

@@ -24,6 +24,7 @@ import RolesAdmin from './pages/RolesAdmin';
 import LinksAdmin from './pages/LinksAdmin';
 import CategoriesAdmin from './pages/CategoriesAdmin';
 import OrdersAdmin from './pages/OrdersAdmin';
+import ReviewsAdmin from './pages/ReviewsAdmin';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import GoogleCallback from './pages/GoogleCallback';
@@ -50,7 +51,7 @@ function AppContent() {
   const location = useLocation();
   const authPaths = ['/login', '/signup', '/forgot-password', '/reset-password'];
   const hideLayout = authPaths.includes(location.pathname);
-  const isAdminPath = location.pathname.startsWith('/admin');
+  const isAdminPath = location.pathname.startsWith('/admin') || ['/reviews', '/reports', '/settings'].includes(location.pathname);
 
   return (
     <div className="app-wrapper">
@@ -119,6 +120,11 @@ function AppContent() {
           <Route path="/admin/orders" element={
             <ProtectedRoute requiredRole="ADMIN">
               <OrdersAdmin />
+            </ProtectedRoute>
+          } />
+          <Route path="/reviews" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <ReviewsAdmin />
             </ProtectedRoute>
           } />
           <Route path="/admin/brands" element={

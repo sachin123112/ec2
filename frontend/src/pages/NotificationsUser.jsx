@@ -88,6 +88,11 @@ export default function NotificationsUser() {
     }
   };
 
+  function handleTrackOrder(notification) {
+    if (!notification.read) handleMarkAsRead(notification.id);
+    navigate('/dashboard', { state: { activeSection: 'Order History' } });
+  }
+
   const getNotificationIcon = (type) => {
     switch (type) {
       case 'order':
@@ -106,7 +111,7 @@ export default function NotificationsUser() {
   const getNotificationColor = (type) => {
     switch (type) {
       case 'order':
-        return '#2563eb';
+        return '#ff642a';
       case 'product':
         return '#f59e0b';
       case 'user':
@@ -179,6 +184,11 @@ export default function NotificationsUser() {
                 <div className="notification-title">{notification.title}</div>
                 <div className="notification-message">{notification.message}</div>
                 <div className="notification-time">{formatTime(notification.timestamp)}</div>
+                {notification.type === 'order' && (
+                  <button type="button" className="notification-track-btn" onClick={() => handleTrackOrder(notification)}>
+                    Track order
+                  </button>
+                )}
               </div>
 
               <div className="notification-actions">

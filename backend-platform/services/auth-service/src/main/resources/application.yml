@@ -3,3 +3,7 @@ spring:
     name: auth-service
   config:
     import: optional:file:../../config/application.yml,optional:file:config/application.yml
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB

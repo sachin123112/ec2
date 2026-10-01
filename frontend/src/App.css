@@ -24,6 +24,12 @@
   min-width: 0;
 }
 
+@media (max-width: 760px) {
+  .admin-app-main {
+    flex-direction: column;
+  }
+}
+
 .hero {
   position: relative;
 

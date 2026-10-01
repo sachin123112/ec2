@@ -66,6 +66,10 @@ public class ImageKitImageService {
         return uploadImage(image, "/mobile-banners/" + pageKey.toLowerCase());
     }
 
+    public String uploadBrandLogo(MultipartFile image, Long brandId) {
+        return uploadImage(image, "/brands/" + brandId);
+    }
+
     private String uploadImage(MultipartFile image, String folder) {
         if (!StringUtils.hasText(privateKey) || !StringUtils.hasText(urlEndpoint)) {
             return saveLocalUploadFallback(image, folder);

@@ -15,8 +15,10 @@
 }
 
 .brands-admin-header h1 { margin: 0; font-size: clamp(1.7rem, 3vw, 2.25rem); letter-spacing: -0.06em; }
-.brands-admin-breadcrumb { display: flex; gap: 8px; margin-top: 8px; color: #8c97a8; font-size: 0.75rem; }
-.brands-admin-breadcrumb a { color: #8490a3; text-decoration: none; }
+.brands-admin-breadcrumb { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; color: #bac3cf; font-size: 0.66rem; }
+.brands-admin-breadcrumb a { color: #8290a3; text-decoration: none; transition: color 0.2s ease; }
+.brands-admin-breadcrumb a:hover { color: #ff642a; }
+.brands-admin-breadcrumb-current { color: #53657d; }
 .brands-admin-add { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 0 16px; border: 0; border-radius: 8px; background: #ff642a; color: #fff; font-size: 0.75rem; font-weight: 800; cursor: pointer; box-shadow: 0 8px 16px rgba(255, 100, 42, 0.2); }
 .brands-admin-add span { font-size: 1.1rem; line-height: 1; }
 .brands-admin-message { max-width: 1320px; margin: 0 auto 14px; padding: 10px 14px; border-radius: 8px; background: #fff5ed; color: #b74c1f; font-size: 0.78rem; }
@@ -55,14 +57,17 @@
 .brands-admin-pagination button { width: 25px; height: 25px; border: 1px solid #e3e8ef; border-radius: 5px; background: #fff; color: #536075; cursor: pointer; font-size: 0.7rem; }
 .brands-admin-pagination button.active { border-color: #ff642a; background: #ff642a; color: #fff; }
 .brands-admin-pagination button:disabled { color: #c7ced9; cursor: not-allowed; }
-.brands-admin-modal-backdrop { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 20px; background: rgba(15, 23, 42, 0.5); }
-.brands-admin-modal { width: min(430px, 100%); padding: 22px; border-radius: 15px; background: #fff; box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22); }
+.brands-admin-modal-backdrop { position: fixed; top: 70px; right: 0; bottom: 0; left: 0; z-index: 20; display: grid; place-items: center; min-height: 0; padding: 24px 20px; overflow-y: auto; background: rgba(15, 23, 42, 0.5); }
+.brands-admin-modal { width: min(430px, 100%); max-height: calc(100dvh - 118px); margin: 0 auto; align-self: center; justify-self: center; transform: translateY(26px); overflow-y: auto; scrollbar-gutter: stable; padding: 22px; border-radius: 15px; background: #fff; box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22); }
 .brands-admin-modal-heading { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
 .brands-admin-kicker { color: #ff642a; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; }
 .brands-admin-modal h2 { margin: 3px 0 0; font-size: 1.4rem; }
 .brands-admin-close { border: 0; background: transparent; color: #8590a0; font-size: 1.6rem; cursor: pointer; }
 .brands-admin-modal label { display: grid; gap: 7px; margin-top: 14px; color: #354157; font-size: 0.75rem; font-weight: 700; }
 .brands-admin-modal input, .brands-admin-modal select { height: 42px; padding: 0 12px; border: 1px solid #dfe6ef; border-radius: 7px; outline: 0; background: #f9fbfd; color: #243149; font: inherit; }
+.brands-admin-modal input[type='file'] { height: auto; padding: 10px 12px; }
+.brands-admin-logo-preview { display: block; width: 86px; height: 52px; margin-top: 10px; border: 1px solid #dfe6ef; border-radius: 7px; object-fit: contain; background: #f8fafc; }
+.brands-admin-logo-image { display: block; width: 98px; height: 34px; border-radius: 5px; object-fit: contain; background: #f3f5f8; }
 .brands-admin-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
 .brands-admin-secondary { padding: 0 14px; border: 1px solid #dfe6ef; border-radius: 8px; background: #fff; color: #536075; font-weight: 700; cursor: pointer; }
 

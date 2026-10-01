@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import './Checkout.css';
@@ -269,12 +269,19 @@ export default function Checkout() {
       const orderResponse = await fetch(`${API_URL}/orders`, {
         method: 'POST',
         headers: authHeaders,
-        body: JSON.stringify({ userId: user.id, totalAmount: total, status: 'PENDING', paymentMethod: paymentMethod.toUpperCase() }),
+        body: JSON.stringify({
+          userId: user.id,
+          totalAmount: total,
+          status: 'PENDING',
+          paymentMethod: paymentMethod.toUpperCase(),
+          items: cart.map(item => ({ name: item.name, quantity: item.qty, unitPrice: item.price })),
+        }),
       });
       if (!orderResponse.ok) throw new Error('Unable to place order. Please try again.');
+      const createdOrder = await orderResponse.json();
 
       clearCart();
-      navigate('/checkout/success');
+      navigate('/checkout/success', { state: { paymentMethod, orderNumber: createdOrder.orderNumber } });
     } catch (error) {
       if (error.message?.includes('phone number')) {
         setPhoneError(error.message);
@@ -429,7 +436,9 @@ export default function Checkout() {
           <div className="summary-line"><span>Subtotal</span><span>₹{totalPrice.toLocaleString()}</span></div>
           <div className="summary-line"><span>Shipping</span><span>{shipping ? `₹${shipping}` : 'FREE'}</span></div>
           <div className="summary-total"><span>Total</span><strong>₹{total.toLocaleString()}</strong></div>
-          <button className="btn-checkout" type="submit" disabled={submitting}>{submitting ? 'Placing order...' : 'Place Order'}</button>
+          <button className="btn-checkout" type="submit" disabled={submitting}>
+            {submitting ? 'Placing order...' : paymentMethod === 'cod' ? 'Confirm Order' : 'Place Order'}
+          </button>
         </aside>
       </form>
     </div>
@@ -437,11 +446,18 @@ export default function Checkout() {
 }
 
 export function CheckoutSuccess() {
+  const { state } = useLocation();
+  const isCashOnDelivery = state?.paymentMethod === 'cod';
+
   return (
     <div className="checkout-success">
       <div className="checkout-success-icon">✓</div>
       <h1>Order placed successfully</h1>
-      <p>Thank you for shopping at PawMart. Your order is being prepared.</p>
+      <p>
+        {isCashOnDelivery
+          ? `Your Cash on Delivery order${state.orderNumber ? ` ${state.orderNumber}` : ''} is being prepared. An invoice email and an order notification have been triggered for your account.`
+          : 'Thank you for shopping at PawMart. Your order is being prepared.'}
+      </p>
       <Link to="/shop" className="btn-primary">Continue Shopping</Link>
     </div>
   );

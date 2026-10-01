@@ -26,6 +26,7 @@ import com.company.auth.document.OrderDocument;
 import com.company.auth.document.ProductDocument;
 import com.company.auth.repository.AddressRepository;
 import com.company.auth.repository.CategoryRepository;
+import com.company.auth.repository.BrandRepository;
 import com.company.auth.repository.LinkRepository;
 import com.company.auth.repository.OrderRepository;
 import com.company.auth.repository.ProductRepository;
@@ -35,6 +36,7 @@ import com.company.auth.repository.UserRepository;
 import com.company.auth.service.SearchService;
 import com.company.auth.service.EmailNotificationService;
 import com.company.auth.service.ImageKitImageService;
+import com.company.auth.service.InvoicePdfGenerator;
 import com.company.auth.service.NotificationService;
 import com.company.auth.repository.PaymentSettingsRepository;
 import com.company.auth.model.PaymentSettings;
@@ -47,6 +49,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -63,6 +66,7 @@ import java.math.BigDecimal;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -77,6 +81,7 @@ public class ApiController {
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
     private final CategoryRepository categoryRepository;
+    private final BrandRepository brandRepository;
     private final RoleRepository roleRepository;
     private final AddressRepository addressRepository;
     private final LinkRepository linkRepository;
@@ -86,6 +91,7 @@ public class ApiController {
     private final ImageKitImageService imageKitImageService;
     private final NotificationService notificationService;
     private final PaymentSettingsRepository paymentSettingsRepository;
+    private final InvoicePdfGenerator invoicePdfGenerator;
 
     public ApiController(
             UserRepository userRepository,
@@ -93,6 +99,7 @@ public class ApiController {
             OrderRepository orderRepository,
             PaymentRepository paymentRepository,
             CategoryRepository categoryRepository,
+            BrandRepository brandRepository,
             RoleRepository roleRepository,
             AddressRepository addressRepository,
             LinkRepository linkRepository,
@@ -101,12 +108,14 @@ public class ApiController {
             EmailNotificationService emailNotificationService,
             ImageKitImageService imageKitImageService,
             NotificationService notificationService,
-            PaymentSettingsRepository paymentSettingsRepository) {
+            PaymentSettingsRepository paymentSettingsRepository,
+            InvoicePdfGenerator invoicePdfGenerator) {
         this.userRepository = userRepository;
         this.productRepository = productRepository;
         this.orderRepository = orderRepository;
         this.paymentRepository = paymentRepository;
         this.categoryRepository = categoryRepository;
+        this.brandRepository = brandRepository;
         this.roleRepository = roleRepository;
         this.addressRepository = addressRepository;
         this.linkRepository = linkRepository;
@@ -116,6 +125,7 @@ public class ApiController {
         this.imageKitImageService = imageKitImageService;
         this.notificationService = notificationService;
         this.paymentSettingsRepository = paymentSettingsRepository;
+        this.invoicePdfGenerator = invoicePdfGenerator;
     }
 
     @GetMapping("/users")
@@ -389,7 +399,12 @@ public class ApiController {
     public List<CategoryDto> listCategories() {
         return categoryRepository.findAll().stream().map(c -> {
             CategoryDto d = new CategoryDto();
-            d.setId(c.getId()); d.setName(c.getName()); d.setCreatedAt(c.getCreatedAt()); return d;
+            d.setId(c.getId()); d.setName(c.getName()); d.setCreatedAt(c.getCreatedAt());
+            if (c.getBrand() != null) {
+                d.setBrandId(c.getBrand().getId());
+                d.setBrandName(c.getBrand().getName());
+            }
+            return d;
         }).collect(Collectors.toList());
     }
 
@@ -398,6 +413,10 @@ public class ApiController {
     public ResponseEntity<CategoryDto> createCategory(@RequestBody CategoryDto request) {
         com.company.auth.model.Category c = new com.company.auth.model.Category();
         c.setName(request.getName());
+        if (request.getBrandId() != null) {
+            c.setBrand(brandRepository.findById(request.getBrandId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Brand not found.")));
+        }
         c = categoryRepository.save(c);
         notificationService.notifyAllUsers(
                 "New category added",
@@ -405,6 +424,10 @@ public class ApiController {
                 "system"
         );
         CategoryDto d = new CategoryDto(); d.setId(c.getId()); d.setName(c.getName()); d.setCreatedAt(c.getCreatedAt());
+        if (c.getBrand() != null) {
+            d.setBrandId(c.getBrand().getId());
+            d.setBrandName(c.getBrand().getName());
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(d);
     }
 
@@ -520,10 +543,37 @@ public class ApiController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
             orders = orderRepository.findTop100ByUserIdOrderByCreatedAtDescIdDesc(user.getId());
         }
-        return orders.stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+        return toOrderDtos(orders);
     }
+
+            @GetMapping("/orders/{id}/invoice")
+            @Operation(summary = "Download an order invoice", description = "Download a PDF invoice for an order owned by the current user or accessible to an admin")
+            public ResponseEntity<byte[]> downloadOrderInvoice(Authentication authentication, @PathVariable Long id) {
+            OrderEntity order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+            boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+            User customer = userRepository.findById(order.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order owner not found"));
+
+            if (!isAdmin) {
+                User requester = userRepository.findByEmail(authentication.getName())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+                if (!requester.getId().equals(order.getUserId())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot access this order invoice");
+                }
+            }
+
+            String paymentMethod = paymentRepository.findByOrderId(order.getId())
+                .map(Payment::getPaymentMethod)
+                .orElse("UNKNOWN");
+            byte[] invoice = invoicePdfGenerator.generate(order, customer, paymentMethod, List.of());
+            String fileName = "PawMart-invoice-" + order.getOrderNumber() + ".pdf";
+            return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(invoice);
+            }
 
     @GetMapping("/orders/search")
     @Operation(summary = "Search orders", description = "Search orders by query and date range")
@@ -584,7 +634,16 @@ public class ApiController {
         paymentRepository.save(payment);
         OrderEntity savedOrder = order;
         searchService.indexOrder(savedOrder);
-        userRepository.findById(savedOrder.getUserId()).ifPresent(user -> emailNotificationService.sendOrderCreated(savedOrder, user));
+        userRepository.findById(savedOrder.getUserId()).ifPresent(user -> {
+            emailNotificationService.sendOrderCreated(savedOrder, user, request.getItems(), paymentMethod);
+            String notificationTitle = "COD".equals(paymentMethod) ? "Cash on Delivery order placed" : "Order placed";
+            notificationService.notifyUserAndAdmins(
+                    user,
+                    notificationTitle,
+                    "Your order " + savedOrder.getOrderNumber() + " is confirmed and currently " + savedOrder.getStatus() + ". Open Order History to track progress.",
+                    "order"
+            );
+        });
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(savedOrder));
     }
 
@@ -594,7 +653,7 @@ public class ApiController {
         OrderEntity order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
         String nextStatus = status == null ? "" : status.trim().toUpperCase();
-        if (!List.of("PENDING", "PROCESSING", "COMPLETED", "CANCELED").contains(nextStatus)) {
+        if (!List.of("PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "COMPLETED", "CANCELED").contains(nextStatus)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported order status");
         }
         boolean statusChanged = !nextStatus.equalsIgnoreCase(order.getStatus());
@@ -607,8 +666,8 @@ public class ApiController {
                         emailNotificationService.sendOrderStatusChanged(saved, user);
                         notificationService.notifyUserAndAdmins(
                                 user,
-                                "Order status updated",
-                                "Your order " + saved.getOrderNumber() + " is now " + saved.getStatus() + ".",
+                            "Order tracking update",
+                            "Your order " + saved.getOrderNumber() + " is now " + saved.getStatus() + ". Open Order History to track its progress.",
                                 "order"
                         );
                     });
@@ -841,6 +900,31 @@ public class ApiController {
         dto.setStatus(order.getStatus());
         dto.setCreatedAt(order.getCreatedAt());
         return dto;
+    }
+
+    private List<OrderDto> toOrderDtos(List<OrderEntity> orders) {
+        Map<Long, String> customerNames = userRepository.findAllById(orders.stream()
+                        .map(OrderEntity::getUserId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .collect(Collectors.toList()))
+                .stream()
+                .collect(Collectors.toMap(User::getId, this::getCustomerDisplayName));
+
+        return orders.stream().map(order -> {
+            OrderDto dto = toDto(order);
+            dto.setCustomerName(customerNames.get(order.getUserId()));
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+    private String getCustomerDisplayName(User user) {
+        String profileName = java.util.stream.Stream.of(user.getFirstName(), user.getLastName())
+                .filter(name -> name != null && !name.isBlank())
+                .collect(Collectors.joining(" "));
+        if (!profileName.isBlank()) return profileName;
+        if (user.getUsername() != null && !user.getUsername().isBlank()) return user.getUsername();
+        return user.getEmail();
     }
 
     private OrderDto toDto(OrderDocument document) {

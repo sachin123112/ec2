@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
 import ChangePasswordModal from '../components/ChangePasswordModal';
+import { downloadOrderInvoice } from '../utils/downloadOrderInvoice';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
@@ -74,6 +75,8 @@ const emptyAddressForm = {
 export default function UserDashboard() {
   const { isAuthenticated, token, userEmail, logout, refreshSession } = useAuth();
   const [orders, setOrders] = useState([]);
+  const [downloadingInvoiceId, setDownloadingInvoiceId] = useState(null);
+  const [trackingOrderId, setTrackingOrderId] = useState(null);
   const [status, setStatus] = useState('Loading your dashboard...');
   const [activeSection, setActiveSection] = useState('Profile Information');
   const [notifications, setNotifications] = useState({ email: true, sms: true, marketing: false });
@@ -152,6 +155,18 @@ export default function UserDashboard() {
       setUnreadNotificationsCount(0);
     }
   }, [authHeaders]);
+
+  async function handleDownloadInvoice(order) {
+    setDownloadingInvoiceId(order.id);
+    try {
+      await downloadOrderInvoice(order, token);
+      setStatus(`Invoice for ${order.orderNumber || `order ${order.id}`} downloaded.`);
+    } catch (error) {
+      setStatus(error.message || 'Unable to download invoice.');
+    } finally {
+      setDownloadingInvoiceId(null);
+    }
+  }
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -245,6 +260,12 @@ export default function UserDashboard() {
       setActiveSection(sectionName);
     }
   }, [location.hash]);
+
+  useEffect(() => {
+    if (location.state?.activeSection === 'Order History') {
+      setActiveSection('Order History');
+    }
+  }, [location.state]);
 
   function validatePhone(phone, countryCode = '+91') {
     const digits = String(phone || '').replace(/\D/g, '');
@@ -799,22 +820,60 @@ export default function UserDashboard() {
                       <th>Status</th>
                       <th>Total</th>
                       <th>Date</th>
+                      <th>Tracking</th>
+                      <th>Invoice</th>
                     </tr>
                   </thead>
                   <tbody>
                     {orders.length === 0 ? (
                       <tr>
-                        <td colSpan="4">No orders found yet. Continue shopping to place your first order.</td>
+                        <td colSpan="6">No orders found yet. Continue shopping to place your first order.</td>
                       </tr>
                     ) : (
-                      orders.map(order => (
-                        <tr key={order.id || order.orderNumber}>
-                          <td>{order.orderNumber || `#${order.id}`}</td>
-                          <td>{order.status}</td>
-                          <td>{order.totalAmount ? `$${Number(order.totalAmount).toFixed(2)}` : '—'}</td>
-                          <td>{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'Today'}</td>
-                        </tr>
-                      ))
+                      orders.map(order => {
+                        const orderStatus = String(order.status || 'PENDING').toUpperCase();
+                        const isCanceled = ['CANCELED', 'CANCELLED'].includes(orderStatus);
+                        const currentStep = ['DELIVERED', 'COMPLETED'].includes(orderStatus) ? 3 : orderStatus === 'SHIPPED' ? 2 : orderStatus === 'PROCESSING' ? 1 : 0;
+                        return (
+                          <Fragment key={order.id || order.orderNumber}>
+                            <tr>
+                              <td>{order.orderNumber || `#${order.id}`}</td>
+                              <td>{order.status}</td>
+                              <td>{order.totalAmount ? `₹${Number(order.totalAmount).toLocaleString('en-IN')}` : '—'}</td>
+                              <td>{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'Today'}</td>
+                              <td>
+                                <button type="button" className="order-track-toggle" aria-expanded={trackingOrderId === order.id} onClick={() => setTrackingOrderId(trackingOrderId === order.id ? null : order.id)}>
+                                  {trackingOrderId === order.id ? 'Hide tracking' : 'Track order'}
+                                </button>
+                              </td>
+                              <td>
+                                <button type="button" className="btn-outline order-invoice-download" onClick={() => handleDownloadInvoice(order)} disabled={downloadingInvoiceId === order.id}>
+                                  {downloadingInvoiceId === order.id ? 'Preparing…' : 'Download PDF'}
+                                </button>
+                              </td>
+                            </tr>
+                            {trackingOrderId === order.id && (
+                              <tr className="order-tracking-row">
+                                <td colSpan="6">
+                                  <div className="order-tracking-panel">
+                                    <ol className="order-tracking-steps">
+                                      {['Order placed', 'Processing', 'Shipped', 'Delivered'].map((step, index) => (
+                                        <li className={isCanceled ? 'upcoming' : index < currentStep ? 'complete' : index === currentStep ? 'current' : 'upcoming'} key={step}>
+                                          <span className="order-tracking-marker">{index < currentStep ? '✓' : index + 1}</span>
+                                          <span>{step}</span>
+                                        </li>
+                                      ))}
+                                    </ol>
+                                    <p className={isCanceled ? 'order-tracking-canceled' : ''}>
+                                      {isCanceled ? 'This order was canceled.' : `Current status: ${order.status || 'Pending'}`}
+                                    </p>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>

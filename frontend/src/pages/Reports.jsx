@@ -70,7 +70,7 @@ export default function Reports() {
     <div className="dashboard-page">
       <div className="dashboard-header">
         <div>
-          <div className="breadcrumb">
+          <div className="products-admin-breadcrumb">
             <button type="button" className="breadcrumb-link" onClick={() => navigate('/admin')}>Dashboard</button>
             <span>›</span>
             <button type="button" className="breadcrumb-link" onClick={() => navigate('/reports')}>Reports</button>

@@ -1,16 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { downloadOrderInvoice } from '../utils/downloadOrderInvoice';
 import './Dashboard.css';
+import './OrdersAdmin.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
-const orderStatuses = ['PENDING', 'PROCESSING', 'COMPLETED', 'CANCELED'];
+const orderStatuses = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'COMPLETED', 'CANCELED'];
 
 export default function OrdersAdmin() {
   const { token } = useAuth();
   const [orders, setOrders] = useState([]);
   const [status, setStatus] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [downloadingInvoiceId, setDownloadingInvoiceId] = useState(null);
 
   const authHeaderBase = useMemo(() => {
     const headers = {};
@@ -42,6 +50,18 @@ export default function OrdersAdmin() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  async function handleDownloadInvoice(order) {
+    setDownloadingInvoiceId(order.id);
+    try {
+      await downloadOrderInvoice(order, token);
+      setStatus(`Invoice for ${order.orderNumber || `order ${order.id}`} downloaded.`);
+    } catch (error) {
+      setStatus(error.message || 'Unable to download invoice.');
+    } finally {
+      setDownloadingInvoiceId(null);
+    }
+  }
+
   async function handleDeleteOrder(id) {
     setStatus('Deleting order...');
     const response = await fetch(`${API_URL}/orders/${id}`, {
@@ -71,13 +91,63 @@ export default function OrdersAdmin() {
     }
   }
 
+  const filteredOrders = orders.filter(order => {
+    const orderNumber = String(order.orderNumber || order.id || '').toLowerCase();
+    const customer = String(order.customerName || order.userName || order.userId || '').toLowerCase();
+    const query = searchTerm.trim().toLowerCase();
+    const customerQuery = customerSearch.trim().toLowerCase();
+    const orderDate = order.createdAt ? new Date(order.createdAt) : null;
+
+    if (query && !orderNumber.includes(query)) return false;
+    if (customerQuery && !customer.includes(customerQuery)) return false;
+    if (statusFilter !== 'ALL' && String(order.status || '').toUpperCase() !== statusFilter) return false;
+    if (dateFrom && orderDate && orderDate < new Date(`${dateFrom}T00:00:00`)) return false;
+    if (dateTo && orderDate && orderDate > new Date(`${dateTo}T23:59:59.999`)) return false;
+    return true;
+  });
+
+  function resetFilters() {
+    setSearchTerm('');
+    setCustomerSearch('');
+    setStatusFilter('ALL');
+    setDateFrom('');
+    setDateTo('');
+  }
+
+  function formatOrderDate(order) {
+    if (!order.createdAt) return 'Awaiting date';
+    return new Date(order.createdAt).toLocaleDateString('en-GB', {
+      day: '2-digit', month: 'short', year: 'numeric',
+    });
+  }
+
+  function formatAmount(order) {
+    return `₹${Number(order.totalAmount || 0).toLocaleString('en-IN')}`;
+  }
+
+  function getStatusClass(orderStatus) {
+    return String(orderStatus || 'PENDING').toLowerCase().replace('canceled', 'cancelled');
+  }
+
   return (
-    <div className="dashboard-page">
-      <div className="dashboard-header">
+    <div className="dashboard-page orders-admin-page">
+      <div className="dashboard-header orders-admin-header">
         <div className="dashboard-header-left">
-          <h1>Orders</h1>
-          <p>Track and manage orders</p>
-          <div className="header-links" style={{ marginTop: 12, display: 'flex', gap: 12 }}>
+          <div className="orders-breadcrumb">
+            <Link to="/admin/dashboard">Dashboard</Link>
+            <span>›</span>
+            <Link to="/admin/orders">Orders</Link>
+            <span>›</span>
+            <span className="orders-breadcrumb-current">Order History</span>
+          </div>
+          <div className="orders-title-row">
+            <div className="orders-title-icon">▣</div>
+            <div>
+              <h1>Order History</h1>
+              <p>View and manage all customer orders for your store.</p>
+            </div>
+          </div>
+          <div className="header-links orders-header-links">
             <Link to="/admin/products" className="btn-outline">Products</Link>
             <Link to="/admin/users" className="btn-outline">Users</Link>
             <Link to="/admin/categories" className="btn-outline">Categories</Link>
@@ -87,68 +157,138 @@ export default function OrdersAdmin() {
 
       <div className="dashboard-status">{status}</div>
 
-      <div className="dashboard-grid">
-        <div className="dashboard-card wide-card">
-          <h2>Order History</h2>
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Order #</th>
-                  <th>User ID</th>
-                  <th>Total</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map(order => (
-                  <tr key={order.id}>
-                    <td>{order.id}</td>
-                    <td>{order.orderNumber}</td>
-                    <td>{order.userId}</td>
-                    <td>{order.totalAmount}</td>
-                    <td>{order.status}</td>
-                    <td>
-                      <div className="order-actions">
-                        <div className="order-menu">
-                          <button
-                            type="button"
-                            className="order-menu-trigger"
-                            aria-label={`Edit status for order ${order.orderNumber}`}
-                            aria-expanded={openMenuId === order.id}
-                            onClick={() => setOpenMenuId(openMenuId === order.id ? null : order.id)}
-                          >
-                            ⋮
-                          </button>
-                          {openMenuId === order.id && (
-                            <div className="order-menu-dropdown" role="menu">
-                              <span className="order-menu-title">Edit status</span>
-                              {orderStatuses.map(orderStatus => (
-                                <button
-                                  type="button"
-                                  role="menuitem"
-                                  className={order.status === orderStatus ? 'active' : ''}
-                                  key={orderStatus}
-                                  onClick={() => handleUpdateStatus(order.id, orderStatus)}
-                                >
-                                  {orderStatus}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      <button className="btn-danger btn-sm" onClick={() => handleDeleteOrder(order.id)}>Delete</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <section className="dashboard-card orders-filter-card" aria-labelledby="filter-orders-title">
+        <div className="orders-section-heading">
+          <div className="orders-section-icon">⌕</div>
+          <div>
+            <h2 id="filter-orders-title">Filter Orders</h2>
+            <p>Find an order by customer, status, or date range.</p>
           </div>
         </div>
-      </div>
+        <div className="orders-filter-grid">
+          <label>
+            <span>Order ID</span>
+            <input value={searchTerm} onChange={event => setSearchTerm(event.target.value)} placeholder="Search order ID..." />
+          </label>
+          <label>
+            <span>Customer</span>
+            <input value={customerSearch} onChange={event => setCustomerSearch(event.target.value)} placeholder="Search customer name..." />
+          </label>
+          <label>
+            <span>Order Status</span>
+            <select value={statusFilter} onChange={event => setStatusFilter(event.target.value)}>
+              <option value="ALL">All Status</option>
+              {orderStatuses.map(orderStatus => <option key={orderStatus} value={orderStatus}>{orderStatus}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Date From</span>
+            <input type="date" value={dateFrom} onChange={event => setDateFrom(event.target.value)} />
+          </label>
+          <label>
+            <span>Date To</span>
+            <input type="date" value={dateTo} onChange={event => setDateTo(event.target.value)} />
+          </label>
+          <div className="orders-filter-actions">
+            <button type="button" className="btn-primary" onClick={() => setStatus('Filters applied.')}>⌕ Apply Filters</button>
+            <button type="button" className="btn-outline" onClick={resetFilters}>↻ Reset</button>
+          </div>
+        </div>
+      </section>
+
+      <section className="dashboard-card orders-list-card">
+        <div className="orders-list-heading">
+          <div className="orders-section-heading">
+            <div className="orders-section-icon list">▤</div>
+            <div>
+              <h2>Order List</h2>
+              <p>View, track and manage customer orders.</p>
+            </div>
+          </div>
+          <button type="button" className="btn-outline orders-export-button">⇩ Export</button>
+        </div>
+
+        <div className="table-scroll">
+          <table className="orders-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Items</th>
+                <th>Total (₹)</th>
+                <th>Payment</th>
+                <th>Status</th>
+                <th>Order Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredOrders.length === 0 && (
+                <tr><td colSpan="9" className="orders-empty-state">No orders match the selected filters.</td></tr>
+              )}
+              {filteredOrders.map((order, index) => (
+                <tr key={order.id}>
+                  <td>{index + 1}</td>
+                  <td className="order-id-cell">{order.orderNumber || `ORD-${order.id}`}</td>
+                  <td>
+                    <div className="customer-cell">
+                      <span className="customer-avatar">{String(order.customerName || order.userName || 'C').charAt(0).toUpperCase()}</span>
+                      <span>{order.customerName || order.userName || `Customer #${order.userId || '—'}`}</span>
+                    </div>
+                  </td>
+                  <td>{order.items?.length || order.itemCount || '—'}</td>
+                  <td className="order-total-cell">{formatAmount(order)}</td>
+                  <td><span className="payment-label">{order.paymentMethod || 'Online'}</span></td>
+                  <td><span className={`order-status-pill ${getStatusClass(order.status)}`}>{order.status || 'PENDING'}</span></td>
+                  <td>{formatOrderDate(order)}</td>
+                  <td>
+                    <div className="order-actions">
+                      <button type="button" className="order-view-button" aria-label={`View order ${order.orderNumber || order.id}`}>◉</button>
+                      <button type="button" className="order-invoice-button" onClick={() => handleDownloadInvoice(order)} disabled={downloadingInvoiceId === order.id} aria-label={`Download invoice for ${order.orderNumber || order.id}`}>
+                        {downloadingInvoiceId === order.id ? '…' : 'PDF'}
+                      </button>
+                      <div className="order-menu">
+                        <button
+                          type="button"
+                          className="order-menu-trigger"
+                          aria-label={`Edit status for order ${order.orderNumber}`}
+                          aria-expanded={openMenuId === order.id}
+                          onClick={() => setOpenMenuId(openMenuId === order.id ? null : order.id)}
+                        >
+                          ⋮
+                        </button>
+                        {openMenuId === order.id && (
+                          <div className="order-menu-dropdown" role="menu">
+                            <span className="order-menu-title">Edit status</span>
+                            {orderStatuses.map(orderStatus => (
+                              <button type="button" role="menuitem" className={order.status === orderStatus ? 'active' : ''} key={orderStatus} onClick={() => handleUpdateStatus(order.id, orderStatus)}>
+                                {orderStatus}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <button type="button" className="order-delete-button" onClick={() => handleDeleteOrder(order.id)}>▥ Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="orders-footer-row">
+          <span>Showing {filteredOrders.length} of {orders.length} orders</span>
+          <div className="pagination-controls">
+            <button type="button" aria-label="First page">«</button>
+            <button type="button" aria-label="Previous page">‹</button>
+            <button type="button" className="page-btn active">1</button>
+            <button type="button" aria-label="Next page">›</button>
+            <button type="button" aria-label="Last page">»</button>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

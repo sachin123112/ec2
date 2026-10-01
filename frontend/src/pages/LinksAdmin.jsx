@@ -185,192 +185,178 @@ export default function LinksAdmin() {
   }
 
   return (
-    <div className="dashboard-page">
-      <div className="dashboard-header">
-        <div className="dashboard-header-left">
-          <h1>Links</h1>
-          <p>Manage site links and banner</p>
+    <div className="dashboard-page links-page">
+      <div className="breadcrumb">
+        <span>Dashboard</span>
+        <span>›</span>
+        <span>Links</span>
+        <span>›</span>
+        <span className="breadcrumb-current">Banners</span>
+      </div>
+
+      <div className="links-page-header">
+        <div className="links-page-title">
+          <div className="links-page-icon">🔗</div>
+          <div>
+            <h1>Manage Link / Banner</h1>
+            <p>Add and manage slider banners, category links, or custom links for your store.</p>
+          </div>
         </div>
+
+        <button type="button" className="btn-outline links-page-back-btn">← Back to List</button>
       </div>
 
       <div className="dashboard-status">{status}</div>
 
-      <div className="dashboard-grid">
-        <div className="dashboard-card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px 10px', borderRadius: '999px', background: '#e0f2fe', color: '#075985', fontWeight: 700, fontSize: '12px', letterSpacing: '0.04em' }}>
-              MOBILE
-            </span>
-            <h2 style={{ margin: 0 }}>Banner Management</h2>
+      <div className="links-editor-grid">
+        <section className="links-panel links-upload-panel">
+          <div className="panel-title-row">
+            <div className="panel-icon panel-icon-amber">🖼</div>
+            <h2>Banner Image</h2>
           </div>
 
-          <div style={{ marginBottom: '30px' }}>
-            <h3 style={{ marginBottom: '15px' }}>Upload New Banner</h3>
-            <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
-              Page
+          <div className="upload-dropzone">
+            <label htmlFor="links-banner-upload" className="upload-trigger">
+              <span className="upload-visual">☁</span>
+              <span className="upload-line">Drag &amp; drop an image here</span>
+              <span className="upload-line secondary">or click to browse</span>
             </label>
-            <select
-              value={mobileBannerPage}
-              onChange={event => setMobileBannerPage(event.target.value)}
-              style={{ display: 'block', marginBottom: '12px', padding: '8px', minWidth: '220px' }}
-            >
-              {MOBILE_BANNER_PAGES.map(page => <option key={page.value} value={page.value}>{page.label}</option>)}
-            </select>
-            <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
-              Upload Banner Image
-            </label>
-            <input 
-              type="file" 
-              accept="image/jpeg,image/png,image/webp" 
-              onChange={handleBannerFileSelect}
-              style={{ marginBottom: '10px', display: 'block' }}
-            />
-            <small style={{ color: '#666', display: 'block', marginBottom: '10px' }}>
-              Supported formats: JPEG, PNG, WebP (Max 5MB)
-            </small>
-            
-            {bannerPreview && (
-              <div style={{ marginBottom: '20px', textAlign: 'center' }}>
-                <img src={bannerPreview} alt="Banner Preview" style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px' }} />
-                <p style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>Preview</p>
-              </div>
-            )}
-            
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button type="button" className="btn-primary" onClick={() => handleBannerUpload(mobileBannerPage)} disabled={!bannerFile}>
-                Upload Mobile Banner
-              </button>
-              {bannerFile && (
-                <button type="button" className="btn-secondary" onClick={cancelBannerUpload}>
-                  Cancel
-                </button>
-              )}
-            </div>
+            <input id="links-banner-upload" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleBannerFileSelect} />
           </div>
 
-          {banners.filter(banner => MOBILE_BANNER_PAGES.some(page => page.value === banner.pageKey)).length > 0 && (
-            <div>
-              <h3 style={{ marginBottom: '15px' }}>Uploaded Mobile Banners ({banners.filter(banner => MOBILE_BANNER_PAGES.some(page => page.value === banner.pageKey)).length})</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                {banners.filter(banner => MOBILE_BANNER_PAGES.some(page => page.value === banner.pageKey)).map((banner) => (
-                  <div key={banner.id} style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '10px', textAlign: 'center' }}>
-                    <img 
-                      src={resolveBannerUrl(banner.imageUrl)} 
-                      alt={`Banner ${banner.id}`} 
-                      style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '6px', marginBottom: '10px' }} 
-                    />
-                    <p style={{ fontSize: '12px', color: '#666', marginBottom: '8px' }}>
-                      {MOBILE_BANNER_PAGES.find(page => page.value === banner.pageKey)?.label || banner.pageKey} · ID: {banner.id}
-                    </p>
-                    <button 
-                      type="button" 
-                      className="btn-danger" 
-                      onClick={() => handleBannerDelete(banner.id)}
-                      style={{ width: '100%' }}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                ))}
-              </div>
+          <div className="banner-upload-controls">
+            <label>
+              <span>Admin page</span>
+              <select value={bannerPage} onChange={event => setBannerPage(event.target.value)}>
+                {ADMIN_BANNER_PAGES.map(page => <option key={page.value} value={page.value}>{page.label}</option>)}
+              </select>
+            </label>
+            <button type="button" className="btn-primary" onClick={handleBannerUpload} disabled={!bannerFile}>Upload Banner</button>
+          </div>
+
+          {bannerPreview && (
+            <div className="banner-preview">
+              <img src={bannerPreview} alt="Selected banner preview" />
             </div>
           )}
-        </div>
 
-        <div className="dashboard-card wide-card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px 10px', borderRadius: '999px', background: '#dcfce7', color: '#166534', fontWeight: 700, fontSize: '12px', letterSpacing: '0.04em' }}>
-              ADMIN
-            </span>
-            <h2 style={{ margin: 0 }}>Link Management</h2>
-          </div>
+          {bannerFile && (
+            <button type="button" className="btn-outline banner-cancel-btn" onClick={cancelBannerUpload}>Cancel</button>
+          )}
+        </section>
 
-          <div className="links-admin-banner-section">
-            <div className="links-admin-section-heading">
-              <div>
-                <span className="links-admin-section-kicker">ADMIN</span>
-                <h3>Storefront Banners</h3>
-              </div>
-              <span>Home, shop, brands, offers and cart</span>
-            </div>
-            <div className="links-admin-banner-controls">
-              <label>
-                Admin page
-                <select value={bannerPage} onChange={event => setBannerPage(event.target.value)}>
-                  {ADMIN_BANNER_PAGES.map(page => <option key={page.value} value={page.value}>{page.label}</option>)}
-                </select>
-              </label>
-              <label>
-                Banner image
-                <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleBannerFileSelect} />
-              </label>
-              <button type="button" className="btn-primary" onClick={handleBannerUpload} disabled={!bannerFile}>Upload Admin Banner</button>
-            </div>
-            <div className="links-admin-banner-list">
-              {banners.filter(banner => ADMIN_BANNER_PAGES.some(page => page.value === banner.pageKey)).map(banner => (
-                <div key={banner.id} className="links-admin-banner-item">
-                  <img src={resolveBannerUrl(banner.imageUrl)} alt={`${banner.pageKey} banner`} />
-                  <div><strong>{ADMIN_BANNER_PAGES.find(page => page.value === banner.pageKey)?.label || banner.pageKey}</strong><span>ID: {banner.id}</span></div>
-                  <button type="button" className="btn-danger btn-sm" onClick={() => handleBannerDelete(banner.id)}>Delete</button>
-                </div>
-              ))}
-            </div>
+        <section className="links-panel links-form-panel">
+          <div className="panel-title-row">
+            <div className="panel-icon panel-icon-blue">🔗</div>
+            <h2>Link Details</h2>
           </div>
 
           <form onSubmit={handleCreateLink} className="panel-form">
-            <label>
-              Label
-              <input value={linkForm.label} onChange={e => setLinkForm({...linkForm, label: e.target.value})} required />
+            <label className="field field-full">
+              <span>Label</span>
+              <input value={linkForm.label} onChange={e => setLinkForm({ ...linkForm, label: e.target.value })} required />
             </label>
-            <label>
-              URL
-              <input type="url" value={linkForm.url} onChange={e => setLinkForm({...linkForm, url: e.target.value})} required />
+
+            <label className="field field-full">
+              <span>URL</span>
+              <input type="url" value={linkForm.url} onChange={e => setLinkForm({ ...linkForm, url: e.target.value })} required />
             </label>
-            <label>
-              Description
-              <textarea value={linkForm.description} onChange={e => setLinkForm({...linkForm, description: e.target.value})} rows={4} />
+
+            <label className="field field-full">
+              <span>Description</span>
+              <textarea value={linkForm.description} onChange={e => setLinkForm({ ...linkForm, description: e.target.value })} rows={4} />
             </label>
-            <label>
-              Active
-              <select value={linkForm.isActive ? 'true' : 'false'} onChange={e => setLinkForm({...linkForm, isActive: e.target.value === 'true'})}>
+
+            <div className="field-row">
+              <label className="field">
+                <span>Open In</span>
+                <select value={linkForm.openIn || 'same-tab'} onChange={e => setLinkForm({ ...linkForm, openIn: e.target.value })}>
+                  <option value="same-tab">Same Tab</option>
+                  <option value="new-tab">New Tab</option>
+                </select>
+              </label>
+
+              <label className="field">
+                <span>Display Order</span>
+                <input type="number" min="1" value={linkForm.displayOrder || 1} onChange={e => setLinkForm({ ...linkForm, displayOrder: Number(e.target.value || 1) })} />
+              </label>
+            </div>
+
+            <label className="field field-full">
+              <span>Active Status</span>
+              <select value={linkForm.isActive ? 'true' : 'false'} onChange={e => setLinkForm({ ...linkForm, isActive: e.target.value === 'true' })}>
                 <option value="true">Active</option>
                 <option value="false">Inactive</option>
               </select>
             </label>
-            <button type="submit" className="btn-primary">Save Link</button>
-          </form>
 
-          <div style={{ marginTop: '24px' }}>
-            <h3 style={{ marginBottom: '12px' }}>Link List</h3>
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Label</th>
-                    <th>URL</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {links.map(link => (
-                    <tr key={link.id}>
-                      <td>{link.id}</td>
-                      <td>{link.label}</td>
-                      <td><a href={link.url} target="_blank" rel="noreferrer">Open</a></td>
-                      <td>{link.isActive ? 'Active' : 'Inactive'}</td>
-                      <td>
-                        <button className="btn-danger btn-sm" onClick={() => handleDeleteLink(link.id)}>Delete</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="form-actions">
+              <button type="button" className="btn-outline" onClick={() => setLinkForm({ label: '', url: '', description: '', isActive: true, openIn: 'same-tab', displayOrder: 1 })}>Reset</button>
+              <button type="submit" className="btn-primary">Save Link</button>
             </div>
+          </form>
+        </section>
+      </div>
+
+      <section className="links-panel link-list-panel">
+        <div className="link-list-header">
+          <div className="panel-title-row compact-title">
+            <div className="panel-icon panel-icon-purple">☰</div>
+            <h2>Link List</h2>
+          </div>
+          <div className="link-list-tools">
+            <div className="table-search">
+              <span>⌕</span>
+              <input type="text" placeholder="Search links..." />
+            </div>
+            <select className="table-filter" defaultValue="all">
+              <option value="all">All</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
           </div>
         </div>
-      </div>
+
+        <div className="table-scroll">
+          <table className="link-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Preview</th>
+                <th>Label</th>
+                <th>URL</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {links.map((link, index) => (
+                <tr key={link.id}>
+                  <td>{index + 1}</td>
+                  <td>
+                    <div className="link-preview">
+                      <span className="link-preview-thumb">P</span>
+                    </div>
+                  </td>
+                  <td>{link.label}</td>
+                  <td className="table-url">{link.url}</td>
+                  <td>
+                    <span className={`status-badge ${link.isActive ? 'active' : 'inactive'}`}>
+                      {link.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="action-buttons">
+                      <button type="button" className="icon-button" aria-label="Edit link">✎</button>
+                      <button type="button" className="icon-button danger" aria-label="Delete link" onClick={() => handleDeleteLink(link.id)}>🗑</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   );
 }

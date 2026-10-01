@@ -1,12 +1,15 @@
 package com.company.auth.dto;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 public class CreateOrderRequest {
     private Long userId;
     private BigDecimal totalAmount;
     private String status;
     private String paymentMethod;
+    private List<OrderItemRequest> items = new ArrayList<>();
 
     public Long getUserId() {
         return userId;
@@ -38,5 +41,13 @@ public class CreateOrderRequest {
 
     public void setPaymentMethod(String paymentMethod) {
         this.paymentMethod = paymentMethod;
+    }
+
+    public List<OrderItemRequest> getItems() {
+        return items;
+    }
+
+    public void setItems(List<OrderItemRequest> items) {
+        this.items = items;
     }
 }

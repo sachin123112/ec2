@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './BrandsAdmin.css';
@@ -6,16 +6,16 @@ import './BrandsAdmin.css';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 const initialBrands = [
-  { id: 1, name: 'Royal Canin', tone: 'red', createdAt: '12 Jul 2026', status: 'Active' },
-  { id: 2, name: 'Pedigree', tone: 'gold', createdAt: '11 Jul 2026', status: 'Active' },
-  { id: 3, name: 'Whiskas', tone: 'purple', createdAt: '10 Jul 2026', status: 'Active' },
-  { id: 4, name: 'Me-O', tone: 'coral', createdAt: '09 Jul 2026', status: 'Active' },
-  { id: 5, name: 'Drools', tone: 'blue', createdAt: '08 Jul 2026', status: 'Active' },
-  { id: 6, name: 'Himalaya', tone: 'teal', createdAt: '07 Jul 2026', status: 'Active' },
-  { id: 7, name: 'Purina', tone: 'black', createdAt: '06 Jul 2026', status: 'Active' },
-  { id: 8, name: 'Hills', tone: 'red', createdAt: '05 Jul 2026', status: 'Inactive' },
-  { id: 9, name: 'Sheba', tone: 'black', createdAt: '04 Jul 2026', status: 'Active' },
-  { id: 10, name: 'Tetra', tone: 'gold', createdAt: '03 Jul 2026', status: 'Active' },
+  { id: 1, name: 'Royal Canin', tone: 'red', createdAt: '12 Jul 2026', status: 'Active', productCount: 42 },
+  { id: 2, name: 'Pedigree', tone: 'gold', createdAt: '11 Jul 2026', status: 'Active', productCount: 36 },
+  { id: 3, name: 'Whiskas', tone: 'purple', createdAt: '10 Jul 2026', status: 'Active', productCount: 28 },
+  { id: 4, name: 'Me-O', tone: 'coral', createdAt: '09 Jul 2026', status: 'Active', productCount: 21 },
+  { id: 5, name: 'Drools', tone: 'blue', createdAt: '08 Jul 2026', status: 'Active', productCount: 18 },
+  { id: 6, name: 'Himalaya', tone: 'teal', createdAt: '07 Jul 2026', status: 'Active', productCount: 12 },
+  { id: 7, name: 'Purina', tone: 'black', createdAt: '06 Jul 2026', status: 'Active', productCount: 15 },
+  { id: 8, name: 'Hills', tone: 'red', createdAt: '05 Jul 2026', status: 'Inactive', productCount: 8 },
+  { id: 9, name: 'Sheba', tone: 'black', createdAt: '04 Jul 2026', status: 'Active', productCount: 17 },
+  { id: 10, name: 'Tetra', tone: 'gold', createdAt: '03 Jul 2026', status: 'Active', productCount: 24 },
 ];
 
 function normalize(value) {
@@ -34,8 +34,14 @@ export default function BrandsAdmin() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [form, setForm] = useState({ name: '', tone: 'blue' });
+  const [editingBrandId, setEditingBrandId] = useState(null);
+  const [form, setForm] = useState({ name: '', tone: 'blue', status: 'Active', productCount: '0', createdAt: new Date().toISOString().slice(0, 10), logo: '' });
   const [message, setMessage] = useState('');
+  const modalRef = useRef(null);
+
+  useEffect(() => {
+    if (isAddOpen && modalRef.current) modalRef.current.scrollTop = 0;
+  }, [isAddOpen]);
 
   useEffect(() => {
     fetch(`${API_URL}/products`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
@@ -54,16 +60,64 @@ export default function BrandsAdmin() {
     event.preventDefault();
     const name = form.name.trim();
     if (!name) return;
-    setBrands(previous => [{
-      id: Date.now(),
-      name,
-      tone: form.tone,
-      createdAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-      status: 'Active',
-    }, ...previous]);
-    setForm({ name: '', tone: 'blue' });
+    if (editingBrandId) {
+      setBrands(previous => previous.map(brand => brand.id === editingBrandId ? {
+        ...brand,
+        name,
+        tone: form.tone,
+        createdAt: form.createdAt,
+        status: form.status,
+        productCount: Number(form.productCount) || 0,
+        logo: form.logo,
+      } : brand));
+    } else {
+      setBrands(previous => [{
+        id: Date.now(),
+        name,
+        tone: form.tone,
+        createdAt: form.createdAt,
+        status: form.status,
+        productCount: Number(form.productCount) || 0,
+        logo: form.logo,
+      }, ...previous]);
+    }
+    setForm({ name: '', tone: 'blue', status: 'Active', productCount: '0', createdAt: new Date().toISOString().slice(0, 10), logo: '' });
+    setEditingBrandId(null);
     setIsAddOpen(false);
-    setMessage(`${name} added to this session.`);
+    setMessage(`${name} ${editingBrandId ? 'updated' : 'added'} in this session.`);
+  }
+
+  function openAddBrand() {
+    setEditingBrandId(null);
+    setForm({ name: '', tone: 'blue', status: 'Active', productCount: '0', createdAt: new Date().toISOString().slice(0, 10), logo: '' });
+    setIsAddOpen(true);
+  }
+
+  function openEditBrand(brand) {
+    setEditingBrandId(brand.id);
+    setForm({
+      name: brand.name || '',
+      tone: brand.tone || 'blue',
+      status: brand.status || 'Active',
+      productCount: String(brand.productCount ?? getProductCount(products, brand.name)),
+      createdAt: brand.createdAt ? new Date(brand.createdAt).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+      logo: brand.logo || '',
+    });
+    setIsAddOpen(true);
+  }
+
+  function handleLogoUpload(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setForm(previous => ({ ...previous, logo: String(reader.result || '') }));
+    reader.readAsDataURL(file);
+  }
+
+  function formatCreatedDate(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
   function toggleBrandStatus(id) {
@@ -81,21 +135,32 @@ export default function BrandsAdmin() {
     <div className="brands-admin-page">
       <header className="brands-admin-header">
         <div>
+          <div className="brands-admin-breadcrumb">
+            <Link to="/admin/dashboard">Dashboard</Link>
+            <span>›</span>
+            <Link to="/admin/brands">Brands</Link>
+            <span>›</span>
+            <span className="brands-admin-breadcrumb-current">Manage Brands</span>
+          </div>
           <h1>Manage Brands</h1>
-          <div className="brands-admin-breadcrumb"><Link to="/admin/dashboard">Home</Link><span>›</span><span>Brands</span></div>
         </div>
-        <button type="button" className="brands-admin-add" onClick={() => setIsAddOpen(true)}><span>+</span> Add Brand</button>
+        <button type="button" className="brands-admin-add" onClick={openAddBrand}><span>+</span> Add Brand</button>
       </header>
 
       {message && <div className="brands-admin-message" role="status">{message}</div>}
 
       {isAddOpen && (
         <div className="brands-admin-modal-backdrop" role="presentation" onMouseDown={event => event.target === event.currentTarget && setIsAddOpen(false)}>
-          <form className="brands-admin-modal" onSubmit={handleAddBrand}>
-            <div className="brands-admin-modal-heading"><div><span className="brands-admin-kicker">Catalog setup</span><h2>Add brand</h2></div><button type="button" className="brands-admin-close" onClick={() => setIsAddOpen(false)} aria-label="Close">×</button></div>
-            <label>Brand name<input autoFocus value={form.name} onChange={event => setForm({ ...form, name: event.target.value })} placeholder="e.g. Royal Canin" required /></label>
+          <form ref={modalRef} className="brands-admin-modal" onSubmit={handleAddBrand}>
+            <div className="brands-admin-modal-heading"><div><span className="brands-admin-kicker">Catalog setup</span><h2>{editingBrandId ? 'Edit brand' : 'Add brand'}</h2></div><button type="button" className="brands-admin-close" onClick={() => setIsAddOpen(false)} aria-label="Close">×</button></div>
+            <label>Brand Name<input autoFocus value={form.name} onChange={event => setForm({ ...form, name: event.target.value })} placeholder="e.g. Royal Canin" required /></label>
             <label>Logo color<select value={form.tone} onChange={event => setForm({ ...form, tone: event.target.value })}><option value="blue">Blue</option><option value="red">Red</option><option value="gold">Gold</option><option value="purple">Purple</option><option value="teal">Teal</option></select></label>
-            <div className="brands-admin-modal-actions"><button type="button" className="brands-admin-secondary" onClick={() => setIsAddOpen(false)}>Cancel</button><button type="submit" className="brands-admin-add">Save Brand</button></div>
+            <label>Status<select value={form.status} onChange={event => setForm({ ...form, status: event.target.value })}><option>Active</option><option>Inactive</option></select></label>
+            <label>Product Count<input type="number" min="0" value={form.productCount} onChange={event => setForm({ ...form, productCount: event.target.value })} /></label>
+            <label>Created Date<input type="date" value={form.createdAt} onChange={event => setForm({ ...form, createdAt: event.target.value })} /></label>
+            <label>Brand Logo<input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleLogoUpload} /></label>
+            {form.logo && <img className="brands-admin-logo-preview" src={form.logo} alt="Brand logo preview" />}
+            <div className="brands-admin-modal-actions"><button type="button" className="brands-admin-secondary" onClick={() => setIsAddOpen(false)}>Cancel</button><button type="submit" className="brands-admin-add">{editingBrandId ? 'Update Brand' : 'Save Brand'}</button></div>
           </form>
         </div>
       )}
@@ -114,12 +179,12 @@ export default function BrandsAdmin() {
                 <tr key={brand.id}>
                   <td><input type="checkbox" aria-label={`Select ${brand.name}`} /></td>
                   <td>{index + 1}</td>
-                  <td><div className={`brands-admin-logo brands-admin-logo--${brand.tone}`}>{brand.name}</div></td>
+                  <td>{brand.logo ? <img className="brands-admin-logo-image" src={brand.logo} alt={`${brand.name} logo`} /> : <div className={`brands-admin-logo brands-admin-logo--${brand.tone}`}>{brand.name}</div>}</td>
                   <td className="brands-admin-name">{brand.name}</td>
-                  <td>{getProductCount(products, brand.name)}</td>
+                  <td>{brand.productCount ?? getProductCount(products, brand.name)}</td>
                   <td><button type="button" className={`brands-admin-status brands-admin-status--${brand.status.toLowerCase()}`} onClick={() => toggleBrandStatus(brand.id)}>{brand.status}</button></td>
-                  <td>{brand.createdAt}</td>
-                  <td><div className="brands-admin-actions"><button type="button" className="brands-admin-edit" onClick={() => setMessage(`Edit form for ${brand.name} is ready for backend integration.`)} aria-label={`Edit ${brand.name}`}>✎</button><button type="button" className="brands-admin-delete" onClick={() => removeBrand(brand.id)} aria-label={`Delete ${brand.name}`}>♧</button></div></td>
+                  <td>{formatCreatedDate(brand.createdAt)}</td>
+                  <td><div className="brands-admin-actions"><button type="button" className="brands-admin-edit" onClick={() => openEditBrand(brand)} aria-label={`Edit ${brand.name}`}>✎</button><button type="button" className="brands-admin-delete" onClick={() => removeBrand(brand.id)} aria-label={`Delete ${brand.name}`}>♧</button></div></td>
                 </tr>
               ))}
             </tbody>
