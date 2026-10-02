@@ -102,6 +102,10 @@ export default function AdminSidebar() {
     setAccountsExpanded(expanded => !expanded);
     if (!isFinancePath) navigate('/admin/accounts');
   }
+
+  function handleSidebarMouseLeave() {
+    if (window.matchMedia('(min-width: 761px)').matches) setIsCollapsed(true);
+  }
   
   function renderFinanceLink(item) {
     const active = (searchParams.get('module') || 'dashboard') === item.key;
@@ -111,7 +115,7 @@ export default function AdminSidebar() {
   }
 
   return (
-    <aside className={`admin-sidebar${isCollapsed ? ' collapsed' : ''}${isFinancePath ? ' admin-sidebar-finance' : ''}`} aria-label="Admin navigation">
+    <aside className={`admin-sidebar${isCollapsed ? ' collapsed' : ''}${isFinancePath ? ' admin-sidebar-finance' : ''}`} aria-label="Admin navigation" onMouseLeave={handleSidebarMouseLeave}>
       <div className="admin-sidebar-brand">
         <span className="admin-sidebar-paw" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 13c-3.5 0-6.5 2.1-6.5 4.7 0 1.7 1.5 2.8 3.2 2.1.9-.4 1.8-.6 3.3-.6s2.4.2 3.3.6c1.7.7 3.2-.4 3.2-2.1 0-2.6-3-4.7-6.5-4.7ZM5.1 11.7c1.2-.2 1.9-1.5 1.6-3-.3-1.5-1.5-2.5-2.7-2.3-1.2.2-1.9 1.5-1.6 3 .3 1.5 1.5 2.5 2.7 2.3Zm5-2.5c1.3 0 2.3-1.3 2.3-2.9S11.4 3.4 10.1 3.4 7.8 4.7 7.8 6.3s1 2.9 2.3 2.9Zm7.2 2.5c1.2.2 2.4-.8 2.7-2.3.3-1.5-.4-2.8-1.6-3-1.2-.2-2.4.8-2.7 2.3-.3 1.5.4 2.8 1.6 3Zm-5-2.5c1.3 0 2.3-1.3 2.3-2.9s-1-2.9-2.3-2.9S10 4.7 10 6.3s1 2.9 2.3 2.9Z" /></svg></span>
         <div className="admin-sidebar-brand-copy"><strong>Paw<span>Mart</span></strong><small>Admin Panel</small></div>

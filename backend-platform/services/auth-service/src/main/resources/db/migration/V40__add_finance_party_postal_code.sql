@@ -1,0 +1,1 @@
+ALTER TABLE finance_parties ADD COLUMN IF NOT EXISTS postal_code VARCHAR(10);

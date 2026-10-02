@@ -81,7 +81,7 @@ public class FinanceService {
 
     @Transactional(readOnly = true)
     public List<Map<String, Object>> listParties(String type) {
-        String partySql = "SELECT p.id, p.party_type AS \"partyType\", p.name, p.gstin, p.pan, p.email, p.phone, p.address, p.opening_balance AS \"openingBalance\", p.opening_balance_side AS \"openingBalanceSide\", p.active, COALESCE(SUM(CASE WHEN a.id IS NULL THEN 0 WHEN p.party_type = 'CUSTOMER' THEN l.debit - l.credit ELSE l.credit - l.debit END), 0) AS \"outstandingBalance\" FROM finance_parties p LEFT JOIN finance_vouchers v ON v.party_id = p.id AND v.status = 'POSTED' LEFT JOIN finance_voucher_lines l ON l.voucher_id = v.id LEFT JOIN finance_accounts a ON a.id = l.account_id AND a.account_type = CASE WHEN p.party_type = 'CUSTOMER' THEN 'RECEIVABLE' ELSE 'PAYABLE' END";
+        String partySql = "SELECT p.id, p.party_type AS \"partyType\", p.name, p.gstin, p.pan, p.email, p.phone, p.address, p.postal_code AS \"postalCode\", p.opening_balance AS \"openingBalance\", p.opening_balance_side AS \"openingBalanceSide\", p.active, COALESCE(SUM(CASE WHEN a.id IS NULL THEN 0 WHEN p.party_type = 'CUSTOMER' THEN l.debit - l.credit ELSE l.credit - l.debit END), 0) AS \"outstandingBalance\" FROM finance_parties p LEFT JOIN finance_vouchers v ON v.party_id = p.id AND v.status = 'POSTED' LEFT JOIN finance_voucher_lines l ON l.voucher_id = v.id LEFT JOIN finance_accounts a ON a.id = l.account_id AND a.account_type = CASE WHEN p.party_type = 'CUSTOMER' THEN 'RECEIVABLE' ELSE 'PAYABLE' END";
         if (type == null || type.isBlank()) {
             return jdbc.queryForList(partySql + " GROUP BY p.id ORDER BY p.name");
         }
@@ -95,13 +95,17 @@ public class FinanceService {
         requireText(input.name(), "Party name");
         BigDecimal opening = nonNegative(input.openingBalance(), "Opening balance");
         String side = input.openingBalanceSide() == null ? "DEBIT" : requiredChoice(input.openingBalanceSide(), "Opening balance side", List.of("DEBIT", "CREDIT"));
-        Long id = jdbc.queryForObject("INSERT INTO finance_parties (party_type, name, gstin, pan, email, phone, address, opening_balance, opening_balance_side) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
-                Long.class, type, input.name().trim(), blankToNull(input.gstin()), blankToNull(input.pan()), blankToNull(input.email()), blankToNull(input.phone()), blankToNull(input.address()), opening, side);
+        String postalCode = blankToNull(input.postalCode());
+        if (postalCode != null && !postalCode.matches("[1-9][0-9]{5}")) {
+            throw new ResponseStatusException(BAD_REQUEST, "Enter a valid 6-digit Indian PIN code");
+        }
+        Long id = jdbc.queryForObject("INSERT INTO finance_parties (party_type, name, gstin, pan, email, phone, address, postal_code, opening_balance, opening_balance_side) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
+            Long.class, type, input.name().trim(), blankToNull(input.gstin()), blankToNull(input.pan()), blankToNull(input.email()), blankToNull(input.phone()), blankToNull(input.address()), postalCode, opening, side);
         if (opening.signum() > 0) {
             Long controlAccountId = getRequiredAccountId("CUSTOMER".equals(type) ? "RECEIVABLE" : "PAYABLE");
             postOpeningBalance(controlAccountId, id, input.name().trim(), opening, side, type + "-" + id);
         }
-        return jdbc.queryForMap("SELECT id, party_type AS \"partyType\", name, gstin, pan, email, phone, address, opening_balance AS \"openingBalance\", opening_balance_side AS \"openingBalanceSide\", active FROM finance_parties WHERE id = ?", id);
+        return jdbc.queryForMap("SELECT id, party_type AS \"partyType\", name, gstin, pan, email, phone, address, postal_code AS \"postalCode\", opening_balance AS \"openingBalance\", opening_balance_side AS \"openingBalanceSide\", active FROM finance_parties WHERE id = ?", id);
     }
 
     @Transactional(readOnly = true)
@@ -136,6 +140,9 @@ public class FinanceService {
     @Transactional
     public Map<String, Object> saveBankAccount(BankAccountInput input) {
         requireText(input.bankName(), "Bank name");
+        requireText(input.accountHolder(), "Account holder");
+        requireText(input.accountNumber(), "Account number");
+        requireText(input.ifsc(), "IFSC");
         if (input.accountId() == null || !exists("SELECT EXISTS (SELECT 1 FROM finance_accounts WHERE id = ? AND account_type = 'BANK' AND active = TRUE)", input.accountId())) {
             throw new ResponseStatusException(BAD_REQUEST, "Select an active BANK ledger account");
         }
@@ -424,7 +431,7 @@ public class FinanceService {
     }
 
     public record AccountInput(String code, String name, String accountGroup, String accountType, BigDecimal openingBalance, String openingBalanceSide) {}
-    public record PartyInput(String partyType, String name, String gstin, String pan, String email, String phone, String address, BigDecimal openingBalance, String openingBalanceSide) {}
+    public record PartyInput(String partyType, String name, String gstin, String pan, String email, String phone, String address, String postalCode, BigDecimal openingBalance, String openingBalanceSide) {}
     public record TaxCodeInput(String taxType, String code, String description, BigDecimal rate, String component, LocalDate effectiveFrom, LocalDate effectiveTo) {}
     public record BankAccountInput(Long accountId, String bankName, String accountHolder, String accountNumber, String ifsc, BigDecimal openingBalance) {}
     public record ProductMappingInput(Long salesAccountId, Long purchaseAccountId, Long inventoryAccountId, String hsnSacCode, Long taxCodeId) {}

@@ -1,0 +1,10 @@
+package com.company.auth.repository;
+
+import com.company.auth.model.OrderItemEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface OrderItemRepository extends JpaRepository<OrderItemEntity, Long> {
+    List<OrderItemEntity> findAllByOrderIdOrderByIdAsc(Long orderId);
+}

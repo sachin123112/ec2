@@ -1,0 +1,2 @@
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipping_address TEXT;
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS product_sku VARCHAR(100);

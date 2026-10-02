@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { financeGroups, financeReportTypes } from '../data/financeNavigation';
@@ -32,8 +32,8 @@ const voucherTypes = {
 
 const blankLine = () => ({ accountId: '', description: '', debit: '', credit: '' });
 
-async function financeRequest(path, token, options = {}) {
-  const response = await fetch(`${API_URL}/admin/finance${path}`, {
+async function performFinanceRequest(path, token, options = {}, authenticatedFetch = fetch) {
+  const response = await authenticatedFetch(`${API_URL}/admin/finance${path}`, {
     ...options,
     headers: {
       Authorization: `Bearer ${token}`,
@@ -50,7 +50,8 @@ async function financeRequest(path, token, options = {}) {
 }
 
 export default function AccountsFinance() {
-  const { token } = useAuth();
+  const { token, refreshSession } = useAuth();
+  const refreshPromiseRef = useRef(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const moduleKey = searchParams.get('module') || 'dashboard';
   const selectedItem = financeGroups.flatMap(group => group.items).find(item => item.key === moduleKey) || financeGroups[0].items[0];
@@ -75,6 +76,36 @@ export default function AccountsFinance() {
   const [ledger, setLedger] = useState(null);
   const reportType = financeReportTypes[moduleKey];
 
+  const fetchWithAuthRetry = useCallback(async (url, options = {}) => {
+    let response = await fetch(url, options);
+    if (response.status !== 401) return response;
+
+    try {
+      if (!refreshPromiseRef.current) {
+        refreshPromiseRef.current = refreshSession().finally(() => {
+          refreshPromiseRef.current = null;
+        });
+      }
+      const refreshed = await refreshPromiseRef.current;
+      response = await fetch(url, {
+        ...options,
+        headers: {
+          ...(options.headers || {}),
+          Authorization: `Bearer ${refreshed.accessToken}`,
+        },
+      });
+    } catch {
+      // Preserve the original 401 for the finance status message.
+    }
+
+    return response;
+  }, [refreshSession]);
+
+  const financeRequest = useCallback((path, tokenOrOptions, maybeOptions) => {
+    const options = typeof tokenOrOptions === 'string' ? maybeOptions || {} : tokenOrOptions || {};
+    return performFinanceRequest(path, token, options, fetchWithAuthRetry);
+  }, [fetchWithAuthRetry, token]);
+
   const loadData = useCallback(async () => {
     if (!token) return;
     try {
@@ -88,7 +119,7 @@ export default function AccountsFinance() {
         financeRequest('/vouchers', token),
         financeRequest('/reconciliation', token),
         financeRequest(`/trial-balance?basis=${reportBasis}`, token),
-        fetch(`${API_URL}/products`, { headers: { Authorization: `Bearer ${token}` } }).then(response => response.ok ? response.json() : []),
+        fetchWithAuthRetry(`${API_URL}/products`, { headers: { Authorization: `Bearer ${token}` } }).then(response => response.ok ? response.json() : []),
         financeRequest('/settings', token),
         reportType ? financeRequest(`/reports/${reportType}?basis=${reportBasis}`, token) : Promise.resolve(null),
       ]);
@@ -109,7 +140,7 @@ export default function AccountsFinance() {
     } catch (error) {
       setStatus(error.message || 'Unable to load finance records. Apply database migrations and restart the auth service.');
     }
-  }, [token, reportBasis, reportType]);
+  }, [token, financeRequest, fetchWithAuthRetry, reportBasis, reportType]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -134,7 +165,9 @@ export default function AccountsFinance() {
       if (moduleKey === 'vendor-master' || moduleKey === 'customer-master') {
         await financeRequest('/parties', token, { method: 'POST', body: JSON.stringify({ ...form, partyType: moduleKey === 'vendor-master' ? 'VENDOR' : 'CUSTOMER' }) });
       } else if (moduleKey === 'group-ledger' || moduleKey === 'cash-petty-cash' || moduleKey === 'charges') {
-        await financeRequest('/accounts', token, { method: 'POST', body: JSON.stringify(form) });
+        const accountGroup = form.accountGroup || (moduleKey === 'charges' ? 'EXPENSE' : 'ASSET');
+        const accountType = form.accountType || (moduleKey === 'cash-petty-cash' ? 'CASH' : 'GENERAL');
+        await financeRequest('/accounts', token, { method: 'POST', body: JSON.stringify({ ...form, accountGroup, accountType }) });
       } else if (moduleKey === 'bank-accounts') {
         await financeRequest('/bank-accounts', token, { method: 'POST', body: JSON.stringify(form) });
       } else if (moduleKey === 'gst-rates' || moduleKey === 'tds-sections-rates') {
@@ -357,16 +390,33 @@ function ModuleWorkspace({ title, moduleKey, accounts, parties, taxCodes, bankAc
             <Field label="GSTIN"><input value={form.gstin || ''} onChange={event => setValue('gstin', event.target.value.toUpperCase())} maxLength="15" /></Field>
             <Field label="PAN"><input value={form.pan || ''} onChange={event => setValue('pan', event.target.value.toUpperCase())} maxLength="10" /></Field>
             <Field label="Email"><input type="email" value={form.email || ''} onChange={event => setValue('email', event.target.value)} /></Field>
-            <Field label="Phone"><input value={form.phone || ''} onChange={event => setValue('phone', event.target.value)} /></Field>
+            <Field label="Phone"><input
+              type="tel"
+              inputMode="numeric"
+              autoComplete="tel-national"
+              pattern="[6-9][0-9]{9}"
+              maxLength="10"
+              title="Enter a valid 10-digit Indian mobile number."
+              value={form.phone || ''}
+              onChange={event => setValue('phone', event.target.value)}
+            /></Field>
             <Field label="Opening balance"><input type="number" min="0" step="0.01" value={form.openingBalance || ''} onChange={event => setValue('openingBalance', event.target.value)} /></Field>
             <Field label="Balance side"><select value={form.openingBalanceSide || 'DEBIT'} onChange={event => setValue('openingBalanceSide', event.target.value)}><option value="DEBIT">Debit</option><option value="CREDIT">Credit</option></select></Field>
+            <Field label="PIN code"><input
+              inputMode="numeric"
+              pattern="[1-9][0-9]{5}"
+              maxLength="6"
+              title="Enter a valid 6-digit Indian PIN code."
+              value={form.postalCode || ''}
+              onChange={event => setValue('postalCode', event.target.value.replace(/\D/g, '').slice(0, 6))}
+            /></Field>
             <Field label="Address" className="finance-field-wide"><textarea rows="2" value={form.address || ''} onChange={event => setValue('address', event.target.value)} /></Field>
           </div>}
           {isAccountMaster && <div className="finance-form-grid">
             <Field label="Account code" required><input required value={form.code || ''} onChange={event => setValue('code', event.target.value)} /></Field>
             <Field label="Account name" required><input required value={form.name || ''} onChange={event => setValue('name', event.target.value)} /></Field>
             <Field label="Group"><select value={form.accountGroup || (moduleKey === 'charges' ? 'EXPENSE' : 'ASSET')} onChange={event => setValue('accountGroup', event.target.value)}>{['ASSET', 'LIABILITY', 'EQUITY', 'INCOME', 'EXPENSE'].map(option => <option key={option}>{option}</option>)}</select></Field>
-            <Field label="Account type"><select value={form.accountType || 'GENERAL'} onChange={event => setValue('accountType', event.target.value)}>{['GENERAL', 'CASH', 'BANK', 'RECEIVABLE', 'PAYABLE', 'INVENTORY', 'GST_CREDIT', 'GST_PAYABLE', 'TDS_PAYABLE', 'SALES', 'PURCHASE'].map(option => <option key={option}>{option}</option>)}</select></Field>
+            <Field label="Account type"><select value={form.accountType || (moduleKey === 'cash-petty-cash' ? 'CASH' : 'GENERAL')} onChange={event => setValue('accountType', event.target.value)}>{['GENERAL', 'CASH', 'BANK', 'RECEIVABLE', 'PAYABLE', 'INVENTORY', 'GST_CREDIT', 'GST_PAYABLE', 'TDS_PAYABLE', 'SALES', 'PURCHASE'].map(option => <option key={option}>{option}</option>)}</select></Field>
             <Field label="Opening balance"><input type="number" min="0" step="0.01" value={form.openingBalance || ''} onChange={event => setValue('openingBalance', event.target.value)} /></Field>
             <Field label="Balance side"><select value={form.openingBalanceSide || 'DEBIT'} onChange={event => setValue('openingBalanceSide', event.target.value)}><option>DEBIT</option><option>CREDIT</option></select></Field>
           </div>}
@@ -381,9 +431,9 @@ function ModuleWorkspace({ title, moduleKey, accounts, parties, taxCodes, bankAc
           {isBank && <div className="finance-form-grid">
             <Field label="Ledger account" required><select required value={form.accountId || ''} onChange={event => setValue('accountId', event.target.value)}><option value="">Select bank ledger</option>{accounts.filter(account => account.accountType === 'BANK').map(account => <option value={account.id} key={account.id}>{account.code} · {account.name}</option>)}</select></Field>
             <Field label="Bank name" required><input required value={form.bankName || ''} onChange={event => setValue('bankName', event.target.value)} /></Field>
-            <Field label="Account holder"><input value={form.accountHolder || ''} onChange={event => setValue('accountHolder', event.target.value)} /></Field>
-            <Field label="Account number"><input value={form.accountNumber || ''} onChange={event => setValue('accountNumber', event.target.value)} /></Field>
-            <Field label="IFSC"><input value={form.ifsc || ''} onChange={event => setValue('ifsc', event.target.value.toUpperCase())} maxLength="11" /></Field>
+            <Field label="Account holder" required><input required value={form.accountHolder || ''} onChange={event => setValue('accountHolder', event.target.value)} /></Field>
+            <Field label="Account number" required><input required value={form.accountNumber || ''} onChange={event => setValue('accountNumber', event.target.value)} /></Field>
+            <Field label="IFSC" required><input required value={form.ifsc || ''} onChange={event => setValue('ifsc', event.target.value.toUpperCase())} maxLength="11" /></Field>
             <Field label="Opening balance"><input type="number" min="0" step="0.01" value={form.openingBalance || ''} onChange={event => setValue('openingBalance', event.target.value)} /></Field>
           </div>}
           {isProductMapping && <div className="finance-form-grid">

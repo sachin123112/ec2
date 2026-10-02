@@ -4,12 +4,14 @@ import com.company.auth.dto.AddressDto;
 import com.company.auth.dto.AddressRequest;
 import com.company.auth.dto.CategoryDto;
 import com.company.auth.dto.CreateLinkRequest;
+import com.company.auth.dto.CreateOrderItemRequest;
 import com.company.auth.dto.CreateOrderRequest;
 import com.company.auth.dto.CreateProductRequest;
 import com.company.auth.dto.CreateUserRequest;
 import com.company.auth.dto.ChangePasswordRequest;
 import com.company.auth.dto.LinkDto;
 import com.company.auth.dto.OrderDto;
+import com.company.auth.dto.OrderItemDto;
 import com.company.auth.dto.ProductDto;
 import com.company.auth.dto.RoleDto;
 import com.company.auth.dto.UserDto;
@@ -18,6 +20,7 @@ import com.company.auth.model.Address;
 import com.company.auth.model.Category;
 import com.company.auth.model.Link;
 import com.company.auth.model.OrderEntity;
+import com.company.auth.model.OrderItemEntity;
 import com.company.auth.model.Product;
 import com.company.auth.model.ProductImage;
 import com.company.auth.model.Payment;
@@ -28,6 +31,7 @@ import com.company.auth.repository.AddressRepository;
 import com.company.auth.repository.CategoryRepository;
 import com.company.auth.repository.LinkRepository;
 import com.company.auth.repository.OrderRepository;
+import com.company.auth.repository.OrderItemRepository;
 import com.company.auth.repository.ProductRepository;
 import com.company.auth.repository.PaymentRepository;
 import com.company.auth.repository.RoleRepository;
@@ -62,20 +66,25 @@ import org.springframework.cache.annotation.Cacheable;
 
 import java.math.BigDecimal;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/api/v1")
 public class ApiController {
 
     private static final Logger logger = LoggerFactory.getLogger(ApiController.class);
+    private static final Pattern GSTIN_PATTERN = Pattern.compile("^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$");
 
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
     private final PaymentRepository paymentRepository;
     private final CategoryRepository categoryRepository;
     private final RoleRepository roleRepository;
@@ -93,6 +102,7 @@ public class ApiController {
             UserRepository userRepository,
             ProductRepository productRepository,
             OrderRepository orderRepository,
+            OrderItemRepository orderItemRepository,
             PaymentRepository paymentRepository,
             CategoryRepository categoryRepository,
             RoleRepository roleRepository,
@@ -108,6 +118,7 @@ public class ApiController {
         this.userRepository = userRepository;
         this.productRepository = productRepository;
         this.orderRepository = orderRepository;
+        this.orderItemRepository = orderItemRepository;
         this.paymentRepository = paymentRepository;
         this.categoryRepository = categoryRepository;
         this.roleRepository = roleRepository;
@@ -529,6 +540,27 @@ public class ApiController {
                 .collect(Collectors.toList());
     }
 
+        @GetMapping("/orders/{id}")
+        public OrderDto getOrderDetails(@PathVariable Long id, Authentication authentication) {
+        OrderEntity order = orderRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+        boolean isAdmin = authentication.getAuthorities().stream()
+            .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+        if (!isAdmin) {
+            User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+            if (!order.getUserId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot view this order");
+            }
+        }
+
+        OrderDto dto = toDto(order);
+        dto.setItems(orderItemRepository.findAllByOrderIdOrderByIdAsc(id).stream()
+            .map(this::toDto)
+            .collect(Collectors.toList()));
+        return dto;
+        }
+
     @GetMapping("/orders/search")
     @Operation(summary = "Search orders", description = "Search orders by query and date range")
     public List<OrderDto> searchOrders(@RequestParam(required = false) String q,
@@ -564,6 +596,12 @@ public class ApiController {
         order.setOrderNumber("ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         order.setTotalAmount(request.getTotalAmount());
         order.setStatus(request.getStatus() == null ? "PENDING" : request.getStatus());
+        order.setShippingAddress(request.getShippingAddress());
+        String gstin = request.getGstin() == null ? null : request.getGstin().trim().toUpperCase(Locale.ROOT);
+        if (gstin != null && !gstin.isEmpty() && !GSTIN_PATTERN.matcher(gstin).matches()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Enter a valid 15-character GSTIN");
+        }
+        order.setGstin(gstin == null || gstin.isEmpty() ? null : gstin);
         String paymentMethod = request.getPaymentMethod() == null
             ? "COD"
             : request.getPaymentMethod().trim().toUpperCase();
@@ -582,7 +620,30 @@ public class ApiController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This payment method is currently unavailable");
         }
 
+        List<OrderItemEntity> orderItems = new ArrayList<>();
+        if (request.getItems() != null) {
+            for (CreateOrderItemRequest itemRequest : request.getItems()) {
+                if (itemRequest.getProductId() == null || itemRequest.getQuantity() == null || itemRequest.getQuantity() < 1) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Order items require a product and positive quantity");
+                }
+                Product product = productRepository.findById(itemRequest.getProductId())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Order product not found"));
+                OrderItemEntity item = new OrderItemEntity();
+                item.setProductId(product.getId());
+                item.setProductSku(product.getSku());
+                item.setProductName(product.getName());
+                item.setQuantity(itemRequest.getQuantity());
+                item.setUnitPrice(product.getPrice());
+                item.setSubtotal(product.getPrice().multiply(BigDecimal.valueOf(itemRequest.getQuantity())));
+                orderItems.add(item);
+            }
+        }
+
         order = orderRepository.save(order);
+        for (OrderItemEntity item : orderItems) {
+            item.setOrderId(order.getId());
+        }
+        orderItemRepository.saveAll(orderItems);
         Payment payment = new Payment();
         payment.setOrderId(order.getId());
         payment.setPaymentMethod(paymentMethod);
@@ -846,6 +907,19 @@ public class ApiController {
         dto.setTotalAmount(order.getTotalAmount());
         dto.setStatus(order.getStatus());
         dto.setCreatedAt(order.getCreatedAt());
+        dto.setShippingAddress(order.getShippingAddress());
+        dto.setGstin(order.getGstin());
+        return dto;
+    }
+
+    private OrderItemDto toDto(OrderItemEntity item) {
+        OrderItemDto dto = new OrderItemDto();
+        dto.setProductId(item.getProductId());
+        dto.setProductSku(item.getProductSku());
+        dto.setProductName(item.getProductName());
+        dto.setQuantity(item.getQuantity());
+        dto.setUnitPrice(item.getUnitPrice());
+        dto.setSubtotal(item.getSubtotal());
         return dto;
     }
 

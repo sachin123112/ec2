@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
 import ChangePasswordModal from '../components/ChangePasswordModal';
@@ -365,7 +365,7 @@ export default function Dashboard() {
         <div className="recent-orders-card dashboard-card">
           <div className="section-header">
             <h3>Recent Orders</h3>
-            <a className="view-all" href="#">View All Orders</a>
+            <Link className="view-all" to="/admin/orders">View All Orders</Link>
           </div>
           <div className="recent-orders-body">
             {filteredOrders.length === 0 ? (

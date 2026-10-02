@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import './Checkout.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+const GSTIN_PATTERN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 
 const emptyAddress = {
   label: 'Home',
@@ -56,6 +57,11 @@ function validateTransactionId(transactionId) {
   return '';
 }
 
+function validateGstin(value) {
+  const gstin = String(value || '').trim().toUpperCase();
+  return !gstin || GSTIN_PATTERN.test(gstin) ? '' : 'Enter a valid 15-character GSTIN.';
+}
+
 export default function Checkout() {
   const { token, userEmail } = useAuth();
   const { cart, totalPrice, clearCart } = useCart();
@@ -65,6 +71,8 @@ export default function Checkout() {
   const [selectedAddressId, setSelectedAddressId] = useState('new');
   const [addressForm, setAddressForm] = useState(emptyAddress);
   const [paymentMethod, setPaymentMethod] = useState('credit_card');
+  const [gstin, setGstin] = useState('');
+  const [gstinError, setGstinError] = useState('');
   const [cardForm, setCardForm] = useState({ number: '', expiry: '', cvv: '', name: '' });
   const [cardError, setCardError] = useState('');
   const [transactionId, setTransactionId] = useState('');
@@ -241,6 +249,12 @@ export default function Checkout() {
         return;
       }
     }
+    const gstinValidationError = validateGstin(gstin);
+    if (gstinValidationError) {
+      setGstinError(gstinValidationError);
+      setStatus(gstinValidationError);
+      return;
+    }
     setSubmitting(true);
     setStatus('');
 
@@ -269,7 +283,24 @@ export default function Checkout() {
       const orderResponse = await fetch(`${API_URL}/orders`, {
         method: 'POST',
         headers: authHeaders,
-        body: JSON.stringify({ userId: user.id, totalAmount: total, status: 'PENDING', paymentMethod: paymentMethod.toUpperCase() }),
+        body: JSON.stringify({
+          userId: user.id,
+          totalAmount: total,
+          status: 'PENDING',
+          paymentMethod: paymentMethod.toUpperCase(),
+          gstin: gstin.trim().toUpperCase() || null,
+          shippingAddress: [
+            deliveryAddress.name,
+            deliveryAddress.addressLine1,
+            deliveryAddress.addressLine2,
+            deliveryAddress.city,
+            deliveryAddress.state,
+            deliveryAddress.postalCode,
+            deliveryAddress.country,
+            deliveryAddress.phone,
+          ].filter(Boolean).join(', '),
+          items: cart.map(item => ({ productId: item.id, quantity: item.qty })),
+        }),
       });
       if (!orderResponse.ok) throw new Error('Unable to place order. Please try again.');
 
@@ -365,7 +396,32 @@ export default function Checkout() {
           </section>
 
           <section className="checkout-section">
-            <h2>2. Payment method</h2>
+            <h2>2. GST details <span className="optional-label">Optional</span></h2>
+            <label className="gstin-field" htmlFor="checkout-gstin">GSTIN</label>
+            <input
+              id="checkout-gstin"
+              className="gstin-input"
+              value={gstin}
+              onChange={event => {
+                setGstinError('');
+                setGstin(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 15));
+              }}
+              onBlur={() => setGstinError(validateGstin(gstin))}
+              maxLength={15}
+              pattern="[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]"
+              title="Enter a valid 15-character GSTIN."
+              autoComplete="off"
+              aria-invalid={Boolean(gstinError)}
+              aria-describedby={gstinError ? 'checkout-gstin-error' : 'checkout-gstin-note'}
+              placeholder="15-character GSTIN"
+            />
+            {gstinError
+              ? <p className="checkout-status gstin-error" id="checkout-gstin-error" role="alert">{gstinError}</p>
+              : <p className="payment-note gstin-note" id="checkout-gstin-note">Add a GSTIN to include it on your billing invoice.</p>}
+          </section>
+
+          <section className="checkout-section">
+            <h2>3. Payment method</h2>
             <div className="payment-methods">
               {[
                 { id: 'credit_card', label: 'Credit Card', enabled: paymentSettings.creditCardActive },

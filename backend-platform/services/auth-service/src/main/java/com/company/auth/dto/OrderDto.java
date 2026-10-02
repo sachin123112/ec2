@@ -2,6 +2,7 @@ package com.company.auth.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class OrderDto {
     private Long id;
@@ -10,6 +11,9 @@ public class OrderDto {
     private BigDecimal totalAmount;
     private String status;
     private LocalDateTime createdAt;
+    private String shippingAddress;
+    private String gstin;
+    private List<OrderItemDto> items;
 
     public Long getId() {
         return id;
@@ -57,5 +61,29 @@ public class OrderDto {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getShippingAddress() {
+        return shippingAddress;
+    }
+
+    public void setShippingAddress(String shippingAddress) {
+        this.shippingAddress = shippingAddress;
+    }
+
+    public String getGstin() {
+        return gstin;
+    }
+
+    public void setGstin(String gstin) {
+        this.gstin = gstin;
+    }
+
+    public List<OrderItemDto> getItems() {
+        return items;
+    }
+
+    public void setItems(List<OrderItemDto> items) {
+        this.items = items;
     }
 }
