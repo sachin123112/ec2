@@ -188,6 +188,7 @@
 .admin-sidebar-finance-link-vendor-outstanding .admin-sidebar-icon, .admin-sidebar-finance-link-vendor-outstanding-report .admin-sidebar-icon, .admin-sidebar-finance-link-customer-outstanding-report .admin-sidebar-icon, .admin-sidebar-finance-link-vendor-statement .admin-sidebar-icon { color: #f5bd53; }
 
 .admin-sidebar.collapsed .admin-sidebar-brand-copy,
+.admin-sidebar.collapsed .admin-sidebar-primary-links,
 .admin-sidebar.collapsed .admin-sidebar-section-title,
 .admin-sidebar.collapsed .admin-sidebar-link-label,
 .admin-sidebar.collapsed .admin-sidebar-chevron,
