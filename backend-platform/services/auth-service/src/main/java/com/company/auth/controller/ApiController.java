@@ -40,6 +40,7 @@ import com.company.auth.service.SearchService;
 import com.company.auth.service.EmailNotificationService;
 import com.company.auth.service.ImageKitImageService;
 import com.company.auth.service.FinanceService;
+import com.company.auth.service.PaymentGatewayService;
 import com.company.auth.service.NotificationService;
 import com.company.auth.repository.PaymentSettingsRepository;
 import com.company.auth.model.PaymentSettings;
@@ -69,6 +70,7 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -97,6 +99,7 @@ public class ApiController {
     private final NotificationService notificationService;
     private final PaymentSettingsRepository paymentSettingsRepository;
     private final FinanceService financeService;
+    private final PaymentGatewayService paymentGatewayService;
 
     public ApiController(
             UserRepository userRepository,
@@ -114,7 +117,8 @@ public class ApiController {
             ImageKitImageService imageKitImageService,
             NotificationService notificationService,
             PaymentSettingsRepository paymentSettingsRepository,
-            FinanceService financeService) {
+            FinanceService financeService,
+            PaymentGatewayService paymentGatewayService) {
         this.userRepository = userRepository;
         this.productRepository = productRepository;
         this.orderRepository = orderRepository;
@@ -131,6 +135,7 @@ public class ApiController {
         this.notificationService = notificationService;
         this.paymentSettingsRepository = paymentSettingsRepository;
         this.financeService = financeService;
+        this.paymentGatewayService = paymentGatewayService;
     }
 
     @GetMapping("/users")
@@ -578,7 +583,7 @@ public class ApiController {
                 content = @Content(schema = @Schema(implementation = OrderDto.class)))
         })
         @Transactional
-        public ResponseEntity<OrderDto> createOrder(
+        public ResponseEntity<Map<String, Object>> createOrder(
             Authentication authentication, @RequestBody CreateOrderRequest request) {
         OrderEntity order = new OrderEntity();
         boolean isAdmin = authentication.getAuthorities().stream()
@@ -594,8 +599,7 @@ public class ApiController {
         }
         order.setUserId(orderUserId);
         order.setOrderNumber("ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-        order.setTotalAmount(request.getTotalAmount());
-        order.setStatus(request.getStatus() == null ? "PENDING" : request.getStatus());
+        order.setStatus("PENDING");
         order.setShippingAddress(request.getShippingAddress());
         String gstin = request.getGstin() == null ? null : request.getGstin().trim().toUpperCase(Locale.ROOT);
         if (gstin != null && !gstin.isEmpty() && !GSTIN_PATTERN.matcher(gstin).matches()) {
@@ -604,10 +608,18 @@ public class ApiController {
         order.setGstin(gstin == null || gstin.isEmpty() ? null : gstin);
         String paymentMethod = request.getPaymentMethod() == null
             ? "COD"
-            : request.getPaymentMethod().trim().toUpperCase();
+            : request.getPaymentMethod().trim().toUpperCase(Locale.ROOT);
         if (!List.of("CARD", "UPI", "NET_BANKING", "CREDIT_CARD", "DEBIT_CARD", "QR_CODE", "COD").contains(paymentMethod)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported payment method");
         }
+        boolean cashOnDelivery = "COD".equals(paymentMethod);
+        String paymentProvider = request.getPaymentProvider() == null
+            ? ""
+            : request.getPaymentProvider().trim().toUpperCase(Locale.ROOT);
+        if (!cashOnDelivery && !List.of("PAYU", "PHONEPE").contains(paymentProvider)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Choose PayU or PhonePe for online payments");
+        }
+        if (cashOnDelivery) paymentProvider = "";
         PaymentSettings paymentSettings = paymentSettingsRepository.findById(1L).orElseGet(PaymentSettings::new);
         boolean enabled = "CARD".equals(paymentMethod) && (paymentSettings.isCreditCardActive() || paymentSettings.isDebitCardActive())
             || "CREDIT_CARD".equals(paymentMethod) && paymentSettings.isCreditCardActive()
@@ -618,6 +630,10 @@ public class ApiController {
                 || "COD".equals(paymentMethod) && paymentSettings.isCashOnDeliveryActive();
         if (!enabled) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This payment method is currently unavailable");
+        }
+        if (("PAYU".equals(paymentProvider) && !paymentGatewayService.isPayUConfigured())
+                || ("PHONEPE".equals(paymentProvider) && !paymentGatewayService.isPhonePeConfigured())) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "The selected payment gateway is not configured");
         }
 
         List<OrderItemEntity> orderItems = new ArrayList<>();
@@ -639,6 +655,14 @@ public class ApiController {
             }
         }
 
+        BigDecimal itemsTotal = orderItems.stream()
+            .map(OrderItemEntity::getSubtotal)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal shippingFee = itemsTotal.compareTo(paymentSettings.getFreeShippingThreshold()) >= 0
+            ? BigDecimal.ZERO
+            : paymentSettings.getShippingFee();
+        order.setTotalAmount(itemsTotal.add(shippingFee));
+
         order = orderRepository.save(order);
         for (OrderItemEntity item : orderItems) {
             item.setOrderId(order.getId());
@@ -647,12 +671,41 @@ public class ApiController {
         Payment payment = new Payment();
         payment.setOrderId(order.getId());
         payment.setPaymentMethod(paymentMethod);
+        payment.setPaymentGateway(cashOnDelivery ? null : paymentProvider);
         paymentRepository.save(payment);
         OrderEntity savedOrder = order;
+        User orderUser = userRepository.findById(savedOrder.getUserId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Order customer not found"));
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("id", savedOrder.getId());
+        response.put("orderNumber", savedOrder.getOrderNumber());
+        response.put("totalAmount", savedOrder.getTotalAmount());
+        response.put("status", savedOrder.getStatus());
+        if (!cashOnDelivery) {
+            response.putAll(paymentGatewayService.initiate(payment, savedOrder, orderUser,
+                paymentMethod, request.getCustomerPhone()));
+        }
         searchService.indexOrder(savedOrder);
-        financeService.postOnlineOrder(savedOrder);
-        userRepository.findById(savedOrder.getUserId()).ifPresent(user -> emailNotificationService.sendOrderCreated(savedOrder, user));
-        return ResponseEntity.status(HttpStatus.CREATED).body(toDto(savedOrder));
+        emailNotificationService.sendOrderCreated(savedOrder, orderUser);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/orders/{id}/payment-status")
+    public Map<String, Object> getPaymentStatus(@PathVariable Long id, Authentication authentication) {
+        OrderEntity order = orderRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+        boolean isAdmin = authentication.getAuthorities().stream()
+            .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+        if (!isAdmin) {
+            Long authenticatedUserId = userRepository.findByEmail(authentication.getName())
+                .map(user -> user.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+            if (!authenticatedUserId.equals(order.getUserId())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Order does not belong to this user");
+            }
+        }
+        return paymentGatewayService.refreshPaymentStatus(id);
     }
 
     @PatchMapping("/orders/{id}/status")

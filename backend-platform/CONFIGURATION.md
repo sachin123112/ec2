@@ -16,6 +16,14 @@ Compose loads `.env` for shared values and applies only container-specific overr
 
 The application host ports are deliberately limited to backend `8080` and frontend `5173`. PostgreSQL, Redis, Elasticsearch, and the user/order services are internal Docker services. The mobile Expo/Metro development server uses host port `8081` when started from `mobile/`.
 
+## Payment gateways
+
+Checkout reads gateway credentials only from the auth-service environment. Add test credentials to the local `.env` file to enable PayU and/or PhonePe; leave a provider's credentials blank to hide that provider. The customer selects a gateway and payment method, then completes payment on the provider-hosted checkout page. Orders remain pending until a provider confirms payment. Cash on Delivery remains pending for collection on delivery.
+
+PayU requires `PAYU_KEY`, `PAYU_SALT`, and `PAYU_TEST_MODE=true` for sandbox use. Its form callback must be publicly reachable at `${APP_PUBLIC_BASE_URL}/api/v1/payments/payu/return`; use an HTTPS tunnel for local PayU tests. PhonePe requires `PHONEPE_CLIENT_ID`, `PHONEPE_CLIENT_SECRET`, `PHONEPE_CLIENT_VERSION`, and `PHONEPE_TEST_MODE=true` for sandbox use. Set `APP_FRONTEND_URL` to the browser-accessible frontend URL for payment returns.
+
+Never put gateway secrets in frontend variables, checkout requests, or committed configuration. Switch test-mode flags off only after provider production credentials and callback URLs are configured.
+
 For host Maven execution, `.env` is not loaded automatically. Set `DB_URL` to a host-reachable database, for example `jdbc:postgresql://127.0.0.1:5432/ec2_db`, then run the service.
 
 ## Environments

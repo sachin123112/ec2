@@ -8,6 +8,8 @@ public class CreateOrderRequest {
     private BigDecimal totalAmount;
     private String status;
     private String paymentMethod;
+    private String paymentProvider;
+    private String customerPhone;
     private String shippingAddress;
     private String gstin;
     private List<CreateOrderItemRequest> items;
@@ -42,6 +44,22 @@ public class CreateOrderRequest {
 
     public void setPaymentMethod(String paymentMethod) {
         this.paymentMethod = paymentMethod;
+    }
+
+    public String getPaymentProvider() {
+        return paymentProvider;
+    }
+
+    public void setPaymentProvider(String paymentProvider) {
+        this.paymentProvider = paymentProvider;
+    }
+
+    public String getCustomerPhone() {
+        return customerPhone;
+    }
+
+    public void setCustomerPhone(String customerPhone) {
+        this.customerPhone = customerPhone;
     }
 
     public String getShippingAddress() {

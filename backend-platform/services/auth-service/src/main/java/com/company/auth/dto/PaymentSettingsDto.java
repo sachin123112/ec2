@@ -16,6 +16,8 @@ public class PaymentSettingsDto {
     private String upiId;
     private BigDecimal freeShippingThreshold;
     private BigDecimal shippingFee;
+    private boolean payuActive;
+    private boolean phonePeActive;
 
     public String getRazorpayKeyId() { return razorpayKeyId; }
     public void setRazorpayKeyId(String value) { razorpayKeyId = value; }
@@ -43,4 +45,8 @@ public class PaymentSettingsDto {
     public void setFreeShippingThreshold(BigDecimal value) { freeShippingThreshold = value; }
     public BigDecimal getShippingFee() { return shippingFee; }
     public void setShippingFee(BigDecimal value) { shippingFee = value; }
+    public boolean isPayuActive() { return payuActive; }
+    public void setPayuActive(boolean value) { payuActive = value; }
+    public boolean isPhonePeActive() { return phonePeActive; }
+    public void setPhonePeActive(boolean value) { phonePeActive = value; }
 }

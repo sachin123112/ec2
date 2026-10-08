@@ -17,6 +17,15 @@ public class Payment {
     @Column(name = "payment_method", nullable = false)
     private String paymentMethod;
 
+    @Column(name = "payment_gateway")
+    private String paymentGateway;
+
+    @Column(name = "gateway_order_id", unique = true)
+    private String gatewayOrderId;
+
+    @Column(name = "gateway_transaction_id")
+    private String gatewayTransactionId;
+
     @Column(name = "payment_status", nullable = false)
     private String paymentStatus;
 
@@ -55,6 +64,30 @@ public class Payment {
 
     public void setPaymentMethod(String paymentMethod) {
         this.paymentMethod = paymentMethod;
+    }
+
+    public String getPaymentGateway() {
+        return paymentGateway;
+    }
+
+    public void setPaymentGateway(String paymentGateway) {
+        this.paymentGateway = paymentGateway;
+    }
+
+    public String getGatewayOrderId() {
+        return gatewayOrderId;
+    }
+
+    public void setGatewayOrderId(String gatewayOrderId) {
+        this.gatewayOrderId = gatewayOrderId;
+    }
+
+    public String getGatewayTransactionId() {
+        return gatewayTransactionId;
+    }
+
+    public void setGatewayTransactionId(String gatewayTransactionId) {
+        this.gatewayTransactionId = gatewayTransactionId;
     }
 
     public String getPaymentStatus() {

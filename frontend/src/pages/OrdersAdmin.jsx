@@ -27,146 +27,130 @@ function getUserName(user) {
   return fullName || user?.username || user?.email || null;
 }
 
-function formatInvoiceAmount(value) {
-  return `INR ${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-async function createOrderInvoicePdf(order, customerName, customerEmail) {
+async function downloadOrderInvoice(order, customerName, customerEmail) {
   const { jsPDF } = await import('jspdf');
   const pdf = new jsPDF({ format: 'a4', unit: 'mm' });
   const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
   const margin = 15;
-  const right = pageWidth - margin;
-  const items = order.items || [];
-  const total = Number(order.totalAmount || 0);
-  const itemSubtotal = items.reduce((sum, item) => sum + Number(item.subtotal || 0), 0);
-  const adjustment = total - itemSubtotal;
+  const contentWidth = pageWidth - margin * 2;
+  const navy = [16, 35, 56];
+  const orange = [255, 107, 53];
+  const text = [30, 41, 55];
+  const muted = [98, 113, 130];
+  const border = [218, 226, 235];
+  const formatMoney = value => `INR ${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const orderId = String(order.orderNumber || order.id || 'ORD-UNKNOWN');
+  const orderDate = order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN') : 'Date unavailable';
+  const invoiceNumber = `INV-${String(order.id ?? order.orderNumber ?? '00000').replace(/\D+/g, '').padStart(6, '0')}`;
+  const items = Array.isArray(order.items) ? order.items : [];
+  const subtotal = items.reduce((sum, item) => sum + Number(item.subtotal || Number(item.quantity || 0) * Number(item.unitPrice || item.price || 0)), 0);
+  let y = 45;
 
-  pdf.setFillColor(18, 35, 54);
-  pdf.rect(0, 0, pageWidth, 34, 'F');
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(20);
-  pdf.text('PawMart', margin, 16);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(9);
-  pdf.text('ORDER INVOICE', margin, 24);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(17);
-  pdf.text('INVOICE', right, 16, { align: 'right' });
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(8);
-  pdf.text(`Invoice no. INV-${String(order.id).padStart(6, '0')}`, right, 23, { align: 'right' });
-
-  pdf.setTextColor(45, 55, 72);
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'bold');
-  pdf.text('ORDER DETAILS', margin, 44);
-  pdf.setFont('helvetica', 'normal');
-  pdf.text(`Order: ${order.orderNumber || order.id}`, margin, 50);
-  pdf.text(`Date: ${order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN') : 'Not available'}`, margin, 55);
-  pdf.text(`Status: ${order.status || 'Not available'}`, margin, 60);
-
-  const cardY = 68;
-  const cardWidth = (pageWidth - margin * 2 - 8) / 2;
-  const shippingLines = pdf.splitTextToSize(order.shippingAddress || 'Delivery address not recorded', cardWidth - 10).slice(0, 5);
-  const customerLines = [customerName || 'Customer', customerEmail || '', order.gstin ? `GSTIN: ${order.gstin}` : ''];
-  const cardHeight = Math.max(31, 16 + shippingLines.length * 4.2);
-  pdf.setFillColor(247, 249, 252);
-  pdf.setDrawColor(226, 232, 240);
-  pdf.roundedRect(margin, cardY, cardWidth, cardHeight, 2, 2, 'FD');
-  pdf.roundedRect(margin + cardWidth + 8, cardY, cardWidth, cardHeight, 2, 2, 'FD');
-  pdf.setTextColor(100, 116, 139);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(8);
-  pdf.text('BILL TO', margin + 5, cardY + 7);
-  pdf.text('SHIP TO', margin + cardWidth + 13, cardY + 7);
-  pdf.setTextColor(45, 55, 72);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(8.5);
-  pdf.text(customerLines.filter(Boolean), margin + 5, cardY + 14);
-  pdf.text(shippingLines, margin + cardWidth + 13, cardY + 14);
-
-  let tableY = cardY + cardHeight + 12;
-  const drawTableHeader = () => {
-    pdf.setFillColor(236, 241, 246);
-    pdf.rect(margin, tableY, pageWidth - margin * 2, 9, 'F');
-    pdf.setTextColor(51, 65, 85);
+  const drawHeader = () => {
+    pdf.setFillColor(...navy);
+    pdf.rect(0, 0, pageWidth, 34, 'F');
+    pdf.setTextColor(255, 255, 255);
     pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(20);
+    pdf.text('PawMart', margin + 4, 17);
+    pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(7.5);
-    pdf.text('PRODUCT', margin + 3, tableY + 6);
-    pdf.text('SKU', 105, tableY + 6);
-    pdf.text('QTY', 142, tableY + 6, { align: 'right' });
-    pdf.text('UNIT PRICE', 173, tableY + 6, { align: 'right' });
-    pdf.text('AMOUNT', right - 2, tableY + 6, { align: 'right' });
-    tableY += 9;
+    pdf.text('Pet Care • Happy Pets • Happy Homes', margin + 4, 24);
+    pdf.setFillColor(...orange);
+    pdf.roundedRect(pageWidth - margin - 39, 7, 39, 14, 2, 2, 'F');
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(10);
+    pdf.text('INVOICE', pageWidth - margin - 19.5, 16, { align: 'center' });
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(7);
+    pdf.text(`Order # ${orderId}`, pageWidth - margin, 25, { align: 'right' });
+    pdf.text(`Invoice No: ${invoiceNumber}  |  ${orderDate}`, pageWidth - margin, 30, { align: 'right' });
   };
 
-  drawTableHeader();
+  const addPage = () => {
+    pdf.addPage();
+    drawHeader();
+    y = 45;
+  };
+
+  drawHeader();
+  pdf.setFillColor(240, 244, 249);
+  pdf.setDrawColor(...border);
+  pdf.roundedRect(margin, y, contentWidth, 28, 2, 2, 'FD');
+  pdf.setTextColor(...text);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(10);
+  pdf.text('ORDER DETAILS', margin + 6, y + 8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(8);
+  pdf.text(`Order ID: ${orderId}`, margin + 6, y + 16);
+  pdf.text(`Date: ${orderDate}`, margin + 6, y + 22);
+  pdf.text(`Customer: ${customerName || 'Customer'}`, margin + 80, y + 16);
+  pdf.text(`Email: ${customerEmail || 'Not provided'}`, margin + 80, y + 22);
+  y += 36;
+
+  pdf.setFillColor(...navy);
+  pdf.rect(margin, y, contentWidth, 9, 'F');
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(7.5);
+  pdf.text('#', margin + 4, y + 6);
+  pdf.text('PRODUCT', margin + 13, y + 6);
+  pdf.text('QTY', margin + 112, y + 6, { align: 'right' });
+  pdf.text('UNIT PRICE', margin + 145, y + 6, { align: 'right' });
+  pdf.text('AMOUNT', pageWidth - margin - 3, y + 6, { align: 'right' });
+  y += 9;
+
   if (!items.length) {
+    pdf.setDrawColor(...border);
+    pdf.rect(margin, y, contentWidth, 12);
+    pdf.setTextColor(...muted);
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9);
-    pdf.setTextColor(100, 116, 139);
-    pdf.text('No product line items were recorded for this order.', margin + 3, tableY + 8);
-    tableY += 17;
+    pdf.setFontSize(8);
+    pdf.text('No product line items were recorded for this order.', margin + 5, y + 8);
+    y += 12;
   } else {
-    items.forEach(item => {
-      const productLines = pdf.splitTextToSize(item.productName || 'Product', 70);
-      const skuLines = item.productSku ? pdf.splitTextToSize(item.productSku, 30) : ['-'];
-      const rowHeight = Math.max(12, Math.max(productLines.length, skuLines.length) * 4.2 + 5);
-      if (tableY + rowHeight > 255) {
-        pdf.addPage();
-        tableY = 18;
-        drawTableHeader();
-      }
-      pdf.setTextColor(45, 55, 72);
+    items.forEach((item, index) => {
+      if (y + 11 > pageHeight - 35) addPage();
+      const quantity = Number(item.quantity || 0);
+      const unitPrice = Number(item.unitPrice || item.price || 0);
+      const lineTotal = Number(item.subtotal || quantity * unitPrice);
+      pdf.setDrawColor(...border);
+      pdf.line(margin, y + 11, pageWidth - margin, y + 11);
+      pdf.setTextColor(...text);
       pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(8);
-      pdf.text(productLines, margin + 3, tableY + 6);
-      pdf.setTextColor(100, 116, 139);
-      pdf.setFontSize(7);
-      pdf.text(skuLines, 105, tableY + 6);
-      pdf.setTextColor(45, 55, 72);
-      pdf.setFontSize(8);
-      pdf.text(String(item.quantity || 0), 142, tableY + 6, { align: 'right' });
-      pdf.text(formatInvoiceAmount(item.unitPrice), 173, tableY + 6, { align: 'right' });
-      pdf.text(formatInvoiceAmount(item.subtotal), right - 2, tableY + 6, { align: 'right' });
-      tableY += rowHeight;
-      pdf.setDrawColor(226, 232, 240);
-      pdf.line(margin, tableY, right, tableY);
+      pdf.setFontSize(7.5);
+      pdf.text(String(index + 1), margin + 4, y + 7);
+      pdf.text(pdf.splitTextToSize(String(item.productName || item.name || 'Product'), 94)[0], margin + 13, y + 7);
+      pdf.text(String(quantity), margin + 112, y + 7, { align: 'right' });
+      pdf.text(formatMoney(unitPrice), margin + 145, y + 7, { align: 'right' });
+      pdf.text(formatMoney(lineTotal), pageWidth - margin - 3, y + 7, { align: 'right' });
+      y += 11;
     });
   }
 
-  if (tableY > 245) {
-    pdf.addPage();
-    tableY = 20;
-  }
-  const summaryY = tableY + 10;
-  const summaryX = pageWidth - margin - 76;
-  pdf.setTextColor(100, 116, 139);
+  if (y + 39 > pageHeight - 25) addPage();
+  const total = Number(order.totalAmount || 0);
+  pdf.setTextColor(...muted);
   pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(9);
-  if (items.length) {
-    pdf.text('Items subtotal', summaryX, summaryY);
-    pdf.text(formatInvoiceAmount(itemSubtotal), right, summaryY, { align: 'right' });
-    pdf.text(adjustment >= 0 ? 'Shipping / other charges' : 'Discount / adjustment', summaryX, summaryY + 7);
-    pdf.text(formatInvoiceAmount(Math.abs(adjustment)), right, summaryY + 7, { align: 'right' });
-  }
-  pdf.setDrawColor(226, 232, 240);
-  pdf.line(summaryX, summaryY + (items.length ? 11 : 2), right, summaryY + (items.length ? 11 : 2));
-  pdf.setTextColor(18, 35, 54);
+  pdf.setFontSize(8);
+  pdf.text('Subtotal', pageWidth - margin - 75, y + 8);
+  pdf.text(formatMoney(subtotal), pageWidth - margin, y + 8, { align: 'right' });
+  pdf.setDrawColor(...border);
+  pdf.line(pageWidth - margin - 75, y + 12, pageWidth - margin, y + 12);
+  pdf.setTextColor(...navy);
   pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(11);
-  pdf.text('TOTAL', summaryX, summaryY + 19);
-  pdf.text(formatInvoiceAmount(total), right, summaryY + 19, { align: 'right' });
-
-  pdf.setTextColor(100, 116, 139);
+  pdf.setFontSize(12);
+  pdf.text('TOTAL', pageWidth - margin - 75, y + 22);
+  pdf.text(formatMoney(total), pageWidth - margin, y + 22, { align: 'right' });
   pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(7.5);
-  pdf.text('Tax breakdown is not included because tax details are not recorded for this order.', margin, 280);
-  pdf.text('Generated electronically by PawMart.', margin, 285);
+  pdf.setFontSize(7);
+  pdf.setTextColor(...muted);
+  pdf.text(`Order status: ${String(order.status || 'Unknown').toUpperCase()}`, margin, pageHeight - 14);
+  pdf.text('Thank you for shopping with PawMart!', pageWidth - margin, pageHeight - 14, { align: 'right' });
 
-  return pdf.output('blob');
+  pdf.save(`${invoiceNumber}.pdf`);
 }
 
 export default function OrdersAdmin() {
@@ -178,9 +162,8 @@ export default function OrdersAdmin() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [orderDetailsLoading, setOrderDetailsLoading] = useState(false);
   const [orderDetailsError, setOrderDetailsError] = useState('');
-  const [invoicePreview, setInvoicePreview] = useState(null);
+  const [invoiceLoadingId, setInvoiceLoadingId] = useState(null);
   const refreshPromiseRef = useRef(null);
-  const invoicePreviewUrlRef = useRef(null);
 
   const authHeaderBase = useMemo(() => {
     const headers = {};
@@ -287,39 +270,25 @@ export default function OrdersAdmin() {
     }
   }
 
-  async function handleViewInvoice(order) {
-    if (invoicePreviewUrlRef.current) URL.revokeObjectURL(invoicePreviewUrlRef.current);
-    invoicePreviewUrlRef.current = null;
-    setInvoicePreview({ order, url: null, loading: true, warning: '', error: '' });
-
-    let invoiceOrder = order;
-    let warning = '';
+  async function handleDownloadInvoice(order) {
+    setInvoiceLoadingId(order.id);
     try {
       const response = await fetchWithAuthRetry(`${API_URL}/orders/${order.id}`);
-      if (response.ok) invoiceOrder = await response.json();
-      else warning = `Order item details are unavailable (${response.status}); showing the available order summary.`;
-    } catch {
-      warning = 'Order item details are unavailable; showing the available order summary.';
-    }
-
-    try {
-      const invoiceBlob = await createOrderInvoicePdf(
+      if (!response.ok) throw new Error(`Unable to load invoice details (${response.status}).`);
+      const invoiceOrder = await response.json();
+      const customer = usersById.get(String(order.userId));
+      await downloadOrderInvoice(
         invoiceOrder,
-        getUserName(usersById.get(String(order.userId))) || order.customerName,
-        usersById.get(String(order.userId))?.email,
+        getUserName(customer) || order.customerName,
+        customer?.email,
       );
-      const invoiceUrl = URL.createObjectURL(invoiceBlob);
-      invoicePreviewUrlRef.current = invoiceUrl;
-      setInvoicePreview({ order, url: invoiceUrl, loading: false, warning, error: '' });
+      setStatus(`Invoice downloaded for ${order.orderNumber}.`);
     } catch (error) {
-      setInvoicePreview({ order, url: null, loading: false, warning: '', error: error.message || 'Unable to generate invoice.' });
+      console.error(error);
+      setStatus(error.message || 'Unable to generate invoice.');
+    } finally {
+      setInvoiceLoadingId(null);
     }
-  }
-
-  function closeInvoicePreview() {
-    if (invoicePreviewUrlRef.current) URL.revokeObjectURL(invoicePreviewUrlRef.current);
-    invoicePreviewUrlRef.current = null;
-    setInvoicePreview(null);
   }
 
   return (
@@ -374,10 +343,11 @@ export default function OrdersAdmin() {
                           <button
                             type="button"
                             className="btn-outline btn-sm order-invoice-button"
-                            aria-label={`View invoice PDF for order ${order.orderNumber}`}
-                            onClick={() => handleViewInvoice(order)}
+                            aria-label={`Download invoice PDF for order ${order.orderNumber}`}
+                            disabled={!['COMPLETED', 'PROCESSING'].includes(order.status) || invoiceLoadingId === order.id}
+                            onClick={() => handleDownloadInvoice(order)}
                           >
-                            PDF
+                            {invoiceLoadingId === order.id ? '…' : 'PDF'}
                           </button>
                           <div className="order-menu">
                             <button
@@ -500,35 +470,6 @@ export default function OrdersAdmin() {
         </div>
       )}
 
-      {invoicePreview && (
-        <div
-          className="order-details-backdrop"
-          role="presentation"
-          onMouseDown={event => event.target === event.currentTarget && closeInvoicePreview()}
-        >
-          <section className="invoice-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="invoice-preview-title">
-            <div className="order-details-header">
-              <div>
-                <h2 id="invoice-preview-title">Invoice preview</h2>
-                <p>{invoicePreview.order.orderNumber}</p>
-              </div>
-              <button type="button" className="order-details-close" aria-label="Close invoice preview" onClick={closeInvoicePreview}>
-                ×
-              </button>
-            </div>
-            {invoicePreview.loading ? (
-              <p className="order-details-empty">Preparing invoice...</p>
-            ) : invoicePreview.error ? (
-              <p className="order-details-error" role="alert">{invoicePreview.error}</p>
-            ) : (
-              <>
-                {invoicePreview.warning && <p className="invoice-preview-warning" role="status">{invoicePreview.warning}</p>}
-                <iframe className="invoice-preview-frame" src={invoicePreview.url} title={`Invoice ${invoicePreview.order.orderNumber}`} />
-              </>
-            )}
-          </section>
-        </div>
-      )}
     </div>
   );
 }

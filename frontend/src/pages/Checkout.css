@@ -39,6 +39,7 @@
 .transaction-status { margin: 0; }
 .payment-note { color: #777; font-size: .82rem; text-align: center; }
 .payment-methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+.payment-providers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; margin-top: .85rem; }
 .payment-option { align-items: center; margin: 0; font-size: .85rem; }
 .checkout-summary { position: sticky; top: 84px; }
 .checkout-item, .summary-line, .summary-total { display: flex; justify-content: space-between; gap: 1rem; padding: .55rem 0; color: #555; font-size: .88rem; }
@@ -57,6 +58,6 @@
   .checkout-header { align-items: flex-start; flex-direction: column; }
   .checkout-grid { grid-template-columns: 1fr; }
   .checkout-summary { position: static; grid-row: 1; }
-  .payment-methods, .address-form, .card-form { grid-template-columns: 1fr; }
+  .payment-methods, .payment-providers, .address-form, .card-form { grid-template-columns: 1fr; }
   .address-form label:first-child, .address-form label:nth-child(2), .card-form input:first-child, .card-form input:nth-child(2) { grid-column: auto; }
 }

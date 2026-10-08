@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import './Checkout.css';
@@ -22,41 +22,6 @@ const emptyAddress = {
 };
 const requiredAddressFields = new Set(['name', 'addressLine1', 'city', 'state', 'postalCode', 'phone']);
 
-function validateCard(card) {
-  const number = card.number.replace(/\D/g, '');
-  if (!/^[0-9]{13,19}$/.test(number)) return 'Enter a valid card number.';
-
-  let checksum = 0;
-  let shouldDouble = false;
-  for (let index = number.length - 1; index >= 0; index -= 1) {
-    let digit = Number(number[index]);
-    if (shouldDouble) {
-      digit *= 2;
-      if (digit > 9) digit -= 9;
-    }
-    checksum += digit;
-    shouldDouble = !shouldDouble;
-  }
-  if (checksum % 10 !== 0) return 'Enter a valid card number.';
-
-  if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(card.expiry)) return 'Enter expiry as MM/YY.';
-  const [month, year] = card.expiry.split('/').map(Number);
-  const expiryDate = new Date(2000 + year, month, 0, 23, 59, 59, 999);
-  if (expiryDate < new Date()) return 'Card expiry date must be in the future.';
-  if (!/^[0-9]{3,4}$/.test(card.cvv)) return 'CVV must contain 3 or 4 digits.';
-  if (!/^[A-Za-z][A-Za-z .'-]{1,79}$/.test(card.name.trim())) return 'Enter a valid cardholder name.';
-  return '';
-}
-
-function validateTransactionId(transactionId) {
-  const value = transactionId.trim();
-  if (!/^[A-Za-z0-9][A-Za-z0-9-]{5,39}$/.test(value)) {
-    return 'Enter a valid transaction ID (6-40 letters, numbers, or hyphens).';
-  }
-  if (!/\d/.test(value)) return 'Transaction ID must contain at least one number.';
-  return '';
-}
-
 function validateGstin(value) {
   const gstin = String(value || '').trim().toUpperCase();
   return !gstin || GSTIN_PATTERN.test(gstin) ? '' : 'Enter a valid 15-character GSTIN.';
@@ -71,12 +36,9 @@ export default function Checkout() {
   const [selectedAddressId, setSelectedAddressId] = useState('new');
   const [addressForm, setAddressForm] = useState(emptyAddress);
   const [paymentMethod, setPaymentMethod] = useState('credit_card');
+  const [paymentProvider, setPaymentProvider] = useState('');
   const [gstin, setGstin] = useState('');
   const [gstinError, setGstinError] = useState('');
-  const [cardForm, setCardForm] = useState({ number: '', expiry: '', cvv: '', name: '' });
-  const [cardError, setCardError] = useState('');
-  const [transactionId, setTransactionId] = useState('');
-  const [transactionError, setTransactionError] = useState('');
   const [status, setStatus] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -86,6 +48,8 @@ export default function Checkout() {
     creditCardActive: true,
     debitCardActive: true,
     qrCodeActive: true,
+    payuActive: false,
+    phonePeActive: false,
     cashOnDeliveryActive: true,
     upiId: 'sachinprakash893@ybl',
     freeShippingThreshold: 999,
@@ -126,8 +90,10 @@ export default function Checkout() {
       .then(response => response.ok ? response.json() : Promise.reject(new Error('Unable to load payment settings.')))
       .then(settings => {
         setPaymentSettings(settings);
-        if (paymentMethod === 'upi' && !settings.upiActive) setPaymentMethod('credit_card');
-        if (paymentMethod === 'cod' && !settings.cashOnDeliveryActive) setPaymentMethod('credit_card');
+        setPaymentProvider(settings.phonePeActive ? 'PHONEPE' : settings.payuActive ? 'PAYU' : '');
+        const hasOnlineMethod = settings.payuActive || settings.phonePeActive;
+        if (!hasOnlineMethod && settings.cashOnDeliveryActive) setPaymentMethod('cod');
+        else if (!settings.creditCardActive && settings.upiActive) setPaymentMethod('upi');
       })
       .catch(error => setStatus(error.message));
   }, []);
@@ -233,21 +199,9 @@ export default function Checkout() {
   async function handleSubmit(event) {
     event.preventDefault();
     if (!cart.length) return;
-    if (['card', 'credit_card', 'debit_card'].includes(paymentMethod)) {
-      const validationError = validateCard(cardForm);
-      if (validationError) {
-        setCardError(validationError);
-        setStatus(validationError);
-        return;
-      }
-    }
-    if (['upi', 'qr_code'].includes(paymentMethod)) {
-      const validationError = validateTransactionId(transactionId);
-      if (validationError) {
-        setTransactionError(validationError);
-        setStatus(validationError);
-        return;
-      }
+    if (paymentMethod !== 'cod' && !paymentProvider) {
+      setStatus('Online payment is not currently available. Select Cash on Delivery.');
+      return;
     }
     const gstinValidationError = validateGstin(gstin);
     if (gstinValidationError) {
@@ -285,9 +239,9 @@ export default function Checkout() {
         headers: authHeaders,
         body: JSON.stringify({
           userId: user.id,
-          totalAmount: total,
-          status: 'PENDING',
           paymentMethod: paymentMethod.toUpperCase(),
+          paymentProvider: paymentMethod === 'cod' ? null : paymentProvider,
+          customerPhone: deliveryAddress.phone,
           gstin: gstin.trim().toUpperCase() || null,
           shippingAddress: [
             deliveryAddress.name,
@@ -302,10 +256,35 @@ export default function Checkout() {
           items: cart.map(item => ({ productId: item.id, quantity: item.qty })),
         }),
       });
-      if (!orderResponse.ok) throw new Error('Unable to place order. Please try again.');
+      const orderResult = await orderResponse.json().catch(() => ({}));
+      if (!orderResponse.ok) throw new Error(orderResult.message || 'Unable to place order. Please try again.');
 
-      clearCart();
-      navigate('/checkout/success');
+      if (paymentMethod === 'cod') {
+        clearCart();
+        navigate(`/checkout/success?orderId=${orderResult.id}&cod=true`);
+        return;
+      }
+
+      if (orderResult.gateway === 'PAYU' && orderResult.checkoutUrl && orderResult.formData) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = orderResult.checkoutUrl;
+        Object.entries(orderResult.formData).forEach(([name, value]) => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = name;
+          input.value = value;
+          form.appendChild(input);
+        });
+        document.body.appendChild(form);
+        form.submit();
+        return;
+      }
+      if (orderResult.gateway === 'PHONEPE' && orderResult.checkoutUrl) {
+        window.location.assign(orderResult.checkoutUrl);
+        return;
+      }
+      throw new Error('The payment provider did not return a checkout page. Please try again.');
     } catch (error) {
       if (error.message?.includes('phone number')) {
         setPhoneError(error.message);
@@ -428,53 +407,36 @@ export default function Checkout() {
                 { id: 'debit_card', label: 'Debit Card', enabled: paymentSettings.debitCardActive },
                 { id: 'upi', label: 'UPI', enabled: paymentSettings.upiActive },
                 { id: 'net_banking', label: 'Net Banking', enabled: paymentSettings.netBankingActive },
-                { id: 'qr_code', label: 'QR Code', enabled: paymentSettings.qrCodeActive },
                 { id: 'cod', label: 'Cash on Delivery', enabled: paymentSettings.cashOnDeliveryActive },
-              ].filter(method => method.enabled).map(method => (
+              ].filter(method => method.enabled && (method.id === 'cod' || paymentSettings.payuActive || paymentSettings.phonePeActive)).map(method => (
                 <label className={`payment-option ${paymentMethod === method.id ? 'selected' : ''}`} key={method.id}>
                   <input type="radio" name="payment" value={method.id} checked={paymentMethod === method.id} onChange={event => setPaymentMethod(event.target.value)} />
                   {method.label}
                 </label>
               ))}
             </div>
-            {['credit_card', 'debit_card', 'card'].includes(paymentMethod) && (
-              <div className="card-form">
-                <input placeholder="Cardholder name" required value={cardForm.name} onChange={event => { setCardError(''); setCardForm({ ...cardForm, name: event.target.value }); }} />
-                <input placeholder="Card number" inputMode="numeric" required maxLength={23} value={cardForm.number} onChange={event => { setCardError(''); const digits = event.target.value.replace(/\D/g, '').slice(0, 19); setCardForm({ ...cardForm, number: digits.replace(/(.{4})/g, '$1 ').trim() }); }} />
-                <input placeholder="MM/YY" inputMode="numeric" required maxLength={5} value={cardForm.expiry} onChange={event => { setCardError(''); const digits = event.target.value.replace(/\D/g, '').slice(0, 4); setCardForm({ ...cardForm, expiry: digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits }); }} />
-                <input placeholder="CVV" inputMode="numeric" required maxLength={4} value={cardForm.cvv} onChange={event => { setCardError(''); setCardForm({ ...cardForm, cvv: event.target.value.replace(/\D/g, '').slice(0, 4) }); }} />
-                {cardError && <p className="checkout-status card-status">{cardError}</p>}
+            {paymentMethod !== 'cod' && (paymentSettings.payuActive || paymentSettings.phonePeActive) && (
+              <div className="payment-providers" role="group" aria-label="Payment provider">
+                {paymentSettings.payuActive && (
+                  <label className={`payment-option ${paymentProvider === 'PAYU' ? 'selected' : ''}`}>
+                    <input type="radio" name="paymentProvider" value="PAYU" checked={paymentProvider === 'PAYU'} onChange={() => setPaymentProvider('PAYU')} />
+                    PayU
+                  </label>
+                )}
+                {paymentSettings.phonePeActive && (
+                  <label className={`payment-option ${paymentProvider === 'PHONEPE' ? 'selected' : ''}`}>
+                    <input type="radio" name="paymentProvider" value="PHONEPE" checked={paymentProvider === 'PHONEPE'} onChange={() => setPaymentProvider('PHONEPE')} />
+                    PhonePe
+                  </label>
+                )}
               </div>
             )}
-            {['upi', 'qr_code'].includes(paymentMethod) && (
-              <div className="upi-payment">
-                <div className="upi-section upi-qr-section">
-                  <img
-                    className="upi-qr-code"
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(`upi://pay?pa=${paymentSettings.upiId}&pn=PawMart`)}`}
-                    alt="QR code for PawMart UPI payment"
-                  />
-                  <p className="payment-note">Scan this QR code to pay.</p>
-                </div>
-                <div className="upi-section upi-id-section">
-                  <label htmlFor="upi-id">Transaction ID</label>
-                  <input
-                    id="upi-id"
-                    className="upi-input"
-                    placeholder="e.g. 123456789012"
-                    required
-                    maxLength={40}
-                    value={transactionId}
-                    onChange={event => {
-                      setTransactionError('');
-                      setTransactionId(event.target.value.replace(/\s/g, '').slice(0, 40));
-                    }}
-                  />
-                  {transactionError && <p className="checkout-status transaction-status">{transactionError}</p>}
-                </div>
-              </div>
+            {paymentMethod !== 'cod' && !paymentSettings.payuActive && !paymentSettings.phonePeActive && (
+              <p className="payment-note">Online payment is not configured. Choose Cash on Delivery.</p>
             )}
-            {paymentMethod === 'net_banking' && <p className="payment-note">Select your bank during secure payment processing.</p>}
+            {paymentMethod !== 'cod' && (paymentSettings.payuActive || paymentSettings.phonePeActive) && (
+              <p className="payment-note">You’ll complete payment securely with {paymentProvider === 'PHONEPE' ? 'PhonePe' : 'PayU'}.</p>
+            )}
             {paymentMethod === 'cod' && <p className="payment-note">Pay when your order arrives.</p>}
           </section>
         </div>
@@ -493,11 +455,83 @@ export default function Checkout() {
 }
 
 export function CheckoutSuccess() {
+  const { token } = useAuth();
+  const { clearCart } = useCart();
+  const clearCartRef = useRef(clearCart);
+  useEffect(() => {
+    clearCartRef.current = clearCart;
+  }, [clearCart]);
+  const [searchParams] = useSearchParams();
+  const orderId = searchParams.get('orderId');
+  const isCod = searchParams.get('cod') === 'true';
+  const [payment, setPayment] = useState(null);
+  const [error, setError] = useState('');
+  const [refreshCount, setRefreshCount] = useState(0);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    if (!orderId || !token) {
+      setChecking(false);
+      return undefined;
+    }
+    let cancelled = false;
+    let attempts = 0;
+    let timeoutId;
+
+    async function checkPayment() {
+      setChecking(true);
+      try {
+        const response = await fetch(`${API_URL}/orders/${orderId}/payment-status`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.message || 'Unable to verify payment status.');
+        if (cancelled) return;
+        setPayment(result);
+        setError('');
+        if (result.paymentStatus === 'COMPLETED' || result.paymentMethod === 'COD') {
+          clearCartRef.current();
+        } else if (result.paymentStatus === 'PENDING' && attempts < 7) {
+          attempts += 1;
+          timeoutId = setTimeout(checkPayment, 3000);
+        }
+      } catch (requestError) {
+        if (!cancelled) setError(requestError.message || 'Unable to verify payment status.');
+      } finally {
+        if (!cancelled) setChecking(false);
+      }
+    }
+
+    checkPayment();
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [orderId, token, refreshCount]);
+
+  const isCompleted = payment?.paymentStatus === 'COMPLETED';
+  const isFailed = payment?.paymentStatus === 'FAILED' || payment?.orderStatus === 'CANCELED';
+  const isCodOrder = isCod || payment?.paymentMethod === 'COD';
+
   return (
     <div className="checkout-success">
-      <div className="checkout-success-icon">✓</div>
-      <h1>Order placed successfully</h1>
-      <p>Thank you for shopping at PawMart. Your order is being prepared.</p>
+      <div className="checkout-success-icon">{isCompleted || isCodOrder ? '✓' : isFailed ? '!' : '…'}</div>
+      <h1>{isCompleted ? 'Payment confirmed' : isCodOrder ? 'Order placed' : isFailed ? 'Payment not completed' : 'Confirming payment'}</h1>
+      <p>
+        {isCompleted
+          ? 'Your payment was verified and your order is being prepared.'
+          : isCodOrder
+            ? 'Your order is pending and payment is due on delivery.'
+            : isFailed
+              ? 'The payment was not confirmed. Your order has not been processed.'
+              : error || (checking ? 'Checking with the payment provider...' : 'Payment is still pending confirmation.')}
+      </p>
+      {payment?.orderNumber && <p>Order {payment.orderNumber}</p>}
+      {!isCompleted && !isCodOrder && !isFailed && orderId && (
+        <button type="button" className="btn-outline" onClick={() => setRefreshCount(value => value + 1)} disabled={checking}>
+          {checking ? 'Checking...' : 'Check payment status'}
+        </button>
+      )}
       <Link to="/shop" className="btn-primary">Continue Shopping</Link>
     </div>
   );

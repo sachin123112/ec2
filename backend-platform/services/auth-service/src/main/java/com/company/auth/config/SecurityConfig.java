@@ -67,6 +67,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/payments/payu/return").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/payment-settings").permitAll()
                 .requestMatchers(HttpMethod.PUT, "/api/v1/payment-settings").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/v1/security-settings").permitAll()

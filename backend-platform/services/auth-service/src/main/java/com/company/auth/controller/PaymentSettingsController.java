@@ -3,6 +3,7 @@ package com.company.auth.controller;
 import com.company.auth.dto.PaymentSettingsDto;
 import com.company.auth.model.PaymentSettings;
 import com.company.auth.repository.PaymentSettingsRepository;
+import com.company.auth.service.PaymentGatewayService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,9 +11,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/payment-settings")
 public class PaymentSettingsController {
     private final PaymentSettingsRepository repository;
+    private final PaymentGatewayService paymentGatewayService;
 
-    public PaymentSettingsController(PaymentSettingsRepository repository) {
+    public PaymentSettingsController(PaymentSettingsRepository repository, PaymentGatewayService paymentGatewayService) {
         this.repository = repository;
+        this.paymentGatewayService = paymentGatewayService;
     }
 
     @GetMapping
@@ -55,6 +58,8 @@ public class PaymentSettingsController {
         dto.setUpiId(settings.getUpiId());
         dto.setFreeShippingThreshold(settings.getFreeShippingThreshold());
         dto.setShippingFee(settings.getShippingFee());
+        dto.setPayuActive(paymentGatewayService.isPayUConfigured());
+        dto.setPhonePeActive(paymentGatewayService.isPhonePeConfigured());
         return dto;
     }
 }
