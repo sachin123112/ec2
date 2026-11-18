@@ -367,9 +367,9 @@ spring:
 ### Environment Variables
 Create `.env` file in `frontend/` folder (optional):
 ```
-VITE_API_URL=http://localhost:8080
-VITE_API_TIMEOUT=5000
+VITE_API_URL=/api/v1
 ```
+The Vite development server proxies API and local upload requests to the backend on port 8080. This also lets you open the frontend from another device using `http://<your-ip>:5173` without browser CORS errors.
 
 ---
 

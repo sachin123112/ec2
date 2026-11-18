@@ -93,6 +93,12 @@
 .finance-field { display: grid; min-width: 0; gap: 6px; color: #546377; font-size: 0.7rem; font-weight: 700; }
 .finance-required { color: #d34b36; }
 .finance-field input, .finance-field select, .finance-field textarea, .finance-voucher-line input, .finance-voucher-line select { width: 100%; min-height: 36px; padding: 8px 10px; border: 1px solid #dce3eb; border-radius: 6px; outline: none; background: #fff; color: #2b394b; font: inherit; font-size: 0.75rem; }
+.finance-document-selection { display: grid; gap: 5px; margin: 4px 0 0; padding: 0; list-style: none; }
+.finance-document-selection li { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; color: #455469; font-size: 0.72rem; }
+.finance-document-selection li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.finance-document-selection button, .finance-document-links button { padding: 3px 7px; border: 1px solid #e4eaf1; border-radius: 5px; background: #fff; color: #455469; font: inherit; cursor: pointer; }
+.finance-document-selection button:hover, .finance-document-links button:hover { border-color: #f3b39b; color: #c64f23; }
+.finance-document-links { display: grid; justify-items: start; gap: 4px; }
 .finance-field textarea { resize: vertical; }
 .finance-field input:focus, .finance-field select:focus, .finance-field textarea:focus, .finance-voucher-line input:focus, .finance-voucher-line select:focus { border-color: #e88a66; box-shadow: 0 0 0 3px rgba(242, 102, 50, 0.09); }
 .finance-field-wide { grid-column: 1 / -1; }

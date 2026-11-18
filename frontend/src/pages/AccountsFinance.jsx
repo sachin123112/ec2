@@ -33,11 +33,12 @@ const voucherTypes = {
 const blankLine = () => ({ accountId: '', description: '', debit: '', credit: '' });
 
 async function performFinanceRequest(path, token, options = {}, authenticatedFetch = fetch) {
+  const isFormData = options.body instanceof FormData;
   const response = await authenticatedFetch(`${API_URL}/admin/finance${path}`, {
     ...options,
     headers: {
       Authorization: `Bearer ${token}`,
-      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(options.body && !isFormData ? { 'Content-Type': 'application/json' } : {}),
       ...options.headers,
     },
   });
@@ -72,6 +73,7 @@ export default function AccountsFinance() {
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({});
   const [voucherLines, setVoucherLines] = useState([blankLine(), blankLine()]);
+  const [invoiceDocuments, setInvoiceDocuments] = useState([]);
   const [ledgerAccountId, setLedgerAccountId] = useState('');
   const [ledger, setLedger] = useState(null);
   const reportType = financeReportTypes[moduleKey];
@@ -176,7 +178,7 @@ export default function AccountsFinance() {
           const { productId, ...mappingInput } = form;
           await financeRequest(`/product-mappings/${productId}`, token, { method: 'PUT', body: JSON.stringify(mappingInput) });
       } else if (voucherTypes[moduleKey]) {
-        await financeRequest('/vouchers', token, { method: 'POST', body: JSON.stringify({
+        const voucher = {
           voucherType: voucherTypes[moduleKey],
           voucherDate: form.voucherDate || new Date().toISOString().slice(0, 10),
           partyId: form.partyId || null,
@@ -185,13 +187,20 @@ export default function AccountsFinance() {
           status: form.status || 'DRAFT',
           accountingBasis: form.accountingBasis || (settings.accountingBasis === 'CASH' ? 'CASH' : 'ACCRUAL'),
           lines: voucherLines.map(line => ({ ...line, accountId: Number(line.accountId), taxCodeId: line.taxCodeId ? Number(line.taxCodeId) : null, debit: Number(line.debit || 0), credit: Number(line.credit || 0) })),
-        }) });
+        };
+        const body = new FormData();
+        body.append('voucher', new Blob([JSON.stringify(voucher)], { type: 'application/json' }));
+        if (moduleKey === 'vendor-payment') {
+          invoiceDocuments.forEach(file => body.append('documents', file));
+        }
+        await financeRequest('/vouchers', token, { method: 'POST', body });
       } else {
         setStatus('This workspace is read-only until its transaction workflow is configured.');
         return;
       }
       setForm({});
       setVoucherLines([blankLine(), blankLine()]);
+      setInvoiceDocuments([]);
       setStatus(`${selectedItem.title} saved.`);
       await loadData();
     } catch (error) {
@@ -336,6 +345,8 @@ export default function AccountsFinance() {
               updateVoucherLine={updateVoucherLine}
               addVoucherLine={() => setVoucherLines(lines => [...lines, blankLine()])}
               removeVoucherLine={index => setVoucherLines(lines => lines.filter((_, lineIndex) => lineIndex !== index))}
+              invoiceDocuments={invoiceDocuments}
+              setInvoiceDocuments={setInvoiceDocuments}
               onSubmit={handleSubmit}
               busy={busy}
               settings={settings}
@@ -361,7 +372,7 @@ export default function AccountsFinance() {
   );
 }
 
-function ModuleWorkspace({ title, moduleKey, accounts, parties, taxCodes, bankAccounts, mappings, products, vouchers, form, setValue, voucherLines, updateVoucherLine, addVoucherLine, removeVoucherLine, onSubmit, busy, settings, isPartyMaster, isAccountMaster, isTaxMaster, isVoucher, isLedger, isReport, ledgerAccountId, setLedgerAccountId, ledger, loadLedger, reconciliationLines, onReconcile, trialBalance, reportData }) {
+function ModuleWorkspace({ title, moduleKey, accounts, parties, taxCodes, bankAccounts, mappings, products, vouchers, form, setValue, voucherLines, updateVoucherLine, addVoucherLine, removeVoucherLine, invoiceDocuments, setInvoiceDocuments, onSubmit, busy, settings, isPartyMaster, isAccountMaster, isTaxMaster, isVoucher, isLedger, isReport, ledgerAccountId, setLedgerAccountId, ledger, loadLedger, reconciliationLines, onReconcile, trialBalance, reportData }) {
   const partyType = moduleKey === 'vendor-master' ? 'VENDOR' : 'CUSTOMER';
   const partyRows = parties.filter(party => party.partyType === partyType);
   const accountRows = moduleKey === 'cash-petty-cash' ? accounts.filter(account => account.accountType === 'CASH') : moduleKey === 'charges' ? accounts.filter(account => account.accountGroup === 'EXPENSE') : accounts;
@@ -452,6 +463,15 @@ function ModuleWorkspace({ title, moduleKey, accounts, parties, taxCodes, bankAc
               <Field label="Basis"><select value={form.accountingBasis || (settings.accountingBasis === 'CASH' ? 'CASH' : 'ACCRUAL')} onChange={event => setValue('accountingBasis', event.target.value)}><option value="ACCRUAL">Accrual</option><option value="CASH">Cash</option></select></Field>
               <Field label="Status"><select value={form.status || 'DRAFT'} onChange={event => setValue('status', event.target.value)}><option value="DRAFT">Save as draft</option><option value="POSTED">Post to ledger</option></select></Field>
               <Field label="Narration" className="finance-field-wide"><input value={form.narration || ''} onChange={event => setValue('narration', event.target.value)} /></Field>
+              {moduleKey === 'vendor-payment' && <Field label="Invoice documents (PDF or image, up to 10 files)" className="finance-field-wide">
+                <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" multiple onChange={event => setInvoiceDocuments(current => [...current, ...Array.from(event.target.files || [])])} />
+                {invoiceDocuments.length > 0 && <ul className="finance-document-selection">
+                  {invoiceDocuments.map((file, index) => <li key={`${file.name}-${file.lastModified}-${index}`}>
+                    <span>{file.name}</span>
+                    <button type="button" aria-label={`Remove ${file.name}`} onClick={() => setInvoiceDocuments(current => current.filter((_, fileIndex) => fileIndex !== index))}>Remove</button>
+                  </li>)}
+                </ul>}
+              </Field>}
             </div>
             <div className="finance-lines-heading"><h3>Voucher lines</h3><span>Debits {formatMoney(openingDebit)} · Credits {formatMoney(openingCredit)}</span></div>
             <div className="finance-voucher-lines">
@@ -505,11 +525,41 @@ function AccountSelect({ accounts, value, onChange }) {
 
 function DataTable({ rows, columns }) {
   if (!rows.length) return <div className="finance-empty">No records yet.</div>;
-  return <div className="finance-table-scroll"><table className="finance-table"><thead><tr>{columns.map(([, label]) => <th key={label}>{label}</th>)}</tr></thead><tbody>{rows.map((row, index) => <tr key={row.id || index}>{columns.map(([key]) => <td key={key}>{row[key] ?? '—'}</td>)}</tr>)}</tbody></table></div>;
+  return <div className="finance-table-scroll"><table className="finance-table"><thead><tr>{columns.map(([, label]) => <th key={label}>{label}</th>)}</tr></thead><tbody>{rows.map((row, index) => <tr key={row.id || index}>{columns.map(([key, , render]) => <td key={key}>{render ? render(row[key], row) : row[key] ?? '—'}</td>)}</tr>)}</tbody></table></div>;
 }
 
 function VoucherTable({ vouchers }) {
-  return <DataTable rows={vouchers} columns={[["voucherNumber", "Voucher"], ["voucherDate", "Date"], ["voucherType", "Type"], ["partyName", "Party"], ["narration", "Narration"], ["totalAmount", "Amount"], ["status", "Status"]]} />;
+  const { token } = useAuth();
+  const [downloadError, setDownloadError] = useState('');
+
+  async function downloadDocument(document, voucher) {
+    setDownloadError('');
+    try {
+      const response = await fetch(`${API_URL}/admin/finance/vouchers/${voucher.id}/documents/${document.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error(`Unable to download invoice document (${response.status}).`);
+      const objectUrl = URL.createObjectURL(await response.blob());
+      const link = window.document.createElement('a');
+      link.href = objectUrl;
+      link.download = document.fileName;
+      link.click();
+      URL.revokeObjectURL(objectUrl);
+    } catch (error) {
+      setDownloadError(error.message || 'Unable to download invoice document.');
+    }
+  }
+
+  return <>
+    {downloadError && <div className="finance-status" role="alert">{downloadError}</div>}
+    <DataTable rows={vouchers} columns={[
+      ["voucherNumber", "Voucher"], ["voucherDate", "Date"], ["voucherType", "Type"], ["partyName", "Party"],
+      ["narration", "Narration"], ["totalAmount", "Amount"], ["status", "Status"],
+      ["documents", "Invoice documents", (documents, voucher) => documents?.length
+        ? <div className="finance-document-links">{documents.map(document => <button type="button" key={document.id} onClick={() => downloadDocument(document, voucher)}>{document.fileName}</button>)}</div>
+        : '—'],
+    ]} />
+  </>;
 }
 
 function ReconciliationRow({ line, onReconcile }) {

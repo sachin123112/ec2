@@ -67,7 +67,8 @@
 }
 
 .admin-sidebar-toggle:hover { border-color: #f4a184; background: #25364b; color: #ff9a70; }
-.admin-sidebar-nav { display: flex; min-height: 0; flex-direction: column; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #34465c transparent; }
+.admin-sidebar-nav { display: flex; min-height: 0; flex-direction: column; overflow-y: auto; scrollbar-width: none; }
+.admin-sidebar-nav::-webkit-scrollbar { display: none; }
 
 .admin-sidebar-link {
 	position: relative;

@@ -4,8 +4,10 @@ import com.company.auth.model.OrderEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -14,6 +16,7 @@ import java.util.Map;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 
 @Service
 public class FinanceService {
@@ -226,7 +229,15 @@ public class FinanceService {
             parameters.add(to);
         }
         sql.append(" GROUP BY v.id, p.name ORDER BY v.voucher_date DESC, v.id DESC");
-        return jdbc.queryForList(sql.toString(), parameters.toArray());
+        List<Map<String, Object>> rows = jdbc.queryForList(sql.toString(), parameters.toArray());
+        for (Map<String, Object> row : rows) {
+            if ("VENDOR_PAYMENT".equals(row.get("voucherType"))) {
+                row.put("documents", jdbc.queryForList(
+                        "SELECT id, file_name AS \"fileName\", content_type AS \"contentType\", file_size AS \"fileSize\" FROM finance_voucher_documents WHERE voucher_id = ? ORDER BY id",
+                        row.get("id")));
+            }
+        }
+        return rows;
     }
 
     private List<Map<String, Object>> listTaxReport(String taxType, LocalDate from, LocalDate to, String basis) {
@@ -235,12 +246,24 @@ public class FinanceService {
 
     @Transactional
     public Map<String, Object> createVoucher(VoucherInput input, Long userId) {
+        return createVoucher(input, userId, List.of());
+    }
+
+    @Transactional
+    public Map<String, Object> createVoucher(VoucherInput input, Long userId, List<MultipartFile> documents) {
         String voucherType = requiredChoice(input.voucherType(), "Voucher type", List.of(
                 "PURCHASE_ORDER", "GRN", "PURCHASE_INVOICE", "PURCHASE_VOUCHER", "PURCHASE_RETURN", "DEBIT_NOTE",
                 "SALES_INVOICE", "SALES_VOUCHER", "DISPATCH", "SALES_RETURN", "REFUND", "CREDIT_NOTE",
                 "GENERAL_PAYMENT", "VENDOR_PAYMENT", "GENERAL_RECEIPT", "CUSTOMER_RECEIPT", "PETTY_CASH_PAYMENT",
                 "JOURNAL", "CONTRA", "EXPENSE", "BANK_DEPOSIT", "BANK_WITHDRAWAL", "BANK_TRANSFER",
                 "GATEWAY_SETTLEMENT", "COD_SETTLEMENT", "ONLINE_ORDER", "OPENING_BALANCE"));
+        List<MultipartFile> invoiceDocuments = documents == null ? List.of() : documents.stream()
+                .filter(document -> document != null && !document.isEmpty())
+                .toList();
+        if (!invoiceDocuments.isEmpty() && !voucherType.equals("VENDOR_PAYMENT")) {
+            throw new ResponseStatusException(BAD_REQUEST, "Invoice documents can only be attached to vendor payments");
+        }
+        validateInvoiceDocuments(invoiceDocuments);
         if (input.voucherDate() == null) throw new ResponseStatusException(BAD_REQUEST, "Voucher date is required");
         String status = input.status() == null ? "DRAFT" : requiredChoice(input.status(), "Voucher status", List.of("DRAFT", "POSTED"));
         String basis = input.accountingBasis() == null ? "ACCRUAL" : requiredChoice(input.accountingBasis(), "Accounting basis", List.of("CASH", "ACCRUAL"));
@@ -277,7 +300,90 @@ public class FinanceService {
             jdbc.update("INSERT INTO finance_voucher_lines (voucher_id, line_number, account_id, description, debit, credit, tax_code_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     voucherId, index + 1, line.accountId(), blankToNull(line.description()), nonNegative(line.debit(), "Debit"), nonNegative(line.credit(), "Credit"), line.taxCodeId());
         }
-        return jdbc.queryForMap("SELECT id, voucher_number AS \"voucherNumber\", voucher_type AS \"voucherType\", voucher_date AS \"voucherDate\", party_id AS \"partyId\", reference_number AS \"referenceNumber\", narration, status, accounting_basis AS \"accountingBasis\", total_amount AS \"totalAmount\", created_at AS \"createdAt\" FROM finance_vouchers WHERE id = ?", voucherId);
+        for (MultipartFile document : invoiceDocuments) {
+            try {
+                jdbc.update("INSERT INTO finance_voucher_documents (voucher_id, file_name, content_type, file_size, content) VALUES (?, ?, ?, ?, ?)",
+                        voucherId, invoiceFileName(document), invoiceContentType(document), document.getSize(), document.getBytes());
+            } catch (IOException exception) {
+                throw new ResponseStatusException(INTERNAL_SERVER_ERROR, "Unable to read an invoice document", exception);
+            }
+        }
+        Map<String, Object> result = jdbc.queryForMap("SELECT id, voucher_number AS \"voucherNumber\", voucher_type AS \"voucherType\", voucher_date AS \"voucherDate\", party_id AS \"partyId\", reference_number AS \"referenceNumber\", narration, status, accounting_basis AS \"accountingBasis\", total_amount AS \"totalAmount\", created_at AS \"createdAt\" FROM finance_vouchers WHERE id = ?", voucherId);
+        if (!invoiceDocuments.isEmpty()) {
+            result.put("documents", jdbc.queryForList(
+                    "SELECT id, file_name AS \"fileName\", content_type AS \"contentType\", file_size AS \"fileSize\" FROM finance_voucher_documents WHERE voucher_id = ? ORDER BY id",
+                    voucherId));
+        }
+        return result;
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getVoucherDocument(Long voucherId, Long documentId) {
+        try {
+            return jdbc.queryForMap(
+                    "SELECT file_name AS \"fileName\", content_type AS \"contentType\", file_size AS \"fileSize\", content FROM finance_voucher_documents WHERE id = ? AND voucher_id = ?",
+                    documentId, voucherId);
+        } catch (org.springframework.dao.EmptyResultDataAccessException exception) {
+            throw new ResponseStatusException(NOT_FOUND, "Invoice document not found");
+        }
+    }
+
+    private void validateInvoiceDocuments(List<MultipartFile> documents) {
+        if (documents.size() > 10) throw new ResponseStatusException(BAD_REQUEST, "Upload no more than 10 invoice documents");
+        long totalSize = 0;
+        for (MultipartFile document : documents) {
+            if (document.getSize() > 10L * 1024 * 1024) {
+                throw new ResponseStatusException(BAD_REQUEST, "Each invoice document must be 10 MB or smaller");
+            }
+            totalSize += document.getSize();
+            String extension = documentExtension(document);
+            if (!List.of("pdf", "png", "jpg", "jpeg", "webp").contains(extension)) {
+                throw new ResponseStatusException(BAD_REQUEST, "Invoice documents must be PDF, PNG, JPG, or WebP files");
+            }
+            validateInvoiceDocumentSignature(document, extension);
+        }
+        if (totalSize > 20L * 1024 * 1024) {
+            throw new ResponseStatusException(BAD_REQUEST, "The total invoice document size must be 20 MB or smaller");
+        }
+    }
+
+    private void validateInvoiceDocumentSignature(MultipartFile document, String extension) {
+        try {
+            byte[] bytes = document.getBytes();
+            boolean valid = switch (extension) {
+                case "pdf" -> bytes.length >= 5 && bytes[0] == '%' && bytes[1] == 'P' && bytes[2] == 'D' && bytes[3] == 'F' && bytes[4] == '-';
+                case "png" -> bytes.length >= 8 && (bytes[0] & 0xff) == 0x89 && bytes[1] == 'P' && bytes[2] == 'N' && bytes[3] == 'G';
+                case "jpg", "jpeg" -> bytes.length >= 3 && (bytes[0] & 0xff) == 0xff && (bytes[1] & 0xff) == 0xd8 && (bytes[2] & 0xff) == 0xff;
+                case "webp" -> bytes.length >= 12 && new String(bytes, 0, 4, java.nio.charset.StandardCharsets.US_ASCII).equals("RIFF")
+                        && new String(bytes, 8, 4, java.nio.charset.StandardCharsets.US_ASCII).equals("WEBP");
+                default -> false;
+            };
+            if (!valid) throw new ResponseStatusException(BAD_REQUEST, "An invoice document does not match its file extension");
+        } catch (IOException exception) {
+            throw new ResponseStatusException(BAD_REQUEST, "Unable to read an invoice document", exception);
+        }
+    }
+
+    private String documentExtension(MultipartFile document) {
+        String filename = document.getOriginalFilename();
+        int dot = filename == null ? -1 : filename.lastIndexOf('.');
+        return dot < 0 ? "" : filename.substring(dot + 1).toLowerCase(java.util.Locale.ROOT);
+    }
+
+    private String invoiceFileName(MultipartFile document) {
+        String filename = document.getOriginalFilename();
+        String baseName = filename == null ? "invoice" : filename.replace('\\', '/').substring(filename.replace('\\', '/').lastIndexOf('/') + 1);
+        return baseName.replaceAll("[\\r\\n\\p{Cntrl}]", "_");
+    }
+
+    private String invoiceContentType(MultipartFile document) {
+        return switch (documentExtension(document)) {
+            case "pdf" -> "application/pdf";
+            case "png" -> "image/png";
+            case "jpg", "jpeg" -> "image/jpeg";
+            case "webp" -> "image/webp";
+            default -> "application/octet-stream";
+        };
     }
 
     @Transactional(readOnly = true)

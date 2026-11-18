@@ -18,9 +18,16 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -100,10 +107,26 @@ public class FinanceController {
         return financeService.listVouchers(type);
     }
 
-    @PostMapping("/vouchers")
-    public Map<String, Object> createVoucher(Principal principal, @RequestBody VoucherInput input) {
+    @PostMapping(value = "/vouchers", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Map<String, Object> createVoucher(
+            Principal principal,
+            @RequestPart("voucher") VoucherInput input,
+            @RequestPart(value = "documents", required = false) List<MultipartFile> documents) {
         Long userId = principal == null ? null : userRepository.findByEmail(principal.getName()).map(user -> user.getId()).orElse(null);
-        return financeService.createVoucher(input, userId);
+        return financeService.createVoucher(input, userId, documents);
+    }
+
+    @GetMapping("/vouchers/{voucherId}/documents/{documentId}")
+    public ResponseEntity<byte[]> downloadVoucherDocument(@PathVariable Long voucherId, @PathVariable Long documentId) {
+        Map<String, Object> document = financeService.getVoucherDocument(voucherId, documentId);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType((String) document.get("contentType")));
+        headers.setContentLength((Long) document.get("fileSize"));
+        headers.setContentDisposition(ContentDisposition.attachment()
+                .filename((String) document.get("fileName"), StandardCharsets.UTF_8)
+                .build());
+        headers.set("X-Content-Type-Options", "nosniff");
+        return ResponseEntity.ok().headers(headers).body((byte[]) document.get("content"));
     }
 
     @GetMapping("/ledger/{accountId}")
